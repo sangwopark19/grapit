@@ -1,29 +1,35 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ConfigService } from '@nestjs/config';
-import { BadRequestException } from '@nestjs/common';
+
+// Mock twilio module before imports
+const mockVerificationsCreate = vi.fn();
+const mockVerificationChecksCreate = vi.fn();
+
+vi.mock('twilio', () => {
+  return {
+    default: vi.fn().mockReturnValue({
+      verify: {
+        v2: {
+          services: vi.fn().mockReturnValue({
+            verifications: { create: mockVerificationsCreate },
+            verificationChecks: { create: mockVerificationChecksCreate },
+          }),
+        },
+      },
+    }),
+  };
+});
 
 describe('SmsService', () => {
   describe('Production mode (Twilio mocked)', () => {
-    let smsService: Awaited<ReturnType<typeof createProductionSmsService>>;
-    let mockVerificationsCreate: ReturnType<typeof vi.fn>;
-    let mockVerificationChecksCreate: ReturnType<typeof vi.fn>;
+    let smsService: any;
 
-    async function createProductionSmsService() {
+    beforeEach(async () => {
+      vi.clearAllMocks();
+      mockVerificationsCreate.mockResolvedValue({ status: 'pending', sid: 'VE123' });
+      mockVerificationChecksCreate.mockResolvedValue({ status: 'approved' });
+
       const { SmsService } = await import('./sms.service.js');
-
-      mockVerificationsCreate = vi.fn().mockResolvedValue({ status: 'pending', sid: 'VE123' });
-      mockVerificationChecksCreate = vi.fn().mockResolvedValue({ status: 'approved' });
-
-      const mockTwilioClient = {
-        verify: {
-          v2: {
-            services: vi.fn().mockReturnValue({
-              verifications: { create: mockVerificationsCreate },
-              verificationChecks: { create: mockVerificationChecksCreate },
-            }),
-          },
-        },
-      };
 
       const mockConfigService = {
         get: vi.fn().mockImplementation((key: string) => {
@@ -37,16 +43,7 @@ describe('SmsService', () => {
         }),
       } as unknown as ConfigService;
 
-      const service = new SmsService(mockConfigService);
-      // Replace the internal Twilio client with the mock
-      (service as any).twilioClient = mockTwilioClient;
-      (service as any).verifySid = 'VA_test_service_sid';
-
-      return service;
-    }
-
-    beforeEach(async () => {
-      smsService = await createProductionSmsService();
+      smsService = new SmsService(mockConfigService);
     });
 
     it('should send verification code via Twilio and return success', async () => {
@@ -55,7 +52,7 @@ describe('SmsService', () => {
       expect(result.success).toBe(true);
       expect(result.message).toContain('인증번호');
       expect(mockVerificationsCreate).toHaveBeenCalledWith({
-        to: '+8210-1234-5678',
+        to: '+821012345678',
         channel: 'sms',
       });
     });
@@ -65,7 +62,7 @@ describe('SmsService', () => {
 
       expect(result.verified).toBe(true);
       expect(mockVerificationChecksCreate).toHaveBeenCalledWith({
-        to: '+8210-1234-5678',
+        to: '+821012345678',
         code: '123456',
       });
     });

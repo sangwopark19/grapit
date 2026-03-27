@@ -6,6 +6,7 @@ import { HealthModule } from './health/health.module.js';
 import { DrizzleModule } from './database/drizzle.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { UserModule } from './modules/user/user.module.js';
+import { SmsModule } from './modules/sms/sms.module.js';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard.js';
 import { authConfig } from './config/auth.config.js';
 
@@ -20,6 +21,7 @@ import { authConfig } from './config/auth.config.js';
     HealthModule,
     AuthModule,
     UserModule,
+    SmsModule,
   ],
   providers: [
     {
