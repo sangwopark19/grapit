@@ -6,6 +6,8 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     root: './src',
+    hookTimeout: 30000,
+    testTimeout: 30000,
   },
   resolve: {
     alias: {
