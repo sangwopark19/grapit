@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { pretendard } from './fonts';
+import { Toaster } from '@/components/ui/sonner';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -14,7 +15,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className={pretendard.variable}>
-      <body>{children}</body>
+      <body className="min-h-screen flex flex-col">
+        {children}
+        <Toaster />
+      </body>
     </html>
   );
 }
