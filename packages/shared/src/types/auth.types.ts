@@ -1,2 +1,23 @@
-// Auth types - populated in Task 2
-export {};
+import type { UserProfile } from './user.types.js';
+
+export interface AuthResponse {
+  accessToken: string;
+  user: UserProfile;
+}
+
+export interface TokenRefreshResponse {
+  accessToken: string;
+}
+
+export interface SocialAuthResult {
+  status: 'authenticated' | 'needs_registration';
+  accessToken?: string;
+  registrationToken?: string;
+  user?: UserProfile;
+  socialProfile?: {
+    provider: string;
+    providerId: string;
+    email?: string;
+    name?: string;
+  };
+}
