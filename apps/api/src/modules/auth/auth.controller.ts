@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
   Req,
   Res,
@@ -8,24 +9,39 @@ import {
   HttpCode,
   HttpStatus,
   UnauthorizedException,
+  Param,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js';
 import { AuthService } from './auth.service.js';
 import { registerBodySchema, type RegisterBody } from './dto/register.dto.js';
 import {
+  completeSocialRegistrationSchema,
+  type CompleteSocialRegistrationBody,
+} from './dto/social-register.dto.js';
+import {
   resetPasswordRequestBodySchema,
   type ResetPasswordRequestBody,
   resetPasswordBodySchema,
   type ResetPasswordBody,
 } from './dto/reset-password.dto.js';
+import {
+  KakaoAuthGuard,
+  NaverAuthGuard,
+  GoogleAuthGuard,
+} from './guards/social-auth.guard.js';
+import type { SocialProfile } from './interfaces/social-profile.interface.js';
 import { AUTH_COOKIE_NAME } from '@grapit/shared/constants/index.js';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Public()
   @Post('register')
@@ -115,6 +131,98 @@ export class AuthController {
   ) {
     await this.authService.resetPassword(dto.token, dto.newPassword);
     return { message: '비밀번호가 변경되었습니다' };
+  }
+
+  // -- Social OAuth endpoints --
+
+  @Public()
+  @UseGuards(KakaoAuthGuard)
+  @Get('social/kakao')
+  socialKakao(): void {
+    // Guard redirects to Kakao OAuth consent page
+  }
+
+  @Public()
+  @UseGuards(KakaoAuthGuard)
+  @Get('social/kakao/callback')
+  async socialKakaoCallback(
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<void> {
+    await this.handleSocialCallback(req, res);
+  }
+
+  @Public()
+  @UseGuards(NaverAuthGuard)
+  @Get('social/naver')
+  socialNaver(): void {
+    // Guard redirects to Naver OAuth consent page
+  }
+
+  @Public()
+  @UseGuards(NaverAuthGuard)
+  @Get('social/naver/callback')
+  async socialNaverCallback(
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<void> {
+    await this.handleSocialCallback(req, res);
+  }
+
+  @Public()
+  @UseGuards(GoogleAuthGuard)
+  @Get('social/google')
+  socialGoogle(): void {
+    // Guard redirects to Google OAuth consent page
+  }
+
+  @Public()
+  @UseGuards(GoogleAuthGuard)
+  @Get('social/google/callback')
+  async socialGoogleCallback(
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<void> {
+    await this.handleSocialCallback(req, res);
+  }
+
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Post('social/complete-registration')
+  async completeSocialRegistration(
+    @Body(new ZodValidationPipe(completeSocialRegistrationSchema))
+    dto: CompleteSocialRegistrationBody,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { registrationToken, ...registerData } = dto;
+    const result = await this.authService.completeSocialRegistration(
+      registrationToken,
+      registerData,
+    );
+    this.setRefreshTokenCookie(res, result.refreshToken);
+
+    return {
+      accessToken: result.accessToken,
+      user: result.user,
+    };
+  }
+
+  // -- Private helpers --
+
+  private async handleSocialCallback(req: Request, res: Response): Promise<void> {
+    const profile = req.user as SocialProfile;
+    const result = await this.authService.findOrCreateSocialUser(profile);
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
+
+    if (result.status === 'authenticated') {
+      res.redirect(
+        `${frontendUrl}/auth/callback?accessToken=${result.accessToken}&status=authenticated`,
+      );
+    } else {
+      res.redirect(
+        `${frontendUrl}/auth/callback?registrationToken=${result.registrationToken}&status=needs_registration`,
+      );
+    }
   }
 
   private setRefreshTokenCookie(res: Response, token: string): void {

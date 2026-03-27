@@ -6,6 +6,9 @@ import { AuthService } from './auth.service.js';
 import { AuthController } from './auth.controller.js';
 import { LocalStrategy } from './strategies/local.strategy.js';
 import { JwtStrategy } from './strategies/jwt.strategy.js';
+import { KakaoStrategy } from './strategies/kakao.strategy.js';
+import { NaverStrategy } from './strategies/naver.strategy.js';
+import { GoogleStrategy } from './strategies/google.strategy.js';
 import { UserModule } from '../user/user.module.js';
 
 @Module({
@@ -24,7 +27,14 @@ import { UserModule } from '../user/user.module.js';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy],
+  providers: [
+    AuthService,
+    LocalStrategy,
+    JwtStrategy,
+    KakaoStrategy,
+    NaverStrategy,
+    GoogleStrategy,
+  ],
   exports: [AuthService],
 })
 export class AuthModule {}

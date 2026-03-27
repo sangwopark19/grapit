@@ -8,12 +8,15 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as argon2 from 'argon2';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { DRIZZLE, type DrizzleDB } from '../../database/drizzle.provider.js';
 import * as schema from '../../database/schema/index.js';
 import { UserRepository } from '../user/user.repository.js';
 import type { RegisterBody } from './dto/register.dto.js';
+import type { SocialRegisterBody } from './dto/social-register.dto.js';
+import type { SocialProfile } from './interfaces/social-profile.interface.js';
 import type { UserProfile } from '@grapit/shared/types/user.types.js';
+import type { SocialAuthResult } from '@grapit/shared/types/auth.types.js';
 import {
   REFRESH_TOKEN_EXPIRY_DAYS,
 } from '@grapit/shared/constants/index.js';
@@ -273,6 +276,155 @@ export class AuthService {
       .update(schema.refreshTokens)
       .set({ revokedAt: new Date() })
       .where(eq(schema.refreshTokens.userId, payload.sub));
+  }
+
+  // -- Social auth methods --
+
+  async findOrCreateSocialUser(profile: SocialProfile): Promise<SocialAuthResult> {
+    // 1. Look up social_accounts by (provider, providerId)
+    const existingSocial = await this.db
+      .select()
+      .from(schema.socialAccounts)
+      .where(
+        and(
+          eq(schema.socialAccounts.provider, profile.provider),
+          eq(schema.socialAccounts.providerId, profile.providerId),
+        ),
+      );
+
+    const socialAccount = existingSocial[0];
+
+    // 2. If found: user already registered, generate JWT tokens
+    if (socialAccount) {
+      const user = await this.userRepository.findById(socialAccount.userId);
+      if (!user) {
+        throw new UnauthorizedException('연결된 사용자 계정을 찾을 수 없습니다');
+      }
+
+      const tokens = await this.generateTokenPair(user.id, user.email, user.role);
+
+      return {
+        status: 'authenticated',
+        accessToken: tokens.accessToken,
+        user: this.mapToProfile(user),
+      };
+    }
+
+    // 3. Not found -- generate registrationToken for frontend to collect additional info
+    const registrationToken = await this.jwtService.signAsync(
+      {
+        provider: profile.provider,
+        providerId: profile.providerId,
+        email: profile.email,
+        name: profile.name,
+        purpose: 'social-registration',
+      },
+      { expiresIn: '30m' },
+    );
+
+    return {
+      status: 'needs_registration',
+      registrationToken,
+      socialProfile: {
+        provider: profile.provider,
+        providerId: profile.providerId,
+        email: profile.email,
+        name: profile.name,
+      },
+    };
+  }
+
+  async completeSocialRegistration(
+    registrationToken: string,
+    dto: SocialRegisterBody,
+  ): Promise<AuthResult> {
+    // 1. Verify registrationToken JWT
+    let payload: {
+      provider: string;
+      providerId: string;
+      email?: string;
+      name?: string;
+      purpose: string;
+    };
+
+    try {
+      payload = await this.jwtService.verifyAsync(registrationToken);
+    } catch {
+      throw new UnauthorizedException('등록 토큰이 만료되었거나 유효하지 않습니다');
+    }
+
+    if (payload.purpose !== 'social-registration') {
+      throw new UnauthorizedException('유효하지 않은 등록 토큰입니다');
+    }
+
+    // 2. Check if user with that email already exists (account linking)
+    const email = payload.email ?? `${payload.provider}_${payload.providerId}@social.grapit.com`;
+    const existingUser = await this.userRepository.findByEmail(email);
+
+    let userId: string;
+
+    if (existingUser) {
+      // Account linking: create social_account link to existing user
+      userId = existingUser.id;
+
+      await this.db.insert(schema.socialAccounts).values({
+        userId,
+        provider: payload.provider,
+        providerId: payload.providerId,
+        providerEmail: payload.email,
+      });
+
+      // Create terms agreement for social login
+      await this.db.insert(schema.termsAgreements).values({
+        userId,
+        termsOfService: dto.termsOfService,
+        privacyPolicy: dto.privacyPolicy,
+        marketingConsent: dto.marketingConsent,
+      });
+
+      const tokens = await this.generateTokenPair(existingUser.id, existingUser.email, existingUser.role);
+
+      return {
+        ...tokens,
+        user: this.mapToProfile(existingUser),
+      };
+    }
+
+    // 3. Create new user (passwordHash = null for social-only accounts)
+    const user = await this.userRepository.create({
+      email,
+      passwordHash: null, // social-only accounts have no password
+      name: dto.name,
+      phone: dto.phone,
+      gender: dto.gender,
+      country: dto.country,
+      birthDate: dto.birthDate,
+      marketingConsent: dto.marketingConsent,
+    });
+
+    // 4. Create social account link
+    await this.db.insert(schema.socialAccounts).values({
+      userId: user.id,
+      provider: payload.provider,
+      providerId: payload.providerId,
+      providerEmail: payload.email,
+    });
+
+    // 5. Create terms agreement
+    await this.db.insert(schema.termsAgreements).values({
+      userId: user.id,
+      termsOfService: dto.termsOfService,
+      privacyPolicy: dto.privacyPolicy,
+      marketingConsent: dto.marketingConsent,
+    });
+
+    // 6. Generate JWT tokens
+    const tokens = await this.generateTokenPair(user.id, user.email, user.role);
+
+    return {
+      ...tokens,
+      user: this.mapToProfile(user),
+    };
   }
 
   // -- Private helpers --

@@ -6,7 +6,7 @@ import type { UserProfile } from '@grapit/shared/types/user.types.js';
 
 export interface NewUser {
   email: string;
-  passwordHash: string;
+  passwordHash: string | null; // null for social-only accounts
   name: string;
   phone: string;
   gender: 'male' | 'female' | 'unspecified';
