@@ -1,10 +1,10 @@
 // Schemas
-export * from './schemas/auth.schema.js';
-export * from './schemas/user.schema.js';
+export * from './schemas/auth.schema';
+export * from './schemas/user.schema';
 
 // Types
-export * from './types/auth.types.js';
-export * from './types/user.types.js';
+export * from './types/auth.types';
+export * from './types/user.types';
 
 // Constants
-export * from './constants/index.js';
+export * from './constants/index';

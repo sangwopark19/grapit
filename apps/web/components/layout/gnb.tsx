@@ -2,22 +2,25 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Menu, Search, ChevronDown, LogOut, User } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/cn';
+import { apiClient } from '@/lib/api-client';
+import { useAuthStore } from '@/stores/use-auth-store';
 import { Button } from '@/components/ui/button';
 import { MobileMenu } from './mobile-menu';
 
 const GENRE_TABS = ['뮤지컬', '콘서트', '연극', '전시', '클래식'] as const;
 
-interface GNBProps {
-  isAuthenticated?: boolean;
-  userName?: string;
-}
-
-export function GNB({ isAuthenticated = false, userName }: GNBProps) {
+export function GNB() {
+  const router = useRouter();
+  const { user, isInitialized, accessToken, clearAuth } = useAuthStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isProfileOpen, setIsProfileOpen] = React.useState(false);
   const profileRef = React.useRef<HTMLDivElement>(null);
+
+  const isAuthenticated = isInitialized && !!accessToken && !!user;
 
   React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -32,14 +35,26 @@ export function GNB({ isAuthenticated = false, userName }: GNBProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const userInitials = userName
-    ? userName
+  const userInitials = user?.name
+    ? user.name
         .split(' ')
         .map((n) => n[0])
         .join('')
         .toUpperCase()
         .slice(0, 2)
     : '';
+
+  async function handleLogout() {
+    setIsProfileOpen(false);
+    try {
+      await apiClient.post('/api/v1/auth/logout');
+    } catch {
+      // Clear state regardless
+    }
+    clearAuth();
+    toast.success('로그아웃되었습니다');
+    router.push('/');
+  }
 
   return (
     <>
@@ -112,7 +127,7 @@ export function GNB({ isAuthenticated = false, userName }: GNBProps) {
                   </Link>
                   <button
                     className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-500 hover:bg-gray-100"
-                    onClick={() => setIsProfileOpen(false)}
+                    onClick={handleLogout}
                   >
                     <LogOut className="h-4 w-4" />
                     로그아웃
@@ -152,7 +167,7 @@ export function GNB({ isAuthenticated = false, userName }: GNBProps) {
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
         isAuthenticated={isAuthenticated}
-        userName={userName}
+        userName={user?.name}
       />
     </>
   );

@@ -1,4 +1,4 @@
-import type { UserProfile } from './user.types.js';
+import type { UserProfile } from './user.types';
 
 export interface AuthResponse {
   accessToken: string;
