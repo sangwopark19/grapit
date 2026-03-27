@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { pretendard } from './fonts';
+import { GNB } from '@/components/layout/gnb';
+import { Footer } from '@/components/layout/footer';
 import { Toaster } from '@/components/ui/sonner';
 import './globals.css';
 
@@ -15,8 +17,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className={pretendard.variable}>
-      <body className="min-h-screen flex flex-col">
-        {children}
+      <body className="flex min-h-screen flex-col">
+        <GNB />
+        <div className="flex flex-1 flex-col">{children}</div>
+        <Footer />
         <Toaster />
       </body>
     </html>
