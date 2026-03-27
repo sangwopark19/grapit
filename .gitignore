@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+.next/
+*.tsbuildinfo
+
+# Turborepo
+.turbo/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+
+# Test coverage
+coverage/
+
+# Docker volumes
+pgdata/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
