@@ -382,4 +382,171 @@ describe('AuthService', () => {
       expect(isValid).toBe(true);
     }, 15000);
   });
+
+  describe('findOrCreateSocialUser', () => {
+    it('should return needs_registration with registrationToken for new social user', async () => {
+      // No existing social account
+      mockDb.select.mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([]),
+        }),
+      });
+
+      // No existing user with this email
+      mockUserRepo.findByEmail.mockResolvedValue(null);
+
+      // Mock JWT sign for registration token
+      mockJwtService.signAsync.mockResolvedValue('mock-registration-token');
+
+      const result = await authService.findOrCreateSocialUser({
+        provider: 'kakao',
+        providerId: '12345',
+        email: 'kakao@test.com',
+        name: 'Kakao User',
+      });
+
+      expect(result.status).toBe('needs_registration');
+      expect(result.registrationToken).toBe('mock-registration-token');
+      expect(result.socialProfile).toEqual({
+        provider: 'kakao',
+        providerId: '12345',
+        email: 'kakao@test.com',
+        name: 'Kakao User',
+      });
+    });
+
+    it('should return authenticated with tokens for existing social user', async () => {
+      const existingUser = createMockUser();
+
+      // Existing social account found
+      mockDb.select.mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([
+            {
+              id: randomUUID(),
+              userId: existingUser.id,
+              provider: 'kakao',
+              providerId: '12345',
+              providerEmail: 'kakao@test.com',
+              createdAt: new Date(),
+            },
+          ]),
+        }),
+      });
+
+      // findById returns existing user
+      mockUserRepo.findById.mockResolvedValue(existingUser);
+
+      const result = await authService.findOrCreateSocialUser({
+        provider: 'kakao',
+        providerId: '12345',
+        email: 'kakao@test.com',
+        name: 'Kakao User',
+      });
+
+      expect(result.status).toBe('authenticated');
+      expect(result.accessToken).toBeDefined();
+      expect(result.user).toBeDefined();
+    });
+  });
+
+  describe('completeSocialRegistration', () => {
+    it('should create user + social account + terms with valid registrationToken', async () => {
+      const newUserId = randomUUID();
+
+      // Verify registration token
+      mockJwtService.verifyAsync.mockResolvedValue({
+        provider: 'kakao',
+        providerId: '12345',
+        email: 'kakao@test.com',
+        name: 'Kakao User',
+        purpose: 'social-registration',
+      });
+
+      // No existing user with this email
+      mockUserRepo.findByEmail.mockResolvedValue(null);
+
+      // Create user
+      mockUserRepo.create.mockResolvedValue({
+        ...createMockUser(),
+        id: newUserId,
+        email: 'kakao@test.com',
+        name: 'Registered Name',
+        passwordHash: null,
+      });
+
+      const result = await authService.completeSocialRegistration(
+        'valid-registration-token',
+        {
+          name: 'Registered Name',
+          gender: 'male',
+          country: 'KR',
+          birthDate: '1995-05-15',
+          phone: '010-1234-5678',
+          termsOfService: true,
+          privacyPolicy: true,
+          marketingConsent: false,
+        },
+      );
+
+      expect(result).toHaveProperty('accessToken');
+      expect(result).toHaveProperty('refreshToken');
+      expect(result).toHaveProperty('user');
+      expect(mockUserRepo.create).toHaveBeenCalled();
+    });
+
+    it('should throw UnauthorizedException for expired registrationToken', async () => {
+      mockJwtService.verifyAsync.mockRejectedValue(new Error('jwt expired'));
+
+      await expect(
+        authService.completeSocialRegistration('expired-token', {
+          name: 'Name',
+          gender: 'male',
+          country: 'KR',
+          birthDate: '1995-05-15',
+          phone: '010-1234-5678',
+          termsOfService: true,
+          privacyPolicy: true,
+          marketingConsent: false,
+        }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should link accounts when social email matches existing user without social link', async () => {
+      const existingUser = createMockUser();
+
+      // Verify registration token
+      mockJwtService.verifyAsync.mockResolvedValue({
+        provider: 'google',
+        providerId: 'google-789',
+        email: existingUser.email,
+        name: 'Google User',
+        purpose: 'social-registration',
+      });
+
+      // Existing user found with same email
+      mockUserRepo.findByEmail.mockResolvedValue(existingUser);
+
+      const result = await authService.completeSocialRegistration(
+        'valid-registration-token',
+        {
+          name: existingUser.name,
+          gender: existingUser.gender,
+          country: existingUser.country,
+          birthDate: existingUser.birthDate,
+          phone: existingUser.phone,
+          termsOfService: true,
+          privacyPolicy: true,
+          marketingConsent: false,
+        },
+      );
+
+      expect(result).toHaveProperty('accessToken');
+      expect(result).toHaveProperty('user');
+      // Should NOT create a new user -- should link to existing
+      expect(mockUserRepo.create).not.toHaveBeenCalled();
+      // Should insert social account link
+      expect(mockDb.insert).toHaveBeenCalled();
+    });
+  });
 });
