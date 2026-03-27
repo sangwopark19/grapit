@@ -43,7 +43,6 @@ Requirements for initial release (MVP). Each maps to roadmap phases.
 - [ ] **BOOK-02**: 선택한 날짜의 회차(시간)를 선택할 수 있다
 - [ ] **BOOK-03**: 좌석 선택 시 Redis SET NX로 10분간 임시 점유된다
 - [ ] **BOOK-04**: 임시 점유 TTL 만료 시 좌석이 자동으로 해제된다
-- [ ] **BOOK-05**: "선택 완료" 후 취소/환불 안내가 표시된다
 
 ### Payment
 
@@ -122,55 +121,51 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | TBD | Pending |
-| AUTH-02 | TBD | Pending |
-| AUTH-03 | TBD | Pending |
-| AUTH-04 | TBD | Pending |
-| AUTH-05 | TBD | Pending |
-| AUTH-06 | TBD | Pending |
-| AUTH-07 | TBD | Pending |
-| PERF-01 | TBD | Pending |
-| PERF-02 | TBD | Pending |
-| PERF-03 | TBD | Pending |
-| PERF-04 | TBD | Pending |
-| PERF-05 | TBD | Pending |
-| SRCH-01 | TBD | Pending |
-| SRCH-02 | TBD | Pending |
-| SRCH-03 | TBD | Pending |
-| SEAT-01 | TBD | Pending |
-| SEAT-02 | TBD | Pending |
-| SEAT-03 | TBD | Pending |
-| SEAT-04 | TBD | Pending |
-| SEAT-05 | TBD | Pending |
-| SEAT-06 | TBD | Pending |
-| BOOK-01 | TBD | Pending |
-| BOOK-02 | TBD | Pending |
-| BOOK-03 | TBD | Pending |
-| BOOK-04 | TBD | Pending |
-| BOOK-05 | TBD | Pending |
-| PAY-01 | TBD | Pending |
-| PAY-02 | TBD | Pending |
-| PAY-03 | TBD | Pending |
-| PAY-04 | TBD | Pending |
-| PAY-05 | TBD | Pending |
-| PAY-06 | TBD | Pending |
-| PAY-07 | TBD | Pending |
-| RESV-01 | TBD | Pending |
-| RESV-02 | TBD | Pending |
-| RESV-03 | TBD | Pending |
-| ADMN-01 | TBD | Pending |
-| ADMN-02 | TBD | Pending |
-| ADMN-03 | TBD | Pending |
-| ADMN-04 | TBD | Pending |
-| INFR-01 | TBD | Pending |
-| INFR-02 | TBD | Pending |
-| INFR-03 | TBD | Pending |
+| AUTH-01 | Phase 1 | Pending |
+| AUTH-02 | Phase 1 | Pending |
+| AUTH-03 | Phase 1 | Pending |
+| AUTH-04 | Phase 1 | Pending |
+| AUTH-05 | Phase 1 | Pending |
+| AUTH-06 | Phase 1 | Pending |
+| AUTH-07 | Phase 1 | Pending |
+| PERF-01 | Phase 2 | Pending |
+| PERF-02 | Phase 2 | Pending |
+| PERF-03 | Phase 2 | Pending |
+| PERF-04 | Phase 2 | Pending |
+| PERF-05 | Phase 2 | Pending |
+| SRCH-01 | Phase 2 | Pending |
+| SRCH-02 | Phase 2 | Pending |
+| SRCH-03 | Phase 2 | Pending |
+| ADMN-01 | Phase 2 | Pending |
+| ADMN-02 | Phase 2 | Pending |
+| ADMN-03 | Phase 2 | Pending |
+| SEAT-01 | Phase 3 | Pending |
+| SEAT-02 | Phase 3 | Pending |
+| SEAT-03 | Phase 3 | Pending |
+| SEAT-04 | Phase 3 | Pending |
+| SEAT-05 | Phase 3 | Pending |
+| SEAT-06 | Phase 3 | Pending |
+| BOOK-01 | Phase 3 | Pending |
+| BOOK-02 | Phase 3 | Pending |
+| BOOK-03 | Phase 3 | Pending |
+| BOOK-04 | Phase 3 | Pending |
+| BOOK-05 | Phase 4 | Pending |
+| PAY-01 | Phase 4 | Pending |
+| PAY-02 | Phase 4 | Pending |
+| PAY-03 | Phase 4 | Pending |
+| PAY-04 | Phase 4 | Pending |
+| PAY-05 | Phase 4 | Pending |
+| PAY-06 | Phase 4 | Pending |
+| PAY-07 | Phase 4 | Pending |
+| RESV-01 | Phase 4 | Pending |
+| RESV-02 | Phase 4 | Pending |
+| RESV-03 | Phase 4 | Pending |
+| ADMN-04 | Phase 4 | Pending |
+| INFR-01 | Phase 5 | Pending |
+| INFR-02 | Phase 5 | Pending |
+| INFR-03 | Phase 5 | Pending |
 
 **Coverage:**
 - v1 requirements: 42 total
-- Mapped to phases: 0 (pending roadmap creation)
-- Unmapped: 42
-
----
-*Requirements defined: 2026-03-27*
-*Last updated: 2026-03-27 after initial definition*
+- Mapped to phases: 42
+- Unmapped: 0
