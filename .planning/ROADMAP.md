@@ -33,7 +33,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 5 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Monorepo scaffolding + DB schema + shared types
+- [x] 01-01-PLAN.md — Monorepo scaffolding + DB schema + shared types
 - [ ] 01-02-PLAN.md — NestJS auth backend (email auth + JWT + refresh rotation + logout)
 - [ ] 01-03-PLAN.md — Frontend app shell + design system (GNB, Footer, Home, shadcn)
 - [ ] 01-04-PLAN.md — Social OAuth strategies (Kakao/Naver/Google) + SMS verification
