@@ -30,11 +30,14 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User's session persists across browser refreshes without re-login (JWT + refresh token rotation)
   4. User can log out and their session is invalidated
   5. NestJS modular monolith serves API endpoints and Next.js renders pages with shared type definitions
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
+- [ ] 01-01-PLAN.md — Monorepo scaffolding + DB schema + shared types
+- [ ] 01-02-PLAN.md — NestJS auth backend (email auth + JWT + refresh rotation + logout)
+- [ ] 01-03-PLAN.md — Frontend app shell + design system (GNB, Footer, Home, shadcn)
+- [ ] 01-04-PLAN.md — Social OAuth strategies (Kakao/Naver/Google) + SMS verification
+- [ ] 01-05-PLAN.md — Frontend auth pages + API integration + protected routes
 
 ### Phase 2: Catalog + Admin
 **Goal**: Users can discover performances by genre and search, and admins can manage all content
@@ -112,7 +115,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation + Auth | 0/2 | Not started | - |
+| 1. Foundation + Auth | 0/5 | Planning complete | - |
 | 2. Catalog + Admin | 0/3 | Not started | - |
 | 3. Seat Map + Real-Time | 0/3 | Not started | - |
 | 4. Booking + Payment | 0/3 | Not started | - |
