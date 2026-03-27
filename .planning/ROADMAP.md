@@ -37,7 +37,7 @@ Plans:
 - [x] 01-02-PLAN.md — NestJS auth backend (email auth + JWT + refresh rotation + logout)
 - [x] 01-03-PLAN.md — Frontend app shell + design system (GNB, Footer, Home, shadcn)
 - [x] 01-04-PLAN.md — Social OAuth strategies (Kakao/Naver/Google) + SMS verification
-- [ ] 01-05-PLAN.md — Frontend auth pages + API integration + protected routes
+- [x] 01-05-PLAN.md — Frontend auth pages + API integration + protected routes
 
 ### Phase 2: Catalog + Admin
 **Goal**: Users can discover performances by genre and search, and admins can manage all content

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-04-PLAN.md
-last_updated: "2026-03-27T09:08:49.790Z"
+stopped_at: Completed 01-05-PLAN.md
+last_updated: "2026-03-27T09:36:48.160Z"
 last_activity: 2026-03-27
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 5
-  completed_plans: 4
+  completed_plans: 5
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 ## Current Position
 
 Phase: 01 (foundation-auth) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-03-27
 
@@ -55,6 +55,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P02 | 17min | 2 tasks | 18 files |
 | Phase 01 P03 | 13min | 2 tasks | 24 files |
 | Phase 01 P04 | 10min | 2 tasks | 20 files |
+| Phase 01 P05 | 17min | 2 tasks | 23 files |
 
 ## Accumulated Context
 
@@ -72,6 +73,9 @@ Recent decisions affecting current work:
 - [Phase 01]: shadcn/ui New York style with Grapit brand colors as Tailwind v4 @theme design tokens
 - [Phase 01]: Social OAuth uses registrationToken flow for new users (D-04 compliance)
 - [Phase 01]: Twilio Verify for SMS with dev mock mode (000000 code) for development without credentials
+- [Phase 01]: Access token stored in Zustand memory only (not localStorage) -- follows OWASP best practice for JWT XSS mitigation
+- [Phase 01]: API client uses module-level promise deduplication for concurrent 401 refresh (prevents token race conditions)
+- [Phase 01]: Shared package imports changed from .js to extensionless for Turbopack compatibility (NestJS deep imports unaffected)
 
 ### Pending Todos
 
@@ -85,6 +89,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T09:08:49.788Z
-Stopped at: Completed 01-04-PLAN.md
+Last session: 2026-03-27T09:36:48.157Z
+Stopped at: Completed 01-05-PLAN.md
 Resume file: None
