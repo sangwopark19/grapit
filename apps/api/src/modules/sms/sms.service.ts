@@ -2,12 +2,12 @@ import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Twilio from 'twilio';
 
-interface SendResult {
+export interface SendResult {
   success: boolean;
   message: string;
 }
 
-interface VerifyResult {
+export interface VerifyResult {
   verified: boolean;
   message?: string;
 }

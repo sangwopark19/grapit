@@ -21,7 +21,7 @@ import {
   REFRESH_TOKEN_EXPIRY_DAYS,
 } from '@grapit/shared/constants/index.js';
 
-interface ValidatedUser {
+export interface ValidatedUser {
   id: string;
   email: string;
   role: string;

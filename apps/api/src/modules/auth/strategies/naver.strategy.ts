@@ -10,8 +10,14 @@ interface NaverProfile {
   emails?: Array<{ value: string }>;
 }
 
+// Cast needed: passport-naver-v2 transitively references @types/passport-oauth2
+// which TS cannot name in declaration emit without it as a direct dependency (TS2742)
+const NaverPassportStrategy = PassportStrategy(Strategy, 'naver') as new (
+  ...args: unknown[]
+) => InstanceType<ReturnType<typeof PassportStrategy>>;
+
 @Injectable()
-export class NaverStrategy extends PassportStrategy(Strategy, 'naver') {
+export class NaverStrategy extends NaverPassportStrategy {
   constructor(private readonly configService: ConfigService) {
     super({
       clientID: configService.get<string>('NAVER_CLIENT_ID', ''),
