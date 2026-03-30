@@ -14,6 +14,7 @@ import { authConfig } from './config/auth.config.js';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: '../../.env',
       load: [authConfig],
     }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 60 }]),

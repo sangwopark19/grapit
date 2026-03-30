@@ -223,7 +223,32 @@
 <!-- GSD:conventions-start source:CONVENTIONS.md -->
 ## Conventions
 
-Conventions not yet established. Will populate as patterns emerge during development.
+### 환경변수 (.env)
+
+- `.env` 파일은 **모노레포 루트** (`/grapit/.env`)에 위치한다. `apps/api/`나 `apps/web/`에 별도 `.env`를 두지 않는다.
+- NestJS `ConfigModule.forRoot()`는 루트 `.env`를 읽는다 (`envFilePath` 미지정 시 cwd 기준).
+- **drizzle-kit은 `process.cwd()` 기준으로 `.env`를 찾는다.** `pnpm --filter`는 cwd를 `apps/api/`로 바꾸므로 루트 `.env`를 못 찾는다. 반드시 `DOTENV_CONFIG_PATH`를 지정해야 한다:
+  ```bash
+  # 마이그레이션 (루트에서 실행)
+  DOTENV_CONFIG_PATH=../../.env pnpm --filter @grapit/api exec drizzle-kit migrate
+  # 스키마 생성 (루트에서 실행)
+  DOTENV_CONFIG_PATH=../../.env pnpm --filter @grapit/api exec drizzle-kit generate
+  ```
+- `.env`는 `.gitignore`에 포함. `.env.example`은 커밋하되 실제 시크릿은 넣지 않는다.
+
+### 프로덕션 환경변수 (Cloud Run)
+
+- Cloud Run에서는 `.env` 파일을 사용하지 않는다. GCP Secret Manager 또는 Cloud Run 환경변수 설정으로 주입한다.
+- drizzle-kit migrate는 프로덕션에서 직접 실행하지 않는다. CI/CD (GitHub Actions)에서 `DATABASE_URL`을 환경변수로 주입하여 실행:
+  ```yaml
+  # GitHub Actions에서
+  env:
+    DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  run: pnpm --filter @grapit/api exec drizzle-kit migrate
+  ```
+- 필수 환경변수: `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`
+- 선택 환경변수: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID` (없으면 SMS dev mock 모드)
+- OAuth: `KAKAO_CLIENT_ID`, `KAKAO_CLIENT_SECRET`, `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
 <!-- GSD:conventions-end -->
 
 <!-- GSD:architecture-start source:ARCHITECTURE.md -->

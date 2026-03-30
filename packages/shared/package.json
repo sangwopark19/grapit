@@ -3,14 +3,30 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./schemas/*": {
+      "types": "./dist/schemas/*",
+      "default": "./dist/schemas/*"
+    },
+    "./types/*": {
+      "types": "./dist/types/*",
+      "default": "./dist/types/*"
+    },
+    "./constants/*": {
+      "types": "./dist/constants/*",
+      "default": "./dist/constants/*"
+    }
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build": "tsc"
+    "build": "tsc",
+    "dev": "tsc --watch"
   },
   "dependencies": {
     "zod": "^3.24.0"

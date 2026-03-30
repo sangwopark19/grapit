@@ -22,7 +22,7 @@ const verifyCodeSchema = z.object({
 type SendCodeBody = z.infer<typeof sendCodeSchema>;
 type VerifyCodeBody = z.infer<typeof verifyCodeSchema>;
 
-@Controller('api/v1/sms')
+@Controller('sms')
 export class SmsController {
   constructor(private readonly smsService: SmsService) {}
 

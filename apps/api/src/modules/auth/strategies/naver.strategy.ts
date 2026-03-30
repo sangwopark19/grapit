@@ -14,9 +14,9 @@ interface NaverProfile {
 export class NaverStrategy extends PassportStrategy(Strategy, 'naver') {
   constructor(private readonly configService: ConfigService) {
     super({
-      clientID: configService.get<string>('NAVER_CLIENT_ID'),
-      clientSecret: configService.get<string>('NAVER_CLIENT_SECRET'),
-      callbackURL: configService.get<string>('NAVER_CALLBACK_URL'),
+      clientID: configService.get<string>('NAVER_CLIENT_ID', ''),
+      clientSecret: configService.get<string>('NAVER_CLIENT_SECRET', ''),
+      callbackURL: configService.get<string>('NAVER_CALLBACK_URL', ''),
     });
   }
 
