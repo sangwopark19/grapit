@@ -49,13 +49,14 @@ Plans:
   3. User can search by performance name and filter results by genre, with a toggle to include/exclude ended shows
   4. Admin can create, edit, and delete performances with all required fields including poster upload
   5. Admin can manage showtimes (date/time) for each performance and upload SVG seat maps with tier/price configuration
-**Plans**: TBD
+**Plans**: 4 plans
 **UI hint**: yes
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
-- [ ] 02-03: TBD
+- [ ] 02-01-PLAN.md — DB schema (7 tables) + shared types/schemas + dependencies install
+- [ ] 02-02-PLAN.md — NestJS backend API (catalog, search, admin CRUD, RBAC, R2 upload)
+- [ ] 02-03-PLAN.md — Frontend public pages (homepage, genre, detail, search) + GNB activation
+- [ ] 02-04-PLAN.md — Frontend admin panel (performance form, banner management, SVG seat map)
 
 ### Phase 3: Seat Map + Real-Time
 **Goal**: Users can view an interactive SVG seat map, select available seats, and see other users' selections in real time
@@ -116,7 +117,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation + Auth | 0/5 | Planning complete | - |
-| 2. Catalog + Admin | 0/3 | Not started | - |
+| 2. Catalog + Admin | 0/4 | Planning complete | - |
 | 3. Seat Map + Real-Time | 0/3 | Not started | - |
 | 4. Booking + Payment | 0/3 | Not started | - |
 | 5. Polish + Launch | 0/2 | Not started | - |
