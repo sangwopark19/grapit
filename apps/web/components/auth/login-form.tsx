@@ -108,7 +108,7 @@ export function LoginForm() {
           />
 
           {loginError && (
-            <p className="text-[14px] text-error animate-in fade-in duration-150">
+            <p className="text-caption text-error animate-in fade-in duration-150">
               {loginError}
             </p>
           )}
@@ -136,7 +136,7 @@ export function LoginForm() {
       <div className="flex justify-end">
         <Link
           href="/auth/reset-password"
-          className="text-[14px] text-gray-500 hover:text-primary"
+          className="text-caption text-gray-500 hover:text-primary"
         >
           비밀번호 찾기
         </Link>
@@ -144,7 +144,7 @@ export function LoginForm() {
 
       <div className="relative">
         <Separator />
-        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-3 text-[14px] text-gray-400">
+        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-3 text-caption text-gray-400">
           또는
         </span>
       </div>

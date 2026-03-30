@@ -8,7 +8,7 @@ export default function Home() {
       <span className="text-4xl font-bold text-primary">Grapit</span>
 
       {/* Heading - 24px gap from logo */}
-      <h1 className="mt-6 text-[28px] font-semibold leading-[1.2] tracking-[-0.02em] text-gray-900">
+      <h1 className="mt-6 text-display font-semibold leading-[1.2] tracking-[-0.02em] text-gray-900">
         곧 다양한 공연이 찾아옵니다
       </h1>
 

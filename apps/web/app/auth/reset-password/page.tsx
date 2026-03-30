@@ -51,7 +51,7 @@ export default function ResetPasswordPage() {
       <main className="flex flex-1 items-center justify-center px-4 py-12">
         <div className="w-full max-w-[400px] space-y-6">
           <div className="space-y-3">
-            <h1 className="text-[20px] font-semibold text-gray-900">
+            <h1 className="text-heading font-semibold text-gray-900">
               비밀번호 재설정 메일 발송 완료
             </h1>
             <p className="text-base text-gray-700">
@@ -71,7 +71,7 @@ export default function ResetPasswordPage() {
     <main className="flex flex-1 items-center justify-center px-4 py-12">
       <div className="w-full max-w-[400px] space-y-6">
         <div className="space-y-3">
-          <h1 className="text-[20px] font-semibold text-gray-900">비밀번호 찾기</h1>
+          <h1 className="text-heading font-semibold text-gray-900">비밀번호 찾기</h1>
           <p className="text-base text-gray-700">
             가입 시 사용한 이메일을 입력하세요
           </p>
@@ -119,7 +119,7 @@ export default function ResetPasswordPage() {
         <div className="text-center">
           <Link
             href="/auth"
-            className="text-[14px] text-gray-500 hover:text-primary"
+            className="text-caption text-gray-500 hover:text-primary"
           >
             로그인으로 돌아가기
           </Link>

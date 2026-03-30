@@ -124,7 +124,7 @@ function CallbackContent() {
     return (
       <main className="flex flex-1 items-center justify-center px-4 py-12">
         <div className="w-full max-w-[400px] space-y-6">
-          <h1 className="text-center text-[20px] font-semibold text-gray-900">
+          <h1 className="text-center text-heading font-semibold text-gray-900">
             추가 정보 입력
           </h1>
 

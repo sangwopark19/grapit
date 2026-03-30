@@ -108,7 +108,7 @@ export function SignupStep2({ onComplete, onBack, defaultValues }: SignupStep2Pr
           <button
             type="button"
             onClick={() => handleViewTerms('termsOfService')}
-            className="text-[14px] text-gray-500 underline hover:text-primary"
+            className="text-caption text-gray-500 underline hover:text-primary"
           >
             보기
           </button>
@@ -128,7 +128,7 @@ export function SignupStep2({ onComplete, onBack, defaultValues }: SignupStep2Pr
           <button
             type="button"
             onClick={() => handleViewTerms('privacyPolicy')}
-            className="text-[14px] text-gray-500 underline hover:text-primary"
+            className="text-caption text-gray-500 underline hover:text-primary"
           >
             보기
           </button>
@@ -151,7 +151,7 @@ export function SignupStep2({ onComplete, onBack, defaultValues }: SignupStep2Pr
           <button
             type="button"
             onClick={() => handleViewTerms('marketingConsent')}
-            className="text-[14px] text-gray-500 underline hover:text-primary"
+            className="text-caption text-gray-500 underline hover:text-primary"
           >
             보기
           </button>
@@ -188,7 +188,7 @@ export function SignupStep2({ onComplete, onBack, defaultValues }: SignupStep2Pr
               {TERMS_CONTENT[dialogKey]?.title} 상세 내용
             </DialogDescription>
           </DialogHeader>
-          <div className="text-[14px] leading-relaxed text-gray-700">
+          <div className="text-caption leading-relaxed text-gray-700">
             {TERMS_CONTENT[dialogKey]?.content}
           </div>
         </DialogContent>

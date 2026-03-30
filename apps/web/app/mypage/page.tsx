@@ -11,7 +11,7 @@ export default function MyPage() {
     <AuthGuard>
       <main className="flex flex-1 justify-center px-4 pt-12 pb-16">
         <div className="w-full max-w-[600px]">
-          <h1 className="mb-8 text-[20px] font-semibold text-gray-900">마이페이지</h1>
+          <h1 className="mb-8 text-heading font-semibold text-gray-900">마이페이지</h1>
 
           {user && <ProfileForm user={user} />}
         </div>
