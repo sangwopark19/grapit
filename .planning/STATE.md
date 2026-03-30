@@ -87,8 +87,15 @@ None yet.
 - [Phase 4]: Toss Payments sandbox requires business registration + PG contract
 - [Phase 3]: Socket.IO multi-instance with Redis adapter needs Cloud Run min-instances=2 testing
 
+## Quick Tasks Completed
+
+| # | Task | Date | Commit |
+|---|------|------|--------|
+| Q1 | 카카오 소셜 로그인 OAuth 설정 가이드 작성 (docs/06-KAKAO-OAUTH-SETUP.md) | 2026-03-30 | pending |
+| Q2 | 카카오/구글/네이버 OAuth 키 발급 및 .env 설정 (dev-browser 활용) | 2026-03-30 | manual |
+
 ## Session Continuity
 
-Last session: 2026-03-27T09:36:48.157Z
-Stopped at: Completed 01-05-PLAN.md
+Last session: 2026-03-30
+Stopped at: Quick task Q2 completed
 Resume file: None
