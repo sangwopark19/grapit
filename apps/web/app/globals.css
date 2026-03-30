@@ -17,9 +17,9 @@
   --color-gray-100: #F5F5F7;
 
   /* Semantic per D-16 */
-  --color-error: #EF4444;
+  --color-error: #C62828;
   --color-error-surface: #FEF2F2;
-  --color-success: #22C55E;
+  --color-success: #15803D;
   --color-success-surface: #F0FDF4;
   --color-warning: #FFB41B;
   --color-warning-surface: #FFFBEB;
@@ -34,6 +34,11 @@
   --spacing-xl: 32px;
   --spacing-2xl: 48px;
   --spacing-3xl: 64px;
+
+  /* Typography scale (semantic tokens) */
+  --text-display: 28px;
+  --text-heading: 20px;
+  --text-caption: 14px;
 
   /* Animation */
   --animate-in: enter 0.2s ease-out;

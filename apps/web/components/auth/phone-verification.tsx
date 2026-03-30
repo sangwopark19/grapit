@@ -161,7 +161,7 @@ export function PhoneVerification({
 
       {/* Error from phone field */}
       {error && !verifyError && (
-        <p className="text-[14px] text-error">{error}</p>
+        <p className="text-caption text-error">{error}</p>
       )}
 
       {/* Code input + timer */}
@@ -198,11 +198,11 @@ export function PhoneVerification({
 
           <div className="flex items-center gap-2">
             {timeLeft > 0 ? (
-              <span className="text-[14px] text-[#C62828]">
+              <span className="text-sm text-error">
                 {formatTime(timeLeft)}
               </span>
             ) : (
-              <span className="text-[14px] text-[#C62828]">시간 만료</span>
+              <span className="text-sm text-error">시간 만료</span>
             )}
           </div>
         </div>
@@ -210,7 +210,7 @@ export function PhoneVerification({
 
       {/* Verify error */}
       {verifyError && (
-        <p className="text-[14px] text-error animate-in fade-in duration-150">
+        <p className="text-caption text-error animate-in fade-in duration-150">
           {verifyError}
         </p>
       )}
@@ -218,8 +218,8 @@ export function PhoneVerification({
       {/* Verified state */}
       {isVerified && (
         <div className="flex items-center gap-2">
-          <CheckCircle2 className="h-5 w-5 text-[#15803D]" />
-          <span className="text-[14px] text-[#15803D]">인증 완료</span>
+          <CheckCircle2 className="h-5 w-5 text-success" />
+          <span className="text-sm text-success">인증 완료</span>
         </div>
       )}
     </div>
