@@ -34,7 +34,7 @@ Declared values (must be multiples of 4):
 | Token | Value | Usage |
 |-------|-------|-------|
 | xs | 4px | Icon-text gaps, badge internal padding |
-| sm | 8px | Inline element spacing, chip gaps |
+| sm | 8px | Inline element spacing, chip gaps, performance card poster internal padding |
 | md | 16px | Card internal padding, form field gaps |
 | lg | 24px | Section padding, card grid gutter |
 | xl | 32px | Major section gaps, page side margins |
@@ -42,7 +42,6 @@ Declared values (must be multiples of 4):
 | 3xl | 64px | Page top/bottom padding, admin panel main content padding |
 
 Exceptions:
-- Performance card poster aspect ratio container uses 12px internal padding (space-3 from UIUX Guide) for compact card layouts
 - Admin table row height: 52px (not a spacing token, but a fixed row height for touch-friendly admin rows)
 
 **Source:** globals.css @theme --spacing-* tokens (Phase 1)
@@ -53,12 +52,12 @@ Exceptions:
 
 | Role | Size | Weight | Line Height | Usage |
 |------|------|--------|-------------|-------|
-| Display | 28px | 700 (bold) | 1.2 | Homepage section headings ("HOT 공연", "신규 오픈"), admin page titles |
+| Display | 28px | 600 (semibold) | 1.2 | Homepage section headings ("HOT 공연", "신규 오픈"), admin page titles |
 | Heading | 20px | 600 (semibold) | 1.3 | Performance detail title, admin section headers, genre category title |
 | Body | 16px | 400 (regular) | 1.5 | Performance descriptions, form labels, admin table text, search input |
 | Caption | 14px | 400 (regular) | 1.5 | Card metadata (venue, dates), subcategory chips, pagination, badges |
 
-Font weights used: 400 (regular) and 600 (semibold). Bold (700) for display only.
+Font weights used: 400 (regular) and 600 (semibold). No other weights permitted.
 
 **Source:** globals.css @theme --text-* tokens, 04-UIUX-GUIDE.md type scale, Phase 1 D-17
 
@@ -189,6 +188,8 @@ Components not yet installed from Phase 1 that this phase requires:
 
 ### Homepage (/)
 
+**Primary focal point:** Banner Carousel -- the full-width hero carousel is the first and largest visual element, drawing user attention immediately upon page load.
+
 ```
 +--------------------------------------------------+
 | GNB (sticky, h-16, white bg, border-b)           |
@@ -200,13 +201,13 @@ Components not yet installed from Phase 1 that this phase requires:
 +--------------------------------------------------+
 | max-w-[1200px] mx-auto px-6                      |
 |                                                    |
-| [HOT 공연] heading (28px bold) + "더보기" link     |
+| [HOT 공연] heading (28px semibold) + "더보기" link |
 | 4-card horizontal scroll (Swiper, freeMode)       |
 |                                                    |
-| [신규 오픈] heading (28px bold) + "더보기" link    |
+| [신규 오픈] heading (28px semibold) + "더보기" link|
 | 4-card grid (2-col mobile, 4-col desktop)         |
 |                                                    |
-| [장르별 바로가기] heading (28px bold)               |
+| [장르별 바로가기] heading (28px semibold)           |
 | 8-icon grid (4x2 mobile, 8x1 desktop)            |
 +--------------------------------------------------+
 | Footer                                             |
@@ -215,13 +216,15 @@ Components not yet installed from Phase 1 that this phase requires:
 
 ### Genre Category Page (/genre/:genre)
 
+**Primary focal point:** Performance card grid -- the filterable grid of performance cards is the core content users came to browse.
+
 ```
 +--------------------------------------------------+
 | GNB (active genre tab underlined in primary)      |
 +--------------------------------------------------+
 | max-w-[1200px] mx-auto px-6                      |
 |                                                    |
-| Page title: "{genre} 공연" (28px bold)            |
+| Page title: "{genre} 공연" (28px semibold)        |
 | Subcategory chips row (horizontal scroll mobile)  |
 |   [전체] [요즘HOT] [오리지널/내한] ...             |
 |                                                    |
@@ -238,6 +241,8 @@ Components not yet installed from Phase 1 that this phase requires:
 ```
 
 ### Performance Detail Page (/performance/:id)
+
+**Primary focal point:** Poster + CTA area -- the large poster image paired with the "예매하기" CTA button is the primary action zone that drives the booking decision.
 
 ```
 +--------------------------------------------------+
@@ -315,7 +320,7 @@ Components not yet installed from Phase 1 that this phase requires:
 +-------+------------------------------------------+
 | Side  | Content area (bg-gray-100, p-32)          |
 | bar   |                                          |
-| 240px | Page title: "공연 관리" (28px bold)        |
+| 240px | Page title: "공연 관리" (28px semibold)    |
 | bg-   |                                          |
 | white | Status filter chips + search input        |
 | border|                                          |
@@ -374,7 +379,7 @@ Components not yet installed from Phase 1 that this phase requires:
 +-------+------------------------------------------+
 | Side  | Content area                              |
 | bar   |                                          |
-|       | "배너 관리" (28px bold) + [배너 등록]     |
+|       | "배너 관리" (28px semibold) + [배너 등록]  |
 |       |                                          |
 |       | Banner cards (sortable list):             |
 |       |   Thumbnail (16:9) + link URL + 순서     |
