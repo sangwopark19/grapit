@@ -23,7 +23,7 @@ function formatPrice(price: number): string {
 
 function DetailSkeleton() {
   return (
-    <div className="mx-auto max-w-[1200px] px-6 py-8">
+    <div className="mx-auto w-full max-w-[1200px] px-6 py-8">
       <div className="flex flex-col gap-8 lg:flex-row">
         {/* Left column: poster + tabs skeleton */}
         <div className="w-full lg:max-w-[380px] shrink-0">

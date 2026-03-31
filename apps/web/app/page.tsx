@@ -23,7 +23,7 @@ export default function HomePage() {
 
       {/* 빈 상태 안내 — 배너가 없고 로딩 완료인 경우 */}
       {!bannersLoading && (!banners || banners.length === 0) && (
-        <div className="mx-auto max-w-[1200px] px-6 pt-12 text-center">
+        <div className="mx-auto w-full max-w-[1200px] px-6 pt-12 text-center">
           <p className="text-gray-500">
             공연을 검색하거나 장르별로 탐색해보세요.
           </p>
@@ -31,7 +31,7 @@ export default function HomePage() {
       )}
 
       {/* Content sections */}
-      <div className="mx-auto max-w-[1200px] px-6">
+      <div className="mx-auto w-full max-w-[1200px] px-6">
         {/* Self-contained: calls useHotPerformances() internally */}
         <HotSection />
 

@@ -41,7 +41,7 @@ export default function SearchPage() {
   // No query -- prompt to search
   if (!q) {
     return (
-      <main className="mx-auto max-w-[1200px] px-6 py-16">
+      <main className="mx-auto w-full max-w-[1200px] px-6 py-16">
         <div className="flex flex-col items-center">
           <SearchIcon className="h-12 w-12 text-gray-400" />
           <h1 className="mt-4 text-xl font-semibold text-gray-900">
@@ -56,7 +56,7 @@ export default function SearchPage() {
   }
 
   return (
-    <main className="mx-auto max-w-[1200px] px-6 py-8">
+    <main className="mx-auto w-full max-w-[1200px] px-6 py-8">
       {/* Heading */}
       <h1 className="text-xl font-semibold text-gray-900">
         &apos;{q}&apos; 검색 결과
