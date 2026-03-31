@@ -5,6 +5,25 @@
   --color-primary: #6C3CE0;
   --color-primary-foreground: #FFFFFF;
 
+  /* shadcn semantic tokens (mapped to brand/neutral palette) */
+  --color-background: #ffffff;
+  --color-foreground: #1A1A2E;
+  --color-card: #ffffff;
+  --color-card-foreground: #1A1A2E;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #1A1A2E;
+  --color-secondary: #F5F5F7;
+  --color-secondary-foreground: #1A1A2E;
+  --color-muted: #F5F5F7;
+  --color-muted-foreground: #6B6B7B;
+  --color-accent: #F5F5F7;
+  --color-accent-foreground: #1A1A2E;
+  --color-destructive: #C62828;
+  --color-destructive-foreground: #FFFFFF;
+  --color-border: #E4E4E7;
+  --color-input: #D1D1DB;
+  --color-ring: #6C3CE0;
+
   /* Neutral per D-15 */
   --color-gray-900: #1A1A2E;
   --color-gray-800: #2D2D44;
@@ -65,6 +84,17 @@
       transform: translateY(-4px);
     }
   }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    50% { transform: translateX(4px); }
+    75% { transform: translateX(-4px); }
+  }
+}
+
+html {
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -73,4 +103,13 @@ body {
   background-color: #ffffff;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Hide scrollbar but keep scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }

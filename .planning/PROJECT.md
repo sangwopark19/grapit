@@ -12,19 +12,18 @@
 
 ### Validated
 
-(None yet — ship to validate)
+- [x] 회원 인증 (이메일/소셜 로그인, 세션 유지, 토큰 관리) — Validated in Phase 1: Foundation + Auth
+- [x] 공연 카탈로그 (장르별 카테고리, 상세 정보, 포스터, 가격) — Validated in Phase 2: Catalog + Admin
+- [x] 통합 검색 (공연명, 아티스트, 장르 필터) — Validated in Phase 2: Catalog + Admin
+- [x] Admin MVP (공연 CRUD, 회차 관리, 예매 조회/환불 처리) — Validated in Phase 2: Catalog + Admin
 
 ### Active
 
-- [ ] 회원 인증 (이메일/소셜 로그인, 세션 유지, 토큰 관리)
-- [ ] 공연 카탈로그 (장르별 카테고리, 상세 정보, 포스터, 가격)
-- [ ] 통합 검색 (공연명, 아티스트, 장르 필터)
 - [ ] SVG 기반 좌석 배치도 (등급별 구분, 실시간 점유 상태, 확대/축소)
 - [ ] 예매 플로우 (날짜/회차 선택 → 좌석 선택 → 결제 → 완료)
 - [ ] 좌석 임시 점유 (Redis SET NX, 10분 TTL)
 - [ ] Toss Payments 결제 연동 (카드, 간편결제)
 - [ ] 예매 확인/취소/환불 (마이페이지)
-- [ ] Admin MVP (공연 CRUD, 회차 관리, 예매 조회/환불 처리)
 
 ### Out of Scope
 
@@ -113,4 +112,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-27 after initialization*
+*Last updated: 2026-03-31 after Phase 2 completion*

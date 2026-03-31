@@ -9,9 +9,12 @@
     "start:prod": "node dist/main.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "seed": "node src/database/seed.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1020.0",
+    "@aws-sdk/s3-request-presigner": "^3.1020.0",
     "@grapit/shared": "workspace:*",
     "@nestjs/common": "^11.1.0",
     "@nestjs/config": "^4.0.0",
@@ -24,6 +27,7 @@
     "argon2": "^0.44.0",
     "cookie-parser": "^1.4.7",
     "drizzle-orm": "^0.45.0",
+    "drizzle-zod": "^0.8.3",
     "helmet": "^8.0.0",
     "nodemailer": "^8.0.4",
     "passport": "^0.7.0",

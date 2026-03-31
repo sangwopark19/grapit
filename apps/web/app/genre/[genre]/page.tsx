@@ -1,0 +1,135 @@
+'use client';
+
+import { use } from 'react';
+import { notFound } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { GENRES, GENRE_LABELS, type Genre } from '@grapit/shared';
+import { Switch } from '@/components/ui/switch';
+import { GenreChip } from '@/components/performance/genre-chip';
+import { SortToggle } from '@/components/performance/sort-toggle';
+import { PerformanceGrid } from '@/components/performance/performance-grid';
+import { PaginationNav } from '@/components/performance/pagination-nav';
+import { usePerformances } from '@/hooks/use-performances';
+
+const SUBCATEGORIES = [
+  { label: '전체', value: '' },
+  { label: '요즘HOT', value: 'hot' },
+  { label: '오리지널/내한', value: 'original' },
+  { label: '라이선스', value: 'license' },
+  { label: '창작', value: 'creative' },
+  { label: '내한', value: 'domestic' },
+];
+
+function isValidGenre(genre: string): genre is Genre {
+  return (GENRES as readonly string[]).includes(genre);
+}
+
+export default function GenrePage({
+  params,
+}: {
+  params: Promise<{ genre: string }>;
+}) {
+  const { genre } = use(params);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  if (!isValidGenre(genre)) {
+    notFound();
+  }
+
+  const sort = (searchParams.get('sort') ?? 'latest') as 'latest' | 'popular';
+  const sub = searchParams.get('sub') ?? '';
+  const ended = searchParams.get('ended') === 'true';
+
+  const { data, isLoading, isError } = usePerformances(genre);
+
+  function updateParam(key: string, value: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    // Reset page on filter change (except page changes)
+    if (key !== 'page') {
+      params.delete('page');
+    }
+    router.replace(`${pathname}?${params.toString()}`);
+  }
+
+  return (
+    <main className="mx-auto w-full max-w-[1200px] px-6 py-8">
+      {/* Page title */}
+      <h1 className="text-[28px] font-semibold leading-[1.2]">
+        {GENRE_LABELS[genre]} 공연
+      </h1>
+
+      {/* Subcategory chips */}
+      <div className="mt-4 flex gap-2 overflow-x-auto scrollbar-hide">
+        {SUBCATEGORIES.map((cat) => (
+          <GenreChip
+            key={cat.value}
+            label={cat.label}
+            value={cat.value}
+            isActive={sub === cat.value}
+            onClick={() => updateParam('sub', cat.value)}
+          />
+        ))}
+      </div>
+
+      {/* Filter row: sort + ended toggle */}
+      <div className="mt-6 flex items-center justify-between">
+        <SortToggle
+          value={sort}
+          onChange={(v) => updateParam('sort', v)}
+        />
+        <label className="flex items-center gap-2 text-sm text-gray-600">
+          <span>판매종료 공연 포함</span>
+          <Switch
+            checked={ended}
+            onCheckedChange={(checked: boolean) =>
+              updateParam('ended', checked ? 'true' : '')
+            }
+          />
+        </label>
+      </div>
+
+      {/* Performance grid */}
+      <div className="mt-8">
+        {isError ? (
+          <div className="flex flex-col items-center py-16">
+            <p className="text-base text-gray-900">
+              공연 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.
+            </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="mt-4 rounded-lg bg-primary px-6 py-2 text-sm font-semibold text-white"
+            >
+              다시 시도
+            </button>
+          </div>
+        ) : (
+          <PerformanceGrid
+            performances={data?.data ?? []}
+            isLoading={isLoading}
+            emptyHeading="등록된 공연이 없습니다"
+            emptyBody="곧 새로운 공연이 등록될 예정입니다"
+          />
+        )}
+      </div>
+
+      {/* Pagination */}
+      {data && data.totalPages > 1 && (
+        <div className="mt-12">
+          <PaginationNav
+            currentPage={data.page}
+            totalPages={data.totalPages}
+            onPageChange={(page) => updateParam('page', String(page))}
+          />
+        </div>
+      )}
+    </main>
+  );
+}

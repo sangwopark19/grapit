@@ -23,8 +23,12 @@ coverage/
 # Docker volumes
 pgdata/
 
+# Local dev uploads (R2 fallback)
+uploads/
+
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
+.claude/

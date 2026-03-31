@@ -1,28 +1,46 @@
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+'use client';
 
-export default function Home() {
+import { Skeleton } from '@/components/ui/skeleton';
+import { BannerCarousel } from '@/components/home/banner-carousel';
+import { HotSection } from '@/components/home/hot-section';
+import { NewSection } from '@/components/home/new-section';
+import { GenreGrid } from '@/components/home/genre-grid';
+import { useHomeBanners } from '@/hooks/use-performances';
+
+export default function HomePage() {
+  const { data: banners, isLoading: bannersLoading } = useHomeBanners();
+
   return (
-    <main className="flex flex-1 flex-col items-center justify-center px-4">
-      {/* Brand logo */}
-      <span className="text-4xl font-bold text-primary">Grapit</span>
+    <main>
+      <h1 className="sr-only">Grapit</h1>
 
-      {/* Heading - 24px gap from logo */}
-      <h1 className="mt-6 text-display font-semibold leading-[1.2] tracking-[-0.02em] text-gray-900">
-        곧 다양한 공연이 찾아옵니다
-      </h1>
+      {/* Banner Carousel */}
+      {bannersLoading ? (
+        <Skeleton className="h-[200px] w-full md:h-[400px]" />
+      ) : (
+        <BannerCarousel banners={banners ?? []} />
+      )}
 
-      {/* Description - 12px gap from heading */}
-      <p className="mt-3 text-center text-base leading-relaxed text-gray-500">
-        지금 가입하고 가장 먼저
-        <br />
-        새로운 공연 소식을 만나보세요
-      </p>
+      {/* 빈 상태 안내 — 배너가 없고 로딩 완료인 경우 */}
+      {!bannersLoading && (!banners || banners.length === 0) && (
+        <div className="mx-auto w-full max-w-[1200px] px-6 pt-12 text-center">
+          <p className="text-gray-500">
+            공연을 검색하거나 장르별로 탐색해보세요.
+          </p>
+        </div>
+      )}
 
-      {/* CTA - 32px gap from description */}
-      <Button asChild size="lg" className="mt-8 h-12 w-[200px]">
-        <Link href="/auth">로그인 / 회원가입</Link>
-      </Button>
+      {/* Content sections */}
+      <div className="mx-auto w-full max-w-[1200px] px-6">
+        {/* Self-contained: calls useHotPerformances() internally */}
+        <HotSection />
+
+        {/* Self-contained: calls useNewPerformances() internally */}
+        <NewSection />
+
+        {/* Static: no data fetching */}
+        <GenreGrid />
+      </div>
     </main>
   );
 }

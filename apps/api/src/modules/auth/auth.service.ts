@@ -176,9 +176,17 @@ export class AuthService {
       ),
     });
 
-    // 8. Generate new access token
+    // 8. Fetch current user for up-to-date role/email
+    const user = await this.userRepository.findById(tokenRecord.userId);
+    if (!user) {
+      throw new UnauthorizedException('사용자를 찾을 수 없습니다');
+    }
+
+    // 9. Generate new access token with full claims
     const accessToken = await this.jwtService.signAsync({
       sub: tokenRecord.userId,
+      email: user.email,
+      role: user.role,
     });
 
     return { accessToken, refreshToken: newRawToken };
@@ -306,6 +314,7 @@ export class AuthService {
       return {
         status: 'authenticated',
         accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
         user: this.mapToProfile(user),
       };
     }

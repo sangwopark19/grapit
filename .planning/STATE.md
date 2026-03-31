@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-05-PLAN.md
-last_updated: "2026-03-27T09:36:48.160Z"
-last_activity: 2026-03-27
+stopped_at: Completed CORP cross-origin fix for local upload images
+last_updated: "2026-03-31T09:13:45.120Z"
+last_activity: 2026-03-31
 progress:
   total_phases: 5
-  completed_phases: 1
-  total_plans: 5
-  completed_plans: 5
+  completed_phases: 2
+  total_plans: 11
+  completed_plans: 11
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** 사용자가 원하는 공연을 발견하고, 좌석을 직접 선택하여, 안정적으로 예매를 완료할 수 있는 것
-**Current focus:** Phase 01 — foundation-auth
+**Current focus:** Phase 02 — catalog-admin
 
 ## Current Position
 
-Phase: 01 (foundation-auth) — EXECUTING
-Plan: 5 of 5
+Phase: 3
+Plan: Not started
 Status: Ready to execute
-Last activity: 2026-03-27
+Last activity: 2026-03-31
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -56,6 +56,8 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P03 | 13min | 2 tasks | 24 files |
 | Phase 01 P04 | 10min | 2 tasks | 20 files |
 | Phase 01 P05 | 17min | 2 tasks | 23 files |
+| Phase 02 P04 | 12min | 2 tasks | 39 files |
+| Phase 02 P05 | 2min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -76,6 +78,10 @@ Recent decisions affecting current work:
 - [Phase 01]: Access token stored in Zustand memory only (not localStorage) -- follows OWASP best practice for JWT XSS mitigation
 - [Phase 01]: API client uses module-level promise deduplication for concurrent 401 refresh (prevents token race conditions)
 - [Phase 01]: Shared package imports changed from .js to extensionless for Turbopack compatibility (NestJS deep imports unaffected)
+- [Phase 02]: Used LayoutShell client component to conditionally hide GNB/Footer on /admin routes
+- [Phase 02]: Used z.input<> for react-hook-form compatibility with zod .default() fields (CreatePerformanceFormInput)
+- [Phase 02]: Middleware checks refreshToken cookie only; admin role check is client-side in layout
+- [Phase 02]: TabsContent mt-6 as single spacing source; keepPreviousData for layout stability
 
 ### Pending Todos
 
@@ -87,8 +93,24 @@ None yet.
 - [Phase 4]: Toss Payments sandbox requires business registration + PG contract
 - [Phase 3]: Socket.IO multi-instance with Redis adapter needs Cloud Run min-instances=2 testing
 
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260331-jjc | Phase 2 UI Review priority fixes: font-medium replacement, home empty state h1, admin error refresh button | 2026-03-31 | 852dfb0 | [260331-jjc-phase-2-ui-review-priority-fixes-font-me](./quick/260331-jjc-phase-2-ui-review-priority-fixes-font-me/) |
+| 260331-l6q | Fix select box transparency + detail page poster alignment | 2026-03-31 | 8fbd009 | [260331-l6q-fix-select-box-z-index-bug-and-performan](./quick/260331-l6q-fix-select-box-z-index-bug-and-performan/) |
+| 260331-ldw | Detail page tab UI/UX: 2-column layout + TabsContent visual container | 2026-03-31 | 1d8f436 | [260331-ldw-ui-ux](./quick/260331-ldw-ui-ux/) |
+| 260331-lt4 | Fix info panel width collapse on tab switch (missing w-full on main) | 2026-03-31 | 1534fa4 | [260331-lt4-info-panel-width-fix](./quick/260331-lt4-info-panel-width-fix/) |
+| 260331-m0k | 필터 탭 클릭 시 UI 레이아웃 시프트 버그 수정 | 2026-03-31 | fdb4757 | [260331-m0k-ui](./quick/260331-m0k-ui/) |
+| 260331-mq2 | Rename middleware.ts to proxy.ts for Next.js 16 | 2026-03-31 | b99662b | [260331-mq2-rename-middleware-ts-to-proxy-ts-for-nex](./quick/260331-mq2-rename-middleware-ts-to-proxy-ts-for-nex/) |
+| 260331-n9m | Admin poster upload 500 fix: local dev mode fallback for UploadService | 2026-03-31 | a88a010 | [260331-n9m-admin-poster-upload-fix](./quick/260331-n9m-admin-poster-upload-fix/) |
+| 260331-o5k | Casting photo preview + venues.name UNIQUE constraint fix | 2026-03-31 | 7ba8d27 | [260331-o5k-casting-preview-save-fix](./quick/260331-o5k-casting-preview-save-fix/) |
+| 260331-ol3 | next/image localhost:8080 remotePatterns 허용 | 2026-03-31 | 59ce131 | [260331-ol3-next-image-localhost](./quick/260331-ol3-next-image-localhost/) |
+| 260331-opp | next/image dev unoptimized + magic bytes content-type 감지 | 2026-03-31 | c8c2e7c | [260331-opp-next-image-dev-unoptimized](./quick/260331-opp-next-image-dev-unoptimized/) |
+| 260331-opp | CORP: cross-origin 헤더 추가 (Helmet same-origin 차단 해결) | 2026-03-31 | 97a25e8 | [260331-opp-next-image-dev-unoptimized](./quick/260331-opp-next-image-dev-unoptimized/) |
+
 ## Session Continuity
 
-Last session: 2026-03-27T09:36:48.157Z
-Stopped at: Completed 01-05-PLAN.md
+Last session: 2026-03-31T09:01:00Z
+Stopped at: Completed CORP cross-origin fix for local upload images
 Resume file: None

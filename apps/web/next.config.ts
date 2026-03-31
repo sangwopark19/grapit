@@ -7,6 +7,13 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: resolve(__dirname, '../../'),
   },
+  images: {
+    unoptimized: process.env.NODE_ENV !== 'production',
+    remotePatterns: [
+      // Production: R2 CDN domain (add when R2 is configured)
+      // { protocol: 'https', hostname: 'cdn.grapit.kr' },
+    ],
+  },
 };
 
 export default nextConfig;
