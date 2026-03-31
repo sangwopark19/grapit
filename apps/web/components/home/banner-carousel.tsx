@@ -41,7 +41,7 @@ export function BannerCarousel({
         {banners.map((banner) => (
           <SwiperSlide key={banner.id}>
             {banner.linkUrl ? (
-              <a href={banner.linkUrl} className="block h-full w-full">
+              <a href={banner.linkUrl} className="relative block h-full w-full">
                 <Image
                   src={banner.imageUrl}
                   alt="프로모션 배너"

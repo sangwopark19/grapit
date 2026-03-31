@@ -56,9 +56,9 @@ export function HotSection() {
           1024: { slidesPerView: 4, spaceBetween: 24 },
         }}
       >
-        {performances.map((p) => (
+        {performances.map((p, i) => (
           <SwiperSlide key={p.id}>
-            <PerformanceCard performance={p} />
+            <PerformanceCard performance={p} priority={i < 2} />
           </SwiperSlide>
         ))}
       </Swiper>

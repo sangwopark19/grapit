@@ -18,11 +18,13 @@ function formatDate(iso: string): string {
 interface PerformanceCardProps {
   performance: PerformanceCardData;
   className?: string;
+  priority?: boolean;
 }
 
 export function PerformanceCard({
   performance,
   className,
+  priority = false,
 }: PerformanceCardProps) {
   return (
     <Link
@@ -41,7 +43,8 @@ export function PerformanceCard({
             fill
             className="object-cover transition-transform duration-150 group-hover:scale-[1.02]"
             sizes="(max-width: 768px) 50vw, 25vw"
-            quality={80}
+            quality={75}
+            priority={priority}
           />
         ) : (
           <div className="flex h-full items-center justify-center">
