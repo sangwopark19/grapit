@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Shipped (direct to main, 2026-03-30)
-stopped_at: Phase 2 UI-SPEC approved
-last_updated: "2026-03-30T07:40:20.242Z"
-last_activity: 2026-03-30
+status: executing
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-03-31T00:43:39.148Z"
+last_activity: 2026-03-31
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 10
+  completed_plans: 6
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** 사용자가 원하는 공연을 발견하고, 좌석을 직접 선택하여, 안정적으로 예매를 완료할 수 있는 것
-**Current focus:** Phase 01 — foundation-auth
+**Current focus:** Phase 02 — catalog-admin
 
 ## Current Position
 
-Phase: 01 (foundation-auth) — SHIPPED
-Plan: 5 of 5
-Status: Shipped (direct to main, 2026-03-30)
-Last activity: 2026-03-30
+Phase: 02 (catalog-admin) — EXECUTING
+Plan: 1 of 5
+Status: Executing
+Last activity: 2026-03-31
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -56,6 +56,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P03 | 13min | 2 tasks | 24 files |
 | Phase 01 P04 | 10min | 2 tasks | 20 files |
 | Phase 01 P05 | 17min | 2 tasks | 23 files |
+| Phase 02 P01 | 7min | 3 tasks | 32 files |
 
 ## Accumulated Context
 
@@ -76,6 +77,9 @@ Recent decisions affecting current work:
 - [Phase 01]: Access token stored in Zustand memory only (not localStorage) -- follows OWASP best practice for JWT XSS mitigation
 - [Phase 01]: API client uses module-level promise deduplication for concurrent 401 refresh (prevents token race conditions)
 - [Phase 01]: Shared package imports changed from .js to extensionless for Turbopack compatibility (NestJS deep imports unaffected)
+- [Phase 02]: radix-ui meta-package installed for shadcn v4 component compatibility (new import pattern)
+- [Phase 02]: lib/index.ts barrel export created to resolve shadcn @/lib import convention
+- [Phase 02]: search_vector added via custom migration SQL (Drizzle lacks native tsvector support)
 
 ### Pending Todos
 
@@ -96,6 +100,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-30T07:40:20.240Z
-Stopped at: Phase 2 UI-SPEC approved
-Resume file: .planning/phases/02-catalog-admin/02-UI-SPEC.md
+Last session: 2026-03-31T00:42:22Z
+Stopped at: Completed 02-01-PLAN.md
+Resume file: None

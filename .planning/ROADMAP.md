@@ -54,7 +54,7 @@ Plans:
 
 Plans:
 - [ ] 02-00-PLAN.md — Wave 0 test scaffolds for backend services (PerformanceService, SearchService, AdminService, RolesGuard)
-- [ ] 02-01-PLAN.md — DB schema (7 tables) + shared types/schemas + dependencies install
+- [x] 02-01-PLAN.md — DB schema (7 tables) + shared types/schemas + dependencies install
 - [ ] 02-02-PLAN.md — NestJS backend API (catalog, search, admin CRUD, RBAC, R2 upload)
 - [ ] 02-03-PLAN.md — Frontend public pages (homepage, genre, detail, search) + GNB activation
 - [ ] 02-04-PLAN.md — Frontend admin panel (performance form, banner management, SVG seat map)
@@ -117,8 +117,8 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation + Auth | 0/5 | Planning complete | - |
-| 2. Catalog + Admin | 0/5 | Planning complete | - |
+| 1. Foundation + Auth | 5/5 | Complete | 2026-03-27 |
+| 2. Catalog + Admin | 1/5 | Executing | - |
 | 3. Seat Map + Real-Time | 0/3 | Not started | - |
 | 4. Booking + Payment | 0/3 | Not started | - |
 | 5. Polish + Launch | 0/2 | Not started | - |
