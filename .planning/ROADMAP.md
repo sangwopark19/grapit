@@ -53,9 +53,9 @@ Plans:
 **UI hint**: yes
 
 Plans:
-- [ ] 02-01: TBD
+- [x] 02-01: TBD
 - [ ] 02-02: TBD
-- [ ] 02-03: TBD
+- [x] 02-03: TBD
 
 ### Phase 3: Seat Map + Real-Time
 **Goal**: Users can view an interactive SVG seat map, select available seats, and see other users' selections in real time
