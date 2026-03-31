@@ -12,6 +12,7 @@ export interface TokenRefreshResponse {
 export interface SocialAuthResult {
   status: 'authenticated' | 'needs_registration';
   accessToken?: string;
+  refreshToken?: string;
   registrationToken?: string;
   user?: UserProfile;
   socialProfile?: {

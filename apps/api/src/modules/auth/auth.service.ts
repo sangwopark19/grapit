@@ -306,6 +306,7 @@ export class AuthService {
       return {
         status: 'authenticated',
         accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
         user: this.mapToProfile(user),
       };
     }

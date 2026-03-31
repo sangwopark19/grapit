@@ -106,7 +106,7 @@ export class AuthController {
       await this.authService.revokeRefreshToken(token);
     }
 
-    res.clearCookie(AUTH_COOKIE_NAME, { path: '/api/v1/auth' });
+    res.clearCookie(AUTH_COOKIE_NAME, { path: '/' });
 
     return { message: 'Logged out' };
   }
@@ -215,6 +215,9 @@ export class AuthController {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
 
     if (result.status === 'authenticated') {
+      if (result.refreshToken) {
+        this.setRefreshTokenCookie(res, result.refreshToken);
+      }
       res.redirect(
         `${frontendUrl}/auth/callback?accessToken=${result.accessToken}&status=authenticated`,
       );
@@ -231,7 +234,7 @@ export class AuthController {
       secure: process.env['NODE_ENV'] === 'production',
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      path: '/api/v1/auth',
+      path: '/',
     });
   }
 }
