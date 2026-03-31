@@ -20,15 +20,15 @@ Requirements for initial release (MVP). Each maps to roadmap phases.
 ### Performance Catalog
 
 - [ ] **PERF-01**: 사용자가 장르별(뮤지컬, 콘서트, 연극 등 8개) 카테고리로 공연을 탐색할 수 있다
-- [ ] **PERF-02**: 사용자가 서브카테고리 필터(전체, 요즘HOT, 오리지널/내한 등)로 공연을 필터링할 수 있다
+- [x] **PERF-02**: 사용자가 서브카테고리 필터(전체, 요즘HOT, 오리지널/내한 등)로 공연을 필터링할 수 있다
 - [ ] **PERF-03**: 공연 상세 페이지에서 포스터, 공연명, 장소, 기간, 공연시간, 관람연령, 등급별 가격을 확인할 수 있다
 - [ ] **PERF-04**: 공연 상세 페이지에서 캐스팅 정보를 확인할 수 있다
 - [ ] **PERF-05**: 공연 목록이 카드형(포스터+정보)으로 페이지네이션되어 표시된다
 
 ### Search
 
-- [ ] **SRCH-01**: 사용자가 공연명 키워드로 검색할 수 있다
-- [ ] **SRCH-02**: 검색 결과를 장르별로 필터링할 수 있다
+- [x] **SRCH-01**: 사용자가 공연명 키워드로 검색할 수 있다
+- [x] **SRCH-02**: 검색 결과를 장르별로 필터링할 수 있다
 - [ ] **SRCH-03**: 판매종료 공연 포함/제외 토글이 제공된다
 
 ### Seat Map & Booking
@@ -129,12 +129,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-06 | Phase 1 | Complete |
 | AUTH-07 | Phase 1 | Complete |
 | PERF-01 | Phase 2 | Pending |
-| PERF-02 | Phase 2 | Pending |
+| PERF-02 | Phase 2 | Complete |
 | PERF-03 | Phase 2 | Pending |
 | PERF-04 | Phase 2 | Pending |
 | PERF-05 | Phase 2 | Pending |
-| SRCH-01 | Phase 2 | Pending |
-| SRCH-02 | Phase 2 | Pending |
+| SRCH-01 | Phase 2 | Complete |
+| SRCH-02 | Phase 2 | Complete |
 | SRCH-03 | Phase 2 | Pending |
 | ADMN-01 | Phase 2 | Complete |
 | ADMN-02 | Phase 2 | Complete |

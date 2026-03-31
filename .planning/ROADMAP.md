@@ -57,8 +57,8 @@ Plans:
 - [x] 02-01-PLAN.md — DB schema (7 tables) + shared types/schemas + dependencies install
 - [x] 02-02-PLAN.md — NestJS backend API (catalog, search, admin CRUD, RBAC, R2 upload)
 - [x] 02-03-PLAN.md — Frontend public pages (homepage, genre, detail, search) + GNB activation
-- [ ] 02-04-PLAN.md — Frontend admin panel (performance form, banner management, SVG seat map)
-- [ ] 02-05-PLAN.md — UAT gap closure: detail page spacing + search layout shift fixes
+- [x] 02-04-PLAN.md — Frontend admin panel (performance form, banner management, SVG seat map)
+- [x] 02-05-PLAN.md — UAT gap closure: detail page spacing + search layout shift fixes
 
 ### Phase 3: Seat Map + Real-Time
 **Goal**: Users can view an interactive SVG seat map, select available seats, and see other users' selections in real time
