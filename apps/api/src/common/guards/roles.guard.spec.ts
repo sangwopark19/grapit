@@ -2,18 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { ExecutionContext } from '@nestjs/common';
 import type { Reflector } from '@nestjs/core';
 
-// Mock the guard module -- it does not exist yet (RED state)
-vi.mock('./roles.guard.js', () => {
-  return {
-    RolesGuard: vi.fn().mockImplementation(function (this: Record<string, unknown>, reflector: unknown) {
-      this.reflector = reflector;
-      return this;
-    }),
-  };
-});
-
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports
-type RolesGuardType = import('./roles.guard.js').RolesGuard;
+import { RolesGuard } from './roles.guard.js';
 
 /**
  * Phase 2 Plan 00: RED-state test stubs for RolesGuard
@@ -55,11 +44,10 @@ function createMockExecutionContext(userRole?: string): ExecutionContext {
 }
 
 describe('RolesGuard', () => {
-  let guard: RolesGuardType;
+  let guard: RolesGuard;
 
-  it('should allow access when no roles metadata is set', async () => {
+  it('should allow access when no roles metadata is set', () => {
     const reflector = createMockReflector(undefined);
-    const { RolesGuard } = await import('./roles.guard.js');
     guard = new RolesGuard(reflector);
 
     const context = createMockExecutionContext('user');
@@ -69,9 +57,8 @@ describe('RolesGuard', () => {
     expect(result).toBe(true);
   });
 
-  it('should allow access when user role matches required role', async () => {
+  it('should allow access when user role matches required role', () => {
     const reflector = createMockReflector(['admin']);
-    const { RolesGuard } = await import('./roles.guard.js');
     guard = new RolesGuard(reflector);
 
     const context = createMockExecutionContext('admin');
@@ -80,9 +67,8 @@ describe('RolesGuard', () => {
     expect(result).toBe(true);
   });
 
-  it('should deny access when user role does not match', async () => {
+  it('should deny access when user role does not match', () => {
     const reflector = createMockReflector(['admin']);
-    const { RolesGuard } = await import('./roles.guard.js');
     guard = new RolesGuard(reflector);
 
     const context = createMockExecutionContext('user');

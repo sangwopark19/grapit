@@ -5,18 +5,7 @@ import type {
   PerformanceWithDetails,
 } from '@grapit/shared';
 
-// Mock the service module -- it does not exist yet (RED state)
-vi.mock('./performance.service.js', () => {
-  return {
-    PerformanceService: vi.fn().mockImplementation(function (this: Record<string, unknown>, db: unknown) {
-      this.db = db;
-      return this;
-    }),
-  };
-});
-
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports
-type PerformanceServiceType = import('./performance.service.js').PerformanceService;
+import { PerformanceService } from './performance.service.js';
 
 /**
  * Phase 2 Plan 00: RED-state test stubs for PerformanceService
@@ -76,15 +65,12 @@ function createMockDb() {
 }
 
 describe('PerformanceService', () => {
-  let service: PerformanceServiceType;
+  let service: PerformanceService;
   let mockDb: ReturnType<typeof createMockDb>;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     mockDb = createMockDb();
-
-    // Dynamic import after vi.mock
-    const { PerformanceService } = await import('./performance.service.js');
-    service = new PerformanceService(mockDb as unknown as Parameters<typeof PerformanceService>[0]);
+    service = new PerformanceService(mockDb as unknown as ConstructorParameters<typeof PerformanceService>[0]);
   });
 
   describe('findByGenre', () => {

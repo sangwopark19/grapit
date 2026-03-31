@@ -1,18 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { SearchResponse } from '@grapit/shared';
 
-// Mock the service module -- it does not exist yet (RED state)
-vi.mock('./search.service.js', () => {
-  return {
-    SearchService: vi.fn().mockImplementation(function (this: Record<string, unknown>, db: unknown) {
-      this.db = db;
-      return this;
-    }),
-  };
-});
-
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports
-type SearchServiceType = import('./search.service.js').SearchService;
+import { SearchService } from './search.service.js';
 
 /**
  * Phase 2 Plan 00: RED-state test stubs for SearchService
@@ -44,14 +33,12 @@ function createMockDb() {
 }
 
 describe('SearchService', () => {
-  let service: SearchServiceType;
+  let service: SearchService;
   let mockDb: ReturnType<typeof createMockDb>;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     mockDb = createMockDb();
-
-    const { SearchService } = await import('./search.service.js');
-    service = new SearchService(mockDb as unknown as Parameters<typeof SearchService>[0]);
+    service = new SearchService(mockDb as unknown as ConstructorParameters<typeof SearchService>[0]);
   });
 
   describe('search', () => {
