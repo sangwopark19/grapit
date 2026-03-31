@@ -107,9 +107,10 @@ None yet.
 | 260331-o5k | Casting photo preview + venues.name UNIQUE constraint fix | 2026-03-31 | 7ba8d27 | [260331-o5k-casting-preview-save-fix](./quick/260331-o5k-casting-preview-save-fix/) |
 | 260331-ol3 | next/image localhost:8080 remotePatterns 허용 | 2026-03-31 | 59ce131 | [260331-ol3-next-image-localhost](./quick/260331-ol3-next-image-localhost/) |
 | 260331-opp | next/image dev unoptimized + magic bytes content-type 감지 | 2026-03-31 | c8c2e7c | [260331-opp-next-image-dev-unoptimized](./quick/260331-opp-next-image-dev-unoptimized/) |
+| 260331-opp | CORP: cross-origin 헤더 추가 (Helmet same-origin 차단 해결) | 2026-03-31 | 97a25e8 | [260331-opp-next-image-dev-unoptimized](./quick/260331-opp-next-image-dev-unoptimized/) |
 
 ## Session Continuity
 
-Last session: 2026-03-31T08:49:00Z
-Stopped at: Completed quick task 260331-opp: next/image dev unoptimized + content-type fix
+Last session: 2026-03-31T09:01:00Z
+Stopped at: Completed CORP cross-origin fix for local upload images
 Resume file: None
