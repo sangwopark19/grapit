@@ -61,9 +61,9 @@ export default function SearchPage() {
       <h1 className="text-xl font-semibold text-gray-900">
         &apos;{q}&apos; 검색 결과
       </h1>
-      {data && (
-        <p className="mt-1 text-sm text-gray-600">총 {data.total}건</p>
-      )}
+      <p className="mt-1 h-5 text-sm text-gray-600">
+        {data ? `총 ${data.total}건` : '\u00A0'}
+      </p>
 
       {/* Genre filter chips */}
       <div className="mt-4 flex gap-2 overflow-x-auto scrollbar-hide">
@@ -105,16 +105,6 @@ export default function SearchPage() {
             >
               다시 시도
             </button>
-          </div>
-        ) : data && data.data.length === 0 && !isLoading ? (
-          <div className="flex flex-col items-center py-16">
-            <SearchIcon className="h-12 w-12 text-gray-400" />
-            <h2 className="mt-4 text-xl font-semibold text-gray-900">
-              검색 결과가 없습니다
-            </h2>
-            <p className="mt-2 text-sm text-gray-600">
-              다른 키워드로 검색하거나 장르별 공연을 둘러보세요
-            </p>
           </div>
         ) : (
           <PerformanceGrid
