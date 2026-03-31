@@ -99,9 +99,10 @@ None yet.
 |---|-------------|------|--------|-----------|
 | 260331-jjc | Phase 2 UI Review priority fixes: font-medium replacement, home empty state h1, admin error refresh button | 2026-03-31 | 852dfb0 | [260331-jjc-phase-2-ui-review-priority-fixes-font-me](./quick/260331-jjc-phase-2-ui-review-priority-fixes-font-me/) |
 | 260331-l6q | Fix select box transparency + detail page poster alignment | 2026-03-31 | 8fbd009 | [260331-l6q-fix-select-box-z-index-bug-and-performan](./quick/260331-l6q-fix-select-box-z-index-bug-and-performan/) |
+| 260331-ldw | Detail page tab UI/UX: 2-column layout + TabsContent visual container | 2026-03-31 | 1d8f436 | [260331-ldw-ui-ux](./quick/260331-ldw-ui-ux/) |
 
 ## Session Continuity
 
-Last session: 2026-03-31T05:59:10.597Z
-Stopped at: Completed 02-05-PLAN.md
+Last session: 2026-03-31T06:33:00Z
+Stopped at: Completed quick task 260331-ldw: Detail page tab UI/UX improvement
 Resume file: None
