@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 Phase: 3
 Plan: Not started
 Status: Ready to execute
-Last activity: 2026-03-31 - Completed quick task 260331-l6q: Fix select box + detail page UI
+Last activity: 2026-03-31 - Completed quick task 260331-ldw: 상세페이지 탭(캐스팅/상세정보/판매정보) UI/UX 문제 수정
 
 Progress: [░░░░░░░░░░] 0%
 
