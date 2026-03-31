@@ -486,6 +486,7 @@ export function PerformanceForm({
           remove={castingsField.remove}
           register={form.register}
           setValue={form.setValue}
+          control={form.control}
         />
       </section>
 
