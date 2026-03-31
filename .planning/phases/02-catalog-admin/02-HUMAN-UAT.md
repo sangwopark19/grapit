@@ -1,5 +1,5 @@
 ---
-status: testing
+status: complete
 phase: 02-catalog-admin
 source: [02-00-SUMMARY.md, 02-01-SUMMARY.md, 02-02-SUMMARY.md, 02-03-SUMMARY.md, 02-04-SUMMARY.md]
 started: 2026-03-31T10:42:00Z
@@ -8,11 +8,7 @@ updated: 2026-03-31T11:00:00Z
 
 ## Current Test
 
-number: 5
-name: Admin performance creation
-expected: |
-  Performance created; redirects to list; new entry visible
-awaiting: user response
+[testing complete]
 
 ## Tests
 
@@ -38,18 +34,18 @@ severity: cosmetic
 
 ### 5. Admin performance creation
 expected: Performance created; redirects to list; new entry visible
-result: [pending]
+result: pass
 
 ### 6. Admin RBAC enforcement
 expected: Middleware redirects non-admin user from /admin/* to / or /auth
-result: [pending]
+result: pass
 
 ## Summary
 
 total: 6
-passed: 2
+passed: 4
 issues: 2
-pending: 2
+pending: 0
 skipped: 0
 blocked: 0
 
