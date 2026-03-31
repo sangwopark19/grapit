@@ -103,9 +103,10 @@ None yet.
 | 260331-lt4 | Fix info panel width collapse on tab switch (missing w-full on main) | 2026-03-31 | 1534fa4 | [260331-lt4-info-panel-width-fix](./quick/260331-lt4-info-panel-width-fix/) |
 | 260331-m0k | 필터 탭 클릭 시 UI 레이아웃 시프트 버그 수정 | 2026-03-31 | fdb4757 | [260331-m0k-ui](./quick/260331-m0k-ui/) |
 | 260331-mq2 | Rename middleware.ts to proxy.ts for Next.js 16 | 2026-03-31 | b99662b | [260331-mq2-rename-middleware-ts-to-proxy-ts-for-nex](./quick/260331-mq2-rename-middleware-ts-to-proxy-ts-for-nex/) |
+| 260331-n9m | Admin poster upload 500 fix: local dev mode fallback for UploadService | 2026-03-31 | 70d0233 | [260331-n9m-admin-poster-upload-fix](./quick/260331-n9m-admin-poster-upload-fix/) |
 
 ## Session Continuity
 
-Last session: 2026-03-31T06:42:00Z
-Stopped at: Completed quick task 260331-lt4: Fix info panel width on tab switch
+Last session: 2026-03-31T07:59:00Z
+Stopped at: Completed quick task 260331-n9m: Admin poster upload local dev mode fallback
 Resume file: None
