@@ -78,7 +78,7 @@ export default function PerformanceDetailPage({
 
   return (
     <>
-      <main className="mx-auto max-w-[1200px] px-6 pt-8 pb-20 lg:pb-8">
+      <main className="mx-auto w-full max-w-[1200px] px-6 pt-8 pb-20 lg:pb-8">
         {/* 2-column layout: left (poster + tabs) / right (info panel) */}
         <div className="flex flex-col gap-8 lg:flex-row">
           {/* Left column: poster + tabs */}
