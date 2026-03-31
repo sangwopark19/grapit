@@ -9,7 +9,8 @@
     "start:prod": "node dist/main.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "seed": "node src/database/seed.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1020.0",

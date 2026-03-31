@@ -5,7 +5,7 @@ import { searchQuerySchema, type SearchQuery } from '@grapit/shared';
 import { SearchService } from './search.service.js';
 
 @Public()
-@Controller('api/v1')
+@Controller()
 export class SearchController {
   constructor(private readonly searchService: SearchService) {}
 

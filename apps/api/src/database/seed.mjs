@@ -1,0 +1,241 @@
+import pg from 'pg';
+
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!DATABASE_URL) {
+  console.error('DATABASE_URL is required');
+  process.exit(1);
+}
+
+const pool = new pg.Pool({ connectionString: DATABASE_URL });
+
+async function seed() {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    // Clean existing seed data
+    await client.query('DELETE FROM banners');
+    await client.query('DELETE FROM castings');
+    await client.query('DELETE FROM price_tiers');
+    await client.query('DELETE FROM showtimes');
+    await client.query('DELETE FROM seat_maps');
+    await client.query('DELETE FROM performances');
+    await client.query('DELETE FROM venues');
+
+    console.log('Cleared existing data');
+
+    // Venues
+    const venueRows = await client.query(`
+      INSERT INTO venues (id, name, address) VALUES
+        (gen_random_uuid(), '블루스퀘어 인터파크홀', '서울 용산구 이태원로 294'),
+        (gen_random_uuid(), '올림픽공원 체조경기장', '서울 송파구 올림픽로 424'),
+        (gen_random_uuid(), '세종문화회관 대극장', '서울 종로구 세종대로 175'),
+        (gen_random_uuid(), 'KINTEX 제1전시장', '경기 고양시 일산서구 킨텍스로 217-60'),
+        (gen_random_uuid(), '예술의전당 오페라극장', '서울 서초구 남부순환로 2406')
+      RETURNING id, name
+    `);
+    const venues = Object.fromEntries(venueRows.rows.map(r => [r.name, r.id]));
+    console.log(`Inserted ${venueRows.rows.length} venues`);
+
+    // Performances
+    const now = new Date();
+    const perfData = [
+      {
+        title: '뮤지컬 〈오페라의 유령〉',
+        genre: 'musical',
+        subcategory: '라이선스',
+        venue: '블루스퀘어 인터파크홀',
+        poster: '/seed/poster/25012652_p.gif',
+        description: '전 세계 1억 5천만 관객을 사로잡은 앤드루 로이드 웨버의 걸작. 파리 오페라 극장 지하에 숨어 사는 천재 음악가 팬텀과 소프라노 크리스틴의 비극적 사랑 이야기.',
+        startDate: new Date(now.getTime() - 30 * 86400000).toISOString(),
+        endDate: new Date(now.getTime() + 90 * 86400000).toISOString(),
+        runtime: '160분 (인터미션 20분 포함)',
+        ageRating: '8세 이상',
+        status: 'selling',
+        viewCount: 12450,
+      },
+      {
+        title: '2026 IU 콘서트 \'The Golden Hour\'',
+        genre: 'concert',
+        subcategory: 'K-POP',
+        venue: '올림픽공원 체조경기장',
+        poster: '/seed/poster/25018106_p.gif',
+        description: '아이유의 2026년 전국 투어 콘서트. 새 앨범 수록곡과 히트곡으로 구성된 3시간의 황금빛 무대.',
+        startDate: new Date(now.getTime() + 14 * 86400000).toISOString(),
+        endDate: new Date(now.getTime() + 16 * 86400000).toISOString(),
+        runtime: '180분',
+        ageRating: '전체 관람가',
+        status: 'selling',
+        viewCount: 34200,
+      },
+      {
+        title: '연극 〈햄릿〉',
+        genre: 'play',
+        subcategory: '셰익스피어',
+        venue: '세종문화회관 대극장',
+        poster: '/seed/poster/26000685_p.gif',
+        description: '셰익스피어의 4대 비극 중 최고 걸작. 덴마크 왕자 햄릿의 복수와 번민을 현대적으로 재해석한 화제의 프로덕션.',
+        startDate: new Date(now.getTime() - 50 * 86400000).toISOString(),
+        endDate: new Date(now.getTime() + 5 * 86400000).toISOString(),
+        runtime: '150분 (인터미션 15분 포함)',
+        ageRating: '13세 이상',
+        status: 'closing_soon',
+        viewCount: 8730,
+      },
+      {
+        title: '전시 〈모네: 빛을 그리다〉',
+        genre: 'exhibition',
+        subcategory: '미술',
+        venue: 'KINTEX 제1전시장',
+        poster: '/seed/poster/26001001_p.gif',
+        description: '인상파의 거장 클로드 모네의 대표작 120점을 몰입형 디지털 아트로 재현. 수련 연작 속을 걷는 듯한 체험형 전시.',
+        startDate: new Date(now.getTime() + 30 * 86400000).toISOString(),
+        endDate: new Date(now.getTime() + 120 * 86400000).toISOString(),
+        runtime: '약 90분 (자유 관람)',
+        ageRating: '전체 관람가',
+        status: 'upcoming',
+        viewCount: 5100,
+      },
+      {
+        title: '뮤지컬 〈위키드〉',
+        genre: 'musical',
+        subcategory: '라이선스',
+        venue: '예술의전당 오페라극장',
+        poster: '/seed/poster/26001248_p.gif',
+        description: '오즈의 마법사 그 이전 이야기. 착한 마녀 글린다와 나쁜 마녀 엘파바의 우정과 운명을 그린 브로드웨이 히트 뮤지컬.',
+        startDate: new Date(now.getTime() - 120 * 86400000).toISOString(),
+        endDate: new Date(now.getTime() - 10 * 86400000).toISOString(),
+        runtime: '155분 (인터미션 20분 포함)',
+        ageRating: '8세 이상',
+        status: 'ended',
+        viewCount: 21300,
+      },
+    ];
+
+    const perfIds = [];
+    for (const p of perfData) {
+      const res = await client.query(`
+        INSERT INTO performances (id, title, genre, subcategory, venue_id, poster_url, description, start_date, end_date, runtime, age_rating, status, view_count)
+        VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        RETURNING id
+      `, [p.title, p.genre, p.subcategory, venues[p.venue], p.poster, p.description, p.startDate, p.endDate, p.runtime, p.ageRating, p.status, p.viewCount]);
+      perfIds.push({ id: res.rows[0].id, title: p.title });
+    }
+    console.log(`Inserted ${perfIds.length} performances`);
+
+    // Showtimes (2~4 per performance, excluding ended)
+    const showtimeInserts = [];
+    for (let i = 0; i < 4; i++) {
+      const perf = perfIds[i];
+      const baseDate = i < 2 ? new Date(now.getTime() + (7 + i * 3) * 86400000) : new Date(now.getTime() + (i * 5) * 86400000);
+
+      for (let s = 0; s < (i < 2 ? 3 : 2); s++) {
+        const dt = new Date(baseDate.getTime() + s * 86400000);
+        dt.setHours(s === 0 ? 14 : 19, 30, 0, 0);
+        showtimeInserts.push(client.query(
+          'INSERT INTO showtimes (id, performance_id, date_time) VALUES (gen_random_uuid(), $1, $2)',
+          [perf.id, dt.toISOString()]
+        ));
+      }
+    }
+    await Promise.all(showtimeInserts);
+    console.log(`Inserted ${showtimeInserts.length} showtimes`);
+
+    // Price tiers
+    const tierData = [
+      { idx: 0, tiers: [{ name: 'VIP석', price: 170000 }, { name: 'R석', price: 140000 }, { name: 'S석', price: 110000 }, { name: 'A석', price: 80000 }] },
+      { idx: 1, tiers: [{ name: 'VIP석', price: 165000 }, { name: 'R석', price: 132000 }, { name: 'S석', price: 99000 }] },
+      { idx: 2, tiers: [{ name: 'R석', price: 60000 }, { name: 'S석', price: 40000 }, { name: 'A석', price: 25000 }] },
+      { idx: 3, tiers: [{ name: '일반', price: 20000 }, { name: '청소년', price: 15000 }] },
+      { idx: 4, tiers: [{ name: 'VIP석', price: 150000 }, { name: 'R석', price: 120000 }, { name: 'S석', price: 90000 }] },
+    ];
+    const tierInserts = [];
+    for (const { idx, tiers } of tierData) {
+      for (let t = 0; t < tiers.length; t++) {
+        tierInserts.push(client.query(
+          'INSERT INTO price_tiers (id, performance_id, tier_name, price, sort_order) VALUES (gen_random_uuid(), $1, $2, $3, $4)',
+          [perfIds[idx].id, tiers[t].name, tiers[t].price, t]
+        ));
+      }
+    }
+    await Promise.all(tierInserts);
+    console.log(`Inserted ${tierInserts.length} price tiers`);
+
+    // Castings
+    const castingData = [
+      { idx: 0, casts: [
+        { actor: '김준수', role: '팬텀' },
+        { actor: '손승원', role: '크리스틴' },
+        { actor: '정성화', role: '라울' },
+      ]},
+      { idx: 1, casts: [
+        { actor: '아이유', role: null },
+      ]},
+      { idx: 2, casts: [
+        { actor: '남궁민', role: '햄릿' },
+        { actor: '이하나', role: '오필리어' },
+        { actor: '유해진', role: '클로디어스' },
+      ]},
+      { idx: 4, casts: [
+        { actor: '옥주현', role: '엘파바' },
+        { actor: '이지혜', role: '글린다' },
+      ]},
+    ];
+    const castInserts = [];
+    for (const { idx, casts } of castingData) {
+      for (let c = 0; c < casts.length; c++) {
+        castInserts.push(client.query(
+          'INSERT INTO castings (id, performance_id, actor_name, role_name, sort_order) VALUES (gen_random_uuid(), $1, $2, $3, $4)',
+          [perfIds[idx].id, casts[c].actor, casts[c].role, c]
+        ));
+      }
+    }
+    await Promise.all(castInserts);
+    console.log(`Inserted ${castInserts.length} castings`);
+
+    // Banners
+    const bannerData = [
+      { image: '/seed/banners/260324015208_26003900.gif', link: null, sort: 0 },
+      { image: '/seed/banners/260330090702_26004771.gif', link: null, sort: 1 },
+      { image: '/seed/banners/260330101328_26003180.gif', link: null, sort: 2 },
+    ];
+    for (const b of bannerData) {
+      await client.query(
+        'INSERT INTO banners (id, image_url, link_url, sort_order, is_active) VALUES (gen_random_uuid(), $1, $2, $3, true)',
+        [b.image, b.link, b.sort]
+      );
+    }
+    console.log(`Inserted ${bannerData.length} banners`);
+
+    // Link banners to performances (linkUrl)
+    await client.query(
+      `UPDATE banners SET link_url = '/performance/' || $1 WHERE sort_order = 0`,
+      [perfIds[0].id]
+    );
+    await client.query(
+      `UPDATE banners SET link_url = '/performance/' || $1 WHERE sort_order = 1`,
+      [perfIds[1].id]
+    );
+    await client.query(
+      `UPDATE banners SET link_url = '/performance/' || $1 WHERE sort_order = 2`,
+      [perfIds[2].id]
+    );
+
+    await client.query('COMMIT');
+    console.log('\nSeed complete!');
+    console.log('Performances:');
+    for (const p of perfIds) {
+      console.log(`  - ${p.title} (${p.id})`);
+    }
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Seed failed:', err);
+    process.exit(1);
+  } finally {
+    client.release();
+    await pool.end();
+  }
+}
+
+seed();

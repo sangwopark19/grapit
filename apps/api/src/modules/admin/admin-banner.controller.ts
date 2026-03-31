@@ -14,7 +14,7 @@ import { Roles } from '../../common/decorators/roles.decorator.js';
 import { createBannerSchema, type CreateBannerInput } from '@grapit/shared';
 import { AdminService } from './admin.service.js';
 
-@Controller('api/v1/admin')
+@Controller('admin')
 @UseGuards(RolesGuard)
 @Roles('admin')
 export class AdminBannerController {

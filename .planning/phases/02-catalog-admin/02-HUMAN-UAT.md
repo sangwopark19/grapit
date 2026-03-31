@@ -1,14 +1,18 @@
 ---
-status: partial
+status: testing
 phase: 02-catalog-admin
-source: [02-VERIFICATION.md]
+source: [02-00-SUMMARY.md, 02-01-SUMMARY.md, 02-02-SUMMARY.md, 02-03-SUMMARY.md, 02-04-SUMMARY.md]
 started: 2026-03-31T10:42:00Z
-updated: 2026-03-31T10:42:00Z
+updated: 2026-03-31T11:00:00Z
 ---
 
 ## Current Test
 
-[awaiting human testing]
+number: 1
+name: Homepage rendering with real data
+expected: |
+  Banner carousel plays, HOT and New cards show actual performance titles/posters from DB
+awaiting: user response
 
 ## Tests
 

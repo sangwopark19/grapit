@@ -11,7 +11,7 @@ import { performanceQuerySchema, type PerformanceQuery } from './dto/performance
 import { PerformanceService } from './performance.service.js';
 
 @Public()
-@Controller('api/v1')
+@Controller()
 export class PerformanceController {
   constructor(private readonly performanceService: PerformanceService) {}
 
