@@ -25,8 +25,16 @@ function DetailSkeleton() {
   return (
     <div className="mx-auto max-w-[1200px] px-6 py-8">
       <div className="flex flex-col gap-8 lg:flex-row">
-        <Skeleton className="aspect-[2/3] w-full max-w-[380px] shrink-0 rounded-lg" />
-        <div className="flex-1 space-y-4">
+        {/* Left column: poster + tabs skeleton */}
+        <div className="w-full lg:max-w-[380px] shrink-0">
+          <Skeleton className="aspect-[2/3] w-full max-w-[280px] mx-auto lg:mx-0 lg:max-w-[380px] rounded-lg" />
+          <div className="mt-8 space-y-4">
+            <Skeleton className="h-12 w-full rounded-lg" />
+            <Skeleton className="h-[300px] w-full rounded-lg" />
+          </div>
+        </div>
+        {/* Right column: info panel skeleton */}
+        <div className="flex-1 space-y-4 order-first lg:order-none">
           <Skeleton className="h-7 w-3/4" />
           <Skeleton className="h-5 w-1/2" />
           <Skeleton className="h-5 w-2/3" />
@@ -71,32 +79,122 @@ export default function PerformanceDetailPage({
   return (
     <>
       <main className="mx-auto max-w-[1200px] px-6 pt-8 pb-20 lg:pb-8">
-        {/* Top section: poster + info */}
+        {/* 2-column layout: left (poster + tabs) / right (info panel) */}
         <div className="flex flex-col gap-8 lg:flex-row">
-          {/* Poster */}
-          <div className="relative aspect-[2/3] w-full max-w-[280px] mx-auto lg:mx-0 shrink-0 overflow-hidden rounded-lg bg-gray-200 lg:max-w-[380px]">
-            {performance.posterUrl ? (
-              <Image
-                src={performance.posterUrl}
-                alt={`${performance.title} 포스터`}
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 380px"
-                priority
+          {/* Left column: poster + tabs */}
+          <div className="w-full lg:max-w-[380px] shrink-0">
+            {/* Poster */}
+            <div className="relative aspect-[2/3] w-full max-w-[280px] mx-auto lg:mx-0 shrink-0 overflow-hidden rounded-lg bg-gray-200 lg:max-w-[380px]">
+              {performance.posterUrl ? (
+                <Image
+                  src={performance.posterUrl}
+                  alt={`${performance.title} 포스터`}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 380px"
+                  priority
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center">
+                  <Ticket className="h-16 w-16 text-gray-400" />
+                </div>
+              )}
+              <StatusBadge
+                status={performance.status}
+                className="absolute left-3 top-3"
               />
-            ) : (
-              <div className="flex h-full items-center justify-center">
-                <Ticket className="h-16 w-16 text-gray-400" />
-              </div>
-            )}
-            <StatusBadge
-              status={performance.status}
-              className="absolute left-3 top-3"
-            />
+            </div>
+
+            {/* Tab section -- below poster on desktop */}
+            <div className="mt-8">
+              <Tabs defaultValue="casting">
+                <TabsList className="w-full">
+                  <TabsTrigger value="casting">캐스팅</TabsTrigger>
+                  <TabsTrigger value="detail">상세정보</TabsTrigger>
+                  <TabsTrigger value="sales">판매정보</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="casting">
+                  {performance.castings.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-2">
+                      {performance.castings.map((cast) => (
+                        <div
+                          key={cast.id}
+                          className="flex flex-col items-center text-center"
+                        >
+                          <div className="relative h-16 w-16 overflow-hidden rounded-full bg-gray-200">
+                            {cast.photoUrl ? (
+                              <Image
+                                src={cast.photoUrl}
+                                alt={cast.actorName}
+                                fill
+                                className="object-cover"
+                                sizes="64px"
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center">
+                                <User className="h-6 w-6 text-gray-400" />
+                              </div>
+                            )}
+                          </div>
+                          <p className="mt-2 text-sm font-semibold text-gray-900">
+                            {cast.actorName}
+                          </p>
+                          {cast.roleName && (
+                            <p className="text-sm text-gray-600">
+                              {cast.roleName}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-center text-sm text-gray-500">
+                      캐스팅 정보가 없습니다
+                    </p>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="detail">
+                  {performance.description ? (
+                    <div className="prose max-w-prose text-sm text-gray-900">
+                      <p className="whitespace-pre-wrap">
+                        {performance.description}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-center text-sm text-gray-500">
+                      상세 정보가 없습니다
+                    </p>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="sales">
+                  {performance.salesInfo ? (
+                    <div className="prose max-w-prose text-sm text-gray-900">
+                      <p className="whitespace-pre-wrap">
+                        {performance.salesInfo}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-600">
+                      <h3 className="mb-2 font-semibold text-gray-900">
+                        취소/환불 안내
+                      </h3>
+                      <ul className="list-inside list-disc space-y-1">
+                        <li>예매 후 취소 시 취소수수료가 발생할 수 있습니다.</li>
+                        <li>공연일 기준 취소 시점에 따라 수수료율이 달라집니다.</li>
+                        <li>자세한 내용은 예매 시 확인해주세요.</li>
+                      </ul>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </div>
           </div>
 
-          {/* Info panel */}
-          <div className="flex-1 lg:sticky lg:top-20 lg:self-start">
+          {/* Right column: info panel (sticky on desktop, first on mobile) */}
+          <div className="flex-1 lg:sticky lg:top-20 lg:self-start order-first lg:order-none">
             <h1 className="text-xl font-semibold text-gray-900">
               {performance.title}
             </h1>
@@ -158,93 +256,6 @@ export default function PerformanceDetailPage({
               추후 오픈 예정
             </button>
           </div>
-        </div>
-
-        {/* Tab section */}
-        <div className="mt-8">
-          <Tabs defaultValue="casting">
-            <TabsList className="w-full">
-              <TabsTrigger value="casting">캐스팅</TabsTrigger>
-              <TabsTrigger value="detail">상세정보</TabsTrigger>
-              <TabsTrigger value="sales">판매정보</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="casting">
-              {performance.castings.length > 0 ? (
-                <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4">
-                  {performance.castings.map((cast) => (
-                    <div
-                      key={cast.id}
-                      className="flex flex-col items-center text-center"
-                    >
-                      <div className="relative h-16 w-16 overflow-hidden rounded-full bg-gray-200">
-                        {cast.photoUrl ? (
-                          <Image
-                            src={cast.photoUrl}
-                            alt={cast.actorName}
-                            fill
-                            className="object-cover"
-                            sizes="64px"
-                          />
-                        ) : (
-                          <div className="flex h-full items-center justify-center">
-                            <User className="h-6 w-6 text-gray-400" />
-                          </div>
-                        )}
-                      </div>
-                      <p className="mt-2 text-sm font-semibold text-gray-900">
-                        {cast.actorName}
-                      </p>
-                      {cast.roleName && (
-                        <p className="text-sm text-gray-600">
-                          {cast.roleName}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-center text-sm text-gray-500">
-                  캐스팅 정보가 없습니다
-                </p>
-              )}
-            </TabsContent>
-
-            <TabsContent value="detail">
-              {performance.description ? (
-                <div className="prose max-w-prose text-sm text-gray-900">
-                  <p className="whitespace-pre-wrap">
-                    {performance.description}
-                  </p>
-                </div>
-              ) : (
-                <p className="text-center text-sm text-gray-500">
-                  상세 정보가 없습니다
-                </p>
-              )}
-            </TabsContent>
-
-            <TabsContent value="sales">
-              {performance.salesInfo ? (
-                <div className="prose max-w-prose text-sm text-gray-900">
-                  <p className="whitespace-pre-wrap">
-                    {performance.salesInfo}
-                  </p>
-                </div>
-              ) : (
-                <div className="text-sm text-gray-600">
-                  <h3 className="mb-2 font-semibold text-gray-900">
-                    취소/환불 안내
-                  </h3>
-                  <ul className="list-inside list-disc space-y-1">
-                    <li>예매 후 취소 시 취소수수료가 발생할 수 있습니다.</li>
-                    <li>공연일 기준 취소 시점에 따라 수수료율이 달라집니다.</li>
-                    <li>자세한 내용은 예매 시 확인해주세요.</li>
-                  </ul>
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
         </div>
       </main>
 
