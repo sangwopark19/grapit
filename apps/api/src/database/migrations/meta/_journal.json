@@ -15,6 +15,13 @@
       "when": 1774917589882,
       "tag": "0001_motionless_miek",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774945940592,
+      "tag": "0002_huge_vengeance",
+      "breakpoints": true
     }
   ]
 }
