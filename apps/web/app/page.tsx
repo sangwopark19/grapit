@@ -1,28 +1,35 @@
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+'use client';
 
-export default function Home() {
+import { Skeleton } from '@/components/ui/skeleton';
+import { BannerCarousel } from '@/components/home/banner-carousel';
+import { HotSection } from '@/components/home/hot-section';
+import { NewSection } from '@/components/home/new-section';
+import { GenreGrid } from '@/components/home/genre-grid';
+import { useHomeBanners } from '@/hooks/use-performances';
+
+export default function HomePage() {
+  const { data: banners, isLoading: bannersLoading } = useHomeBanners();
+
   return (
-    <main className="flex flex-1 flex-col items-center justify-center px-4">
-      {/* Brand logo */}
-      <span className="text-4xl font-bold text-primary">Grapit</span>
+    <main>
+      {/* Banner Carousel */}
+      {bannersLoading ? (
+        <Skeleton className="h-[200px] w-full md:h-[400px]" />
+      ) : (
+        <BannerCarousel banners={banners ?? []} />
+      )}
 
-      {/* Heading - 24px gap from logo */}
-      <h1 className="mt-6 text-display font-semibold leading-[1.2] tracking-[-0.02em] text-gray-900">
-        곧 다양한 공연이 찾아옵니다
-      </h1>
+      {/* Content sections */}
+      <div className="mx-auto max-w-[1200px] px-6">
+        {/* Self-contained: calls useHotPerformances() internally */}
+        <HotSection />
 
-      {/* Description - 12px gap from heading */}
-      <p className="mt-3 text-center text-base leading-relaxed text-gray-500">
-        지금 가입하고 가장 먼저
-        <br />
-        새로운 공연 소식을 만나보세요
-      </p>
+        {/* Self-contained: calls useNewPerformances() internally */}
+        <NewSection />
 
-      {/* CTA - 32px gap from description */}
-      <Button asChild size="lg" className="mt-8 h-12 w-[200px]">
-        <Link href="/auth">로그인 / 회원가입</Link>
-      </Button>
+        {/* Static: no data fetching */}
+        <GenreGrid />
+      </div>
     </main>
   );
 }
