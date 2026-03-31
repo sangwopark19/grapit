@@ -1,0 +1,139 @@
+export const GENRES = [
+  'musical', 'concert', 'play', 'exhibition',
+  'classic', 'sports', 'kids_family', 'leisure_camping',
+] as const;
+export type Genre = typeof GENRES[number];
+
+export const GENRE_LABELS: Record<Genre, string> = {
+  musical: '뮤지컬',
+  concert: '콘서트',
+  play: '연극',
+  exhibition: '전시',
+  classic: '클래식',
+  sports: '스포츠',
+  kids_family: '아동/가족',
+  leisure_camping: '레저/캠핑',
+};
+
+export const GENRE_SLUGS: Record<string, Genre> = {
+  '뮤지컬': 'musical',
+  '콘서트': 'concert',
+  '연극': 'play',
+  '전시': 'exhibition',
+  '클래식': 'classic',
+  '스포츠': 'sports',
+  '아동/가족': 'kids_family',
+  '레저/캠핑': 'leisure_camping',
+};
+
+export type PerformanceStatus = 'upcoming' | 'selling' | 'closing_soon' | 'ended';
+
+export const STATUS_LABELS: Record<PerformanceStatus, string> = {
+  upcoming: '판매예정',
+  selling: '판매중',
+  closing_soon: '마감임박',
+  ended: '판매종료',
+};
+
+export interface Venue {
+  id: string;
+  name: string;
+  address: string | null;
+}
+
+export interface PriceTier {
+  id: string;
+  performanceId: string;
+  tierName: string;
+  price: number;
+  sortOrder: number;
+}
+
+export interface Showtime {
+  id: string;
+  performanceId: string;
+  dateTime: string; // ISO string
+}
+
+export interface CastMember {
+  id: string;
+  performanceId: string;
+  actorName: string;
+  roleName: string | null;
+  photoUrl: string | null;
+  sortOrder: number;
+}
+
+export interface SeatMapConfig {
+  tiers: Array<{
+    tierName: string;
+    color: string;
+    seatIds: string[];
+  }>;
+}
+
+export interface SeatMap {
+  id: string;
+  performanceId: string;
+  svgUrl: string;
+  seatConfig: SeatMapConfig | null;
+  totalSeats: number;
+}
+
+export interface Banner {
+  id: string;
+  imageUrl: string;
+  linkUrl: string | null;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export interface Performance {
+  id: string;
+  title: string;
+  genre: Genre;
+  subcategory: string | null;
+  venueId: string | null;
+  posterUrl: string | null;
+  description: string | null;
+  startDate: string; // ISO string
+  endDate: string;   // ISO string
+  runtime: string | null;
+  ageRating: string;
+  status: PerformanceStatus;
+  salesInfo: string | null;
+  viewCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PerformanceWithDetails extends Performance {
+  venue: Venue | null;
+  priceTiers: PriceTier[];
+  showtimes: Showtime[];
+  castings: CastMember[];
+  seatMap: SeatMap | null;
+}
+
+export interface PerformanceCardData {
+  id: string;
+  title: string;
+  genre: Genre;
+  posterUrl: string | null;
+  status: PerformanceStatus;
+  startDate: string;
+  endDate: string;
+  venueName: string | null;
+}
+
+export interface PerformanceListResponse {
+  data: PerformanceCardData[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface SearchResponse extends PerformanceListResponse {
+  query: string;
+}

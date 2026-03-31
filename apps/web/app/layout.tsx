@@ -1,9 +1,8 @@
 import type { Metadata } from 'next';
 import { pretendard } from './fonts';
-import { GNB } from '@/components/layout/gnb';
-import { Footer } from '@/components/layout/footer';
 import { Toaster } from '@/components/ui/sonner';
 import { AuthInitializer } from '@/components/auth/auth-initializer';
+import { LayoutShell } from './layout-shell';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -20,9 +19,7 @@ export default function RootLayout({
     <html lang="ko" className={pretendard.variable}>
       <body className="flex min-h-screen flex-col">
         <AuthInitializer />
-        <GNB />
-        <div className="flex flex-1 flex-col">{children}</div>
-        <Footer />
+        <LayoutShell>{children}</LayoutShell>
         <Toaster />
       </body>
     </html>
