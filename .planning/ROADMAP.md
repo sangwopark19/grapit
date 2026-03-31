@@ -56,7 +56,7 @@ Plans:
 - [x] 02-00-PLAN.md — Wave 0 test scaffolds for backend services (PerformanceService, SearchService, AdminService, RolesGuard)
 - [x] 02-01-PLAN.md — DB schema (7 tables) + shared types/schemas + dependencies install
 - [ ] 02-02-PLAN.md — NestJS backend API (catalog, search, admin CRUD, RBAC, R2 upload)
-- [ ] 02-03-PLAN.md — Frontend public pages (homepage, genre, detail, search) + GNB activation
+- [x] 02-03-PLAN.md — Frontend public pages (homepage, genre, detail, search) + GNB activation
 - [ ] 02-04-PLAN.md — Frontend admin panel (performance form, banner management, SVG seat map)
 
 ### Phase 3: Seat Map + Real-Time

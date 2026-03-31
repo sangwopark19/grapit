@@ -1,0 +1,30 @@
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { StatusBadge } from '../status-badge';
+
+describe('StatusBadge', () => {
+  it('renders correct label for selling status', () => {
+    render(<StatusBadge status="selling" />);
+    expect(screen.getByText('판매중')).toBeDefined();
+  });
+
+  it('renders correct label for closing_soon status', () => {
+    render(<StatusBadge status="closing_soon" />);
+    expect(screen.getByText('마감임박')).toBeDefined();
+  });
+
+  it('renders correct label for ended status', () => {
+    render(<StatusBadge status="ended" />);
+    expect(screen.getByText('판매종료')).toBeDefined();
+  });
+
+  it('renders correct label for upcoming status', () => {
+    render(<StatusBadge status="upcoming" />);
+    expect(screen.getByText('판매예정')).toBeDefined();
+  });
+
+  it('has accessible aria-label', () => {
+    render(<StatusBadge status="selling" />);
+    expect(screen.getByLabelText('상태: 판매중')).toBeDefined();
+  });
+});

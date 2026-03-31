@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 02-00-PLAN.md
-last_updated: "2026-03-31T00:52:12.219Z"
+status: verifying
+stopped_at: Completed 02-03-PLAN.md
+last_updated: "2026-03-31T00:58:24.202Z"
 last_activity: 2026-03-31
 progress:
   total_phases: 5
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** 사용자가 원하는 공연을 발견하고, 좌석을 직접 선택하여, 안정적으로 예매를 완료할 수 있는 것
-**Current focus:** Phase 02 — catalog-admin
+**Current focus:** Phase 01 — foundation-auth
 
 ## Current Position
 
-Phase: 02 (catalog-admin) — EXECUTING
-Plan: 2 of 5
-Status: Ready to execute
+Phase: 01 (foundation-auth) — EXECUTING
+Plan: 5 of 5
+Status: Phase complete — ready for verification
 Last activity: 2026-03-31
 
 Progress: [░░░░░░░░░░] 0%
@@ -56,8 +56,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P03 | 13min | 2 tasks | 24 files |
 | Phase 01 P04 | 10min | 2 tasks | 20 files |
 | Phase 01 P05 | 17min | 2 tasks | 23 files |
-| Phase 02 P01 | 7min | 3 tasks | 32 files |
-| Phase 02 P00 | 3min | 1 tasks | 5 files |
+| Phase 02 P03 | 9min | 2 tasks | 36 files |
 
 ## Accumulated Context
 
@@ -78,11 +77,8 @@ Recent decisions affecting current work:
 - [Phase 01]: Access token stored in Zustand memory only (not localStorage) -- follows OWASP best practice for JWT XSS mitigation
 - [Phase 01]: API client uses module-level promise deduplication for concurrent 401 refresh (prevents token race conditions)
 - [Phase 01]: Shared package imports changed from .js to extensionless for Turbopack compatibility (NestJS deep imports unaffected)
-- [Phase 02]: radix-ui meta-package installed for shadcn v4 component compatibility (new import pattern)
-- [Phase 02]: lib/index.ts barrel export created to resolve shadcn @/lib import convention
-- [Phase 02]: search_vector added via custom migration SQL (Drizzle lacks native tsvector support)
-- [Phase 02]: vi.mock() factory pattern for RED-state tests importing non-existent modules
-- [Phase 02]: Dynamic import after vi.mock for mocked service instantiation in test stubs
+- [Phase 02]: Self-contained section pattern: HotSection/NewSection call hooks internally, page renders without props
+- [Phase 02]: URL searchParams as filter state: genre/search pages use router.replace for deep-linkable URLs
 
 ### Pending Todos
 
@@ -94,15 +90,8 @@ None yet.
 - [Phase 4]: Toss Payments sandbox requires business registration + PG contract
 - [Phase 3]: Socket.IO multi-instance with Redis adapter needs Cloud Run min-instances=2 testing
 
-## Quick Tasks Completed
-
-| # | Task | Date | Commit |
-|---|------|------|--------|
-| Q1 | 카카오 소셜 로그인 OAuth 설정 가이드 작성 (docs/06-KAKAO-OAUTH-SETUP.md) | 2026-03-30 | pending |
-| Q2 | 카카오/구글/네이버 OAuth 키 발급 및 .env 설정 (dev-browser 활용) | 2026-03-30 | manual |
-
 ## Session Continuity
 
-Last session: 2026-03-31T00:52:12.217Z
-Stopped at: Completed 02-00-PLAN.md
+Last session: 2026-03-31T00:58:24.199Z
+Stopped at: Completed 02-03-PLAN.md
 Resume file: None

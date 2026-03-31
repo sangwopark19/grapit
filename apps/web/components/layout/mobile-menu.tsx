@@ -2,10 +2,10 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { X, User, LogOut } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { X, User, LogOut, Search } from 'lucide-react';
 import { cn } from '@/lib/cn';
-
-const GENRE_TABS = ['뮤지컬', '콘서트', '연극', '전시', '클래식'] as const;
+import { GENRES, GENRE_LABELS } from '@grapit/shared';
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -20,6 +20,9 @@ export function MobileMenu({
   isAuthenticated = false,
   userName,
 }: MobileMenuProps) {
+  const router = useRouter();
+  const [searchValue, setSearchValue] = React.useState('');
+
   // Prevent body scroll when menu is open
   React.useEffect(() => {
     if (isOpen) {
@@ -32,13 +35,27 @@ export function MobileMenu({
     };
   }, [isOpen]);
 
+  function handleSearch() {
+    const trimmed = searchValue.trim();
+    if (trimmed.length === 0) return;
+    router.push(`/search?q=${encodeURIComponent(trimmed)}`);
+    setSearchValue('');
+    onClose();
+  }
+
+  function handleSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  }
+
   return (
     <>
       {/* Backdrop */}
       <div
         className={cn(
           'fixed inset-0 z-50 bg-black/50 transition-opacity duration-200',
-          isOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
+          isOpen ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
         onClick={onClose}
         aria-hidden="true"
@@ -48,7 +65,7 @@ export function MobileMenu({
       <div
         className={cn(
           'fixed right-0 top-0 z-50 h-full w-72 bg-white shadow-xl transition-transform duration-200 ease-out',
-          isOpen ? 'translate-x-0' : 'translate-x-full'
+          isOpen ? 'translate-x-0' : 'translate-x-full',
         )}
       >
         {/* Header */}
@@ -61,6 +78,23 @@ export function MobileMenu({
           >
             <X className="h-5 w-5" />
           </button>
+        </div>
+
+        {/* Search input */}
+        <div className="border-b border-gray-200 px-6 py-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              role="searchbox"
+              aria-label="공연 검색"
+              placeholder="공연명, 아티스트를 검색하세요"
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              className="h-10 w-full rounded-lg bg-gray-100 pl-10 pr-4 text-sm text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-primary focus:outline-none"
+            />
+          </div>
         </div>
 
         {/* Auth section */}
@@ -109,19 +143,19 @@ export function MobileMenu({
           )}
         </div>
 
-        {/* Genre tabs */}
+        {/* Genre tabs -- all 8 genres (no "더보기" on mobile) */}
         <div className="px-6 py-4">
           <p className="mb-3 text-sm font-medium text-gray-500">카테고리</p>
           <div className="flex flex-col gap-1">
-            {GENRE_TABS.map((tab) => (
-              <button
-                key={tab}
-                disabled
-                title="곧 오픈 예정입니다"
-                className="cursor-not-allowed rounded-lg px-3 py-2 text-left text-base text-gray-900 opacity-40"
+            {GENRES.map((genre) => (
+              <Link
+                key={genre}
+                href={`/genre/${genre}`}
+                onClick={onClose}
+                className="rounded-lg px-3 py-2 text-left text-base text-gray-900 hover:bg-gray-100"
               >
-                {tab}
-              </button>
+                {GENRE_LABELS[genre]}
+              </Link>
             ))}
           </div>
         </div>

@@ -2,22 +2,45 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Menu, Search, ChevronDown, LogOut, User } from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation';
+import { Menu, Search, ChevronDown, LogOut, User, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/cn';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/use-auth-store';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { MobileMenu } from './mobile-menu';
+import { GENRE_LABELS, type Genre } from '@grapit/shared';
 
-const GENRE_TABS = ['뮤지컬', '콘서트', '연극', '전시', '클래식'] as const;
+const MAIN_GENRE_TABS: { label: string; slug: Genre }[] = [
+  { label: '뮤지컬', slug: 'musical' },
+  { label: '콘서트', slug: 'concert' },
+  { label: '연극', slug: 'play' },
+  { label: '전시', slug: 'exhibition' },
+  { label: '클래식', slug: 'classic' },
+];
+
+const MORE_GENRES: { label: string; slug: Genre }[] = [
+  { label: '스포츠', slug: 'sports' },
+  { label: '아동/가족', slug: 'kids_family' },
+  { label: '레저/캠핑', slug: 'leisure_camping' },
+];
 
 export function GNB() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, isInitialized, accessToken, clearAuth } = useAuthStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isProfileOpen, setIsProfileOpen] = React.useState(false);
+  const [searchValue, setSearchValue] = React.useState('');
+  const [isShaking, setIsShaking] = React.useState(false);
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
   const profileRef = React.useRef<HTMLDivElement>(null);
 
   const isAuthenticated = isInitialized && !!accessToken && !!user;
@@ -56,6 +79,26 @@ export function GNB() {
     router.push('/');
   }
 
+  function handleSearch() {
+    const trimmed = searchValue.trim();
+    if (trimmed.length === 0) {
+      setIsShaking(true);
+      setTimeout(() => setIsShaking(false), 200);
+      return;
+    }
+    router.push(`/search?q=${encodeURIComponent(trimmed)}`);
+  }
+
+  function handleSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  }
+
+  function isActiveGenre(slug: string): boolean {
+    return pathname.startsWith(`/genre/${slug}`);
+  }
+
   return (
     <>
       <header className="sticky top-0 z-50 h-16 border-b border-[#E5E5E5] bg-white">
@@ -70,16 +113,52 @@ export function GNB() {
 
           {/* Genre tabs - hidden on mobile */}
           <div className="hidden items-center gap-1 md:flex">
-            {GENRE_TABS.map((tab) => (
-              <button
-                key={tab}
-                disabled
-                title="곧 오픈 예정입니다"
-                className="cursor-not-allowed px-3 py-2 text-base text-gray-900 opacity-40"
+            {MAIN_GENRE_TABS.map((tab) => (
+              <Link
+                key={tab.slug}
+                href={`/genre/${tab.slug}`}
+                className={cn(
+                  'px-3 py-2 text-base transition-colors',
+                  isActiveGenre(tab.slug)
+                    ? 'border-b-2 border-primary font-semibold text-primary'
+                    : 'text-gray-900 hover:text-primary',
+                )}
               >
-                {tab}
-              </button>
+                {tab.label}
+              </Link>
             ))}
+
+            {/* More genres dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className={cn(
+                    'flex items-center gap-1 px-3 py-2 text-base transition-colors',
+                    MORE_GENRES.some((g) => isActiveGenre(g.slug))
+                      ? 'border-b-2 border-primary font-semibold text-primary'
+                      : 'text-gray-900 hover:text-primary',
+                  )}
+                >
+                  더보기
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-[180px]" align="start">
+                {MORE_GENRES.map((genre) => (
+                  <DropdownMenuItem key={genre.slug} asChild>
+                    <Link
+                      href={`/genre/${genre.slug}`}
+                      className={cn(
+                        'w-full',
+                        isActiveGenre(genre.slug) && 'font-semibold text-primary',
+                      )}
+                    >
+                      {genre.label}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Spacer */}
@@ -87,14 +166,37 @@ export function GNB() {
 
           {/* Search bar - hidden on mobile */}
           <div className="mr-4 hidden lg:block">
-            <div className="relative">
+            <div
+              className={cn(
+                'relative transition-transform',
+                isShaking && 'animate-[shake_200ms_ease-in-out]',
+              )}
+            >
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <input
+                ref={searchInputRef}
                 type="text"
-                disabled
+                role="searchbox"
+                aria-label="공연 검색"
                 placeholder="공연명, 아티스트를 검색하세요"
-                className="h-10 w-64 cursor-not-allowed rounded-lg bg-gray-100 pl-10 pr-4 text-sm text-gray-900 placeholder:text-gray-400"
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                className="h-10 w-64 rounded-lg bg-gray-100 pl-10 pr-10 text-sm text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-primary focus:outline-none"
               />
+              {searchValue && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchValue('');
+                    searchInputRef.current?.focus();
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  aria-label="검색어 지우기"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -111,7 +213,7 @@ export function GNB() {
                 <ChevronDown
                   className={cn(
                     'h-4 w-4 text-gray-500 transition-transform',
-                    isProfileOpen && 'rotate-180'
+                    isProfileOpen && 'rotate-180',
                   )}
                 />
               </button>
