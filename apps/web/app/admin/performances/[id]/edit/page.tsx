@@ -27,7 +27,13 @@ export default function AdminPerformanceEditPage({
   if (isError || !data) {
     return (
       <div className="py-12 text-center text-gray-500">
-        데이터를 불러오지 못했습니다. 새로고침하거나 잠시 후 다시 시도해주세요.
+        <p>데이터를 불러오지 못했습니다. 새로고침하거나 잠시 후 다시 시도해주세요.</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-3 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+        >
+          새로고침
+        </button>
       </div>
     );
   }

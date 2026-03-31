@@ -37,6 +37,8 @@ const GENRE_LIST: Genre[] = [
   'leisure_camping',
 ];
 
+// 빈 상태 발생 시: SearchIcon 대신 Telescope 또는 LayoutGrid 아이콘 사용
+// 장르 바로가기는 정적 컴포넌트로 현재 빈 상태 없음
 export function GenreGrid() {
   return (
     <section className="mt-12 pb-12">
