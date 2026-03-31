@@ -43,6 +43,9 @@ export class LocalUploadController {
     }
     res.setHeader('Content-Type', file.contentType);
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    // Override Helmet's same-origin CORP to allow cross-origin image loading
+    // (frontend on :3000 loads images from API on :8080)
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     res.send(file.buffer);
   }
 }
