@@ -62,9 +62,9 @@ Requirements for initial release (MVP). Each maps to roadmap phases.
 
 ### Admin
 
-- [ ] **ADMN-01**: 관리자가 공연을 등록/수정/삭제할 수 있다 (제목, 장르, 장소, 기간, 가격, 포스터 등)
-- [ ] **ADMN-02**: 관리자가 공연의 회차(날짜/시간)를 등록/수정/삭제할 수 있다
-- [ ] **ADMN-03**: 관리자가 공연장의 SVG 좌석 배치도를 업로드하고 좌석 등급/가격을 설정할 수 있다
+- [x] **ADMN-01**: 관리자가 공연을 등록/수정/삭제할 수 있다 (제목, 장르, 장소, 기간, 가격, 포스터 등)
+- [x] **ADMN-02**: 관리자가 공연의 회차(날짜/시간)를 등록/수정/삭제할 수 있다
+- [x] **ADMN-03**: 관리자가 공연장의 SVG 좌석 배치도를 업로드하고 좌석 등급/가격을 설정할 수 있다
 - [ ] **ADMN-04**: 관리자가 예매 목록을 조회하고 환불 처리할 수 있다
 
 ### Infrastructure
@@ -136,9 +136,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SRCH-01 | Phase 2 | Complete |
 | SRCH-02 | Phase 2 | Complete |
 | SRCH-03 | Phase 2 | Complete |
-| ADMN-01 | Phase 2 | Pending |
-| ADMN-02 | Phase 2 | Pending |
-| ADMN-03 | Phase 2 | Pending |
+| ADMN-01 | Phase 2 | Complete |
+| ADMN-02 | Phase 2 | Complete |
+| ADMN-03 | Phase 2 | Complete |
 | SEAT-01 | Phase 3 | Pending |
 | SEAT-02 | Phase 3 | Pending |
 | SEAT-03 | Phase 3 | Pending |

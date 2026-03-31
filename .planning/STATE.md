@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 02-03-PLAN.md
-last_updated: "2026-03-31T00:58:24.202Z"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-03-31T01:13:16.783Z"
 last_activity: 2026-03-31
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 10
-  completed_plans: 7
+  completed_plans: 9
   percent: 0
 ---
 
@@ -57,6 +57,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P04 | 10min | 2 tasks | 20 files |
 | Phase 01 P05 | 17min | 2 tasks | 23 files |
 | Phase 02 P03 | 9min | 2 tasks | 36 files |
+| Phase 02 P02 | 9min | 2 tasks | 21 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,9 @@ Recent decisions affecting current work:
 - [Phase 01]: Shared package imports changed from .js to extensionless for Turbopack compatibility (NestJS deep imports unaffected)
 - [Phase 02]: Self-contained section pattern: HotSection/NewSection call hooks internally, page renders without props
 - [Phase 02]: URL searchParams as filter state: genre/search pages use router.replace for deep-linkable URLs
+- [Phase 02]: View count increment fires before null check for testability and atomic pattern
+- [Phase 02]: Combined tsvector+ILIKE in single WHERE OR clause instead of fallback pattern
+- [Phase 02]: RBAC via @Roles decorator + RolesGuard with Reflector metadata on controller class
 
 ### Pending Todos
 
@@ -92,6 +96,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-31T00:58:24.199Z
-Stopped at: Completed 02-03-PLAN.md
+Last session: 2026-03-31T01:13:16.781Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
