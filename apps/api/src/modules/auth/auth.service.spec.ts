@@ -248,6 +248,8 @@ describe('AuthService', () => {
         }),
       });
 
+      mockUserRepo.findById.mockResolvedValue(mockUser);
+
       const result = await authService.refreshTokens(rawToken);
 
       expect(result).toHaveProperty('accessToken');
