@@ -74,7 +74,7 @@ export default function PerformanceDetailPage({
         {/* Top section: poster + info */}
         <div className="flex flex-col gap-8 lg:flex-row">
           {/* Poster */}
-          <div className="relative aspect-[2/3] w-full max-w-[280px] mx-auto shrink-0 overflow-hidden rounded-lg bg-gray-200 lg:max-w-[380px]">
+          <div className="relative aspect-[2/3] w-full max-w-[280px] mx-auto lg:mx-0 shrink-0 overflow-hidden rounded-lg bg-gray-200 lg:max-w-[380px]">
             {performance.posterUrl ? (
               <Image
                 src={performance.posterUrl}
