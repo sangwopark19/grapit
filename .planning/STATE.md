@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 Phase: 3
 Plan: Not started
 Status: Ready to execute
-Last activity: 2026-03-31
+Last activity: 2026-03-31 - Completed quick task 260331-l6q: Fix select box + detail page UI
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -98,6 +98,7 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260331-jjc | Phase 2 UI Review priority fixes: font-medium replacement, home empty state h1, admin error refresh button | 2026-03-31 | 852dfb0 | [260331-jjc-phase-2-ui-review-priority-fixes-font-me](./quick/260331-jjc-phase-2-ui-review-priority-fixes-font-me/) |
+| 260331-l6q | Fix select box transparency + detail page poster alignment | 2026-03-31 | 8fbd009 | [260331-l6q-fix-select-box-z-index-bug-and-performan](./quick/260331-l6q-fix-select-box-z-index-bug-and-performan/) |
 
 ## Session Continuity
 
