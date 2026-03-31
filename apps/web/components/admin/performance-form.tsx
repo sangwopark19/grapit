@@ -138,9 +138,14 @@ export function PerformanceForm({
         toast.error('포스터 이미지는 5MB 이하여야 합니다.');
         return;
       }
+
+      // Show immediate blob preview for better UX
+      const blobUrl = URL.createObjectURL(file);
+      setPosterPreview(blobUrl);
+
       const ext = file.name.split('.').pop() ?? 'jpg';
       try {
-        const { uploadUrl, publicUrl } =
+        const { uploadUrl, publicUrl, mode } =
           await presignedUpload.mutateAsync({
             folder: 'posters',
             contentType: file.type,
@@ -150,15 +155,19 @@ export function PerformanceForm({
           method: 'PUT',
           body: file,
           headers: { 'Content-Type': file.type },
+          ...(mode === 'local' ? { credentials: 'include' as const } : {}),
         });
         form.setValue('posterUrl', publicUrl, { shouldDirty: true });
-        setPosterPreview(publicUrl);
+        // Keep blobUrl for preview (avoids auth issues with local mode URLs)
+        // Form submits publicUrl to server regardless
         toast.success('포스터가 업로드되었습니다.');
       } catch {
+        URL.revokeObjectURL(blobUrl);
+        setPosterPreview(posterPreview);
         toast.error('포스터 업로드에 실패했습니다.');
       }
     },
-    [form, presignedUpload],
+    [form, presignedUpload, posterPreview],
   );
 
   function handleDrop(e: React.DragEvent) {

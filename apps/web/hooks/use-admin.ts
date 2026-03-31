@@ -95,10 +95,12 @@ export function usePresignedUpload() {
       contentType: string;
       extension: string;
     }) =>
-      apiClient.post<{ uploadUrl: string; publicUrl: string; key: string }>(
-        '/api/v1/admin/upload/presigned',
-        params,
-      ),
+      apiClient.post<{
+        uploadUrl: string;
+        publicUrl: string;
+        key: string;
+        mode: 'local' | 'r2';
+      }>('/api/v1/admin/upload/presigned', params),
   });
 }
 
