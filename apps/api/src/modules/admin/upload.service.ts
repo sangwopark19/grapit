@@ -98,18 +98,23 @@ export class UploadService {
     const filePath = path.join(process.cwd(), 'uploads', key);
     try {
       const buffer = await fs.readFile(filePath);
-      const ext = path.extname(key).slice(1).toLowerCase();
-      const mimeMap: Record<string, string> = {
-        jpg: 'image/jpeg',
-        jpeg: 'image/jpeg',
-        png: 'image/png',
-        gif: 'image/gif',
-        svg: 'image/svg+xml',
-        webp: 'image/webp',
-      };
-      return { buffer, contentType: mimeMap[ext] ?? 'application/octet-stream' };
+      return { buffer, contentType: this.detectContentType(buffer, key) };
     } catch {
       return null;
     }
+  }
+
+  private detectContentType(buffer: Buffer, key: string): string {
+    // Detect by magic bytes (file content may not match extension)
+    if (buffer.length >= 2) {
+      if (buffer[0] === 0xff && buffer[1] === 0xd8) return 'image/jpeg';
+      if (buffer[0] === 0x89 && buffer[1] === 0x50) return 'image/png';
+      if (buffer[0] === 0x47 && buffer[1] === 0x49) return 'image/gif';
+      if (buffer.length >= 12 && buffer[0] === 0x52 && buffer[1] === 0x49 &&
+          buffer[8] === 0x57 && buffer[9] === 0x45) return 'image/webp';
+    }
+    // SVG is text-based, fall back to extension
+    if (key.endsWith('.svg')) return 'image/svg+xml';
+    return 'application/octet-stream';
   }
 }

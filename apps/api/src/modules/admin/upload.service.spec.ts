@@ -15,7 +15,8 @@ vi.mock('@aws-sdk/client-s3', () => ({
 vi.mock('node:fs/promises', () => ({
   mkdir: vi.fn().mockResolvedValue(undefined),
   writeFile: vi.fn().mockResolvedValue(undefined),
-  readFile: vi.fn().mockResolvedValue(Buffer.from('fake-image-data')),
+  // JPEG magic bytes (0xFF 0xD8) for content-type detection
+  readFile: vi.fn().mockResolvedValue(Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10])),
 }));
 
 import { UploadService } from './upload.service.js';
@@ -164,12 +165,18 @@ describe('UploadService', () => {
       expect(Buffer.isBuffer(result!.buffer)).toBe(true);
     });
 
-    it('should return correct content type based on extension', async () => {
+    it('should detect content type from magic bytes', async () => {
+      const { readFile } = await import('node:fs/promises');
+
+      // PNG magic bytes
+      vi.mocked(readFile).mockResolvedValueOnce(Buffer.from([0x89, 0x50, 0x4e, 0x47]) as never);
       const pngResult = await service.getLocalFile('posters/test.png');
       expect(pngResult!.contentType).toBe('image/png');
 
-      const webpResult = await service.getLocalFile('posters/test.webp');
-      expect(webpResult!.contentType).toBe('image/webp');
+      // GIF magic bytes (even with .png extension)
+      vi.mocked(readFile).mockResolvedValueOnce(Buffer.from([0x47, 0x49, 0x46, 0x38]) as never);
+      const gifResult = await service.getLocalFile('posters/mislabeled.png');
+      expect(gifResult!.contentType).toBe('image/gif');
     });
 
     it('should return null when file does not exist', async () => {

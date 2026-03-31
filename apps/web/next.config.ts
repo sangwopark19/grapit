@@ -8,13 +8,10 @@ const nextConfig: NextConfig = {
     root: resolve(__dirname, '../../'),
   },
   images: {
+    unoptimized: process.env.NODE_ENV !== 'production',
     remotePatterns: [
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-        port: '8080',
-        pathname: '/api/v1/admin/upload/local/**',
-      },
+      // Production: R2 CDN domain (add when R2 is configured)
+      // { protocol: 'https', hostname: 'cdn.grapit.kr' },
     ],
   },
 };
