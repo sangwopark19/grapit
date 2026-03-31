@@ -17,17 +17,14 @@ function getPageNumbers(current: number, total: number): (number | '...')[] {
   const pages: (number | '...')[] = [];
 
   if (current <= 4) {
-    // Near start: show first 5 + ... + last
     for (let i = 1; i <= 5; i++) pages.push(i);
     pages.push('...');
     pages.push(total);
   } else if (current >= total - 3) {
-    // Near end: first + ... + last 5
     pages.push(1);
     pages.push('...');
     for (let i = total - 4; i <= total; i++) pages.push(i);
   } else {
-    // Middle: first + ... + current-1, current, current+1 + ... + last
     pages.push(1);
     pages.push('...');
     pages.push(current - 1);
@@ -56,7 +53,6 @@ export function PaginationNav({
 
   return (
     <nav aria-label="페이지 네비게이션" className="flex items-center justify-center gap-1">
-      {/* Previous */}
       <button
         type="button"
         disabled={currentPage === 1}
@@ -72,7 +68,6 @@ export function PaginationNav({
         <ChevronLeft className="h-4 w-4" />
       </button>
 
-      {/* Page numbers */}
       {pages.map((page, idx) =>
         page === '...' ? (
           <span
@@ -99,7 +94,6 @@ export function PaginationNav({
         ),
       )}
 
-      {/* Next */}
       <button
         type="button"
         disabled={currentPage === totalPages}

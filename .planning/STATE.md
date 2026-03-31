@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 02-02-PLAN.md
-last_updated: "2026-03-31T01:13:16.783Z"
+stopped_at: Completed 02-04-PLAN.md
+last_updated: "2026-03-31T01:29:47.407Z"
 last_activity: 2026-03-31
 progress:
   total_phases: 5
-  completed_phases: 1
-  total_plans: 10
-  completed_plans: 9
+  completed_phases: 2
+  total_plans: 6
+  completed_plans: 6
   percent: 0
 ---
 
@@ -56,8 +56,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P03 | 13min | 2 tasks | 24 files |
 | Phase 01 P04 | 10min | 2 tasks | 20 files |
 | Phase 01 P05 | 17min | 2 tasks | 23 files |
-| Phase 02 P03 | 9min | 2 tasks | 36 files |
-| Phase 02 P02 | 9min | 2 tasks | 21 files |
+| Phase 02 P04 | 12min | 2 tasks | 39 files |
 
 ## Accumulated Context
 
@@ -78,11 +77,9 @@ Recent decisions affecting current work:
 - [Phase 01]: Access token stored in Zustand memory only (not localStorage) -- follows OWASP best practice for JWT XSS mitigation
 - [Phase 01]: API client uses module-level promise deduplication for concurrent 401 refresh (prevents token race conditions)
 - [Phase 01]: Shared package imports changed from .js to extensionless for Turbopack compatibility (NestJS deep imports unaffected)
-- [Phase 02]: Self-contained section pattern: HotSection/NewSection call hooks internally, page renders without props
-- [Phase 02]: URL searchParams as filter state: genre/search pages use router.replace for deep-linkable URLs
-- [Phase 02]: View count increment fires before null check for testability and atomic pattern
-- [Phase 02]: Combined tsvector+ILIKE in single WHERE OR clause instead of fallback pattern
-- [Phase 02]: RBAC via @Roles decorator + RolesGuard with Reflector metadata on controller class
+- [Phase 02]: Used LayoutShell client component to conditionally hide GNB/Footer on /admin routes
+- [Phase 02]: Used z.input<> for react-hook-form compatibility with zod .default() fields (CreatePerformanceFormInput)
+- [Phase 02]: Middleware checks refreshToken cookie only; admin role check is client-side in layout
 
 ### Pending Todos
 
@@ -96,6 +93,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-31T01:13:16.781Z
-Stopped at: Completed 02-02-PLAN.md
+Last session: 2026-03-31T01:29:47.405Z
+Stopped at: Completed 02-04-PLAN.md
 Resume file: None

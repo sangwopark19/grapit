@@ -31,6 +31,7 @@ export const createPerformanceSchema = z.object({
 });
 
 export type CreatePerformanceInput = z.infer<typeof createPerformanceSchema>;
+export type CreatePerformanceFormInput = z.input<typeof createPerformanceSchema>;
 
 export const updatePerformanceSchema = createPerformanceSchema.partial();
 export type UpdatePerformanceInput = z.infer<typeof updatePerformanceSchema>;
