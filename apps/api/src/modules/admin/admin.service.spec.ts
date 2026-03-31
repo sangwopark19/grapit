@@ -1,0 +1,264 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type {
+  Banner,
+  SeatMap,
+  PerformanceWithDetails,
+} from '@grapit/shared';
+import type {
+  CreatePerformanceInput,
+  UpdatePerformanceInput,
+  CreateBannerInput,
+  SeatMapConfigInput,
+} from '@grapit/shared/schemas/performance.schema';
+
+// Mock the service module -- it does not exist yet (RED state)
+vi.mock('./admin.service.js', () => {
+  return {
+    AdminService: vi.fn().mockImplementation(function (this: Record<string, unknown>, db: unknown) {
+      this.db = db;
+      return this;
+    }),
+  };
+});
+
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+type AdminServiceType = import('./admin.service.js').AdminService;
+
+/**
+ * Phase 2 Plan 00: RED-state test stubs for AdminService
+ *
+ * These tests describe the expected contract for AdminService:
+ * - createPerformance: transactional creation with venue + child records
+ * - updatePerformance: transactional update with priceTiers replace
+ * - deletePerformance: cascade delete
+ * - banner CRUD: create, update, delete, reorder
+ * - saveSeatMap: upsert seat map for performance
+ *
+ * Services will be implemented in Plan 02. Tests should turn GREEN then.
+ */
+
+function createMockTx() {
+  const txChain: Record<string, ReturnType<typeof vi.fn>> = {};
+  const methods = ['select', 'from', 'where', 'returning'];
+  for (const method of methods) {
+    txChain[method] = vi.fn().mockReturnValue(txChain);
+  }
+  (txChain as { then?: unknown }).then = vi.fn((resolve: (v: unknown[]) => void) => resolve([]));
+
+  return {
+    insert: vi.fn().mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: 'new-id' }]),
+        onConflictDoUpdate: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([{ id: 'existing-id' }]),
+        }),
+      }),
+    }),
+    select: vi.fn().mockReturnValue(txChain),
+    update: vi.fn().mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([{ id: 'updated-id' }]),
+        }),
+      }),
+    }),
+    delete: vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue([]),
+    }),
+  };
+}
+
+function createMockDb() {
+  const mockTx = createMockTx();
+  return {
+    transaction: vi.fn((cb: (tx: typeof mockTx) => Promise<unknown>) => cb(mockTx)),
+    insert: vi.fn().mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: 'new-id' }]),
+        onConflictDoUpdate: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([{ id: 'existing-id' }]),
+        }),
+      }),
+    }),
+    update: vi.fn().mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([{ id: 'updated-id' }]),
+        }),
+      }),
+    }),
+    delete: vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue([]),
+    }),
+    _tx: mockTx,
+  };
+}
+
+const sampleCreateInput: CreatePerformanceInput = {
+  title: 'Hamlet',
+  genre: 'play',
+  venueName: 'National Theater',
+  venueAddress: 'Seoul, Korea',
+  posterUrl: 'https://r2.example.com/posters/hamlet.jpg',
+  description: 'Shakespeare classic',
+  startDate: '2026-04-01',
+  endDate: '2026-06-30',
+  runtime: '150min',
+  ageRating: '12+',
+  priceTiers: [
+    { tierName: 'VIP', price: 150000, sortOrder: 0 },
+    { tierName: 'R', price: 120000, sortOrder: 1 },
+    { tierName: 'S', price: 90000, sortOrder: 2 },
+  ],
+  showtimes: [
+    { dateTime: '2026-04-01T19:00:00Z' },
+    { dateTime: '2026-04-02T14:00:00Z' },
+  ],
+  castings: [
+    { actorName: 'Actor A', roleName: 'Hamlet', sortOrder: 0 },
+    { actorName: 'Actor B', roleName: 'Ophelia', sortOrder: 1 },
+  ],
+};
+
+describe('AdminService', () => {
+  let service: AdminServiceType;
+  let mockDb: ReturnType<typeof createMockDb>;
+
+  beforeEach(async () => {
+    mockDb = createMockDb();
+
+    const { AdminService } = await import('./admin.service.js');
+    service = new AdminService(mockDb as unknown as Parameters<typeof AdminService>[0]);
+  });
+
+  describe('createPerformance', () => {
+    it('should create performance with venue in a transaction', async () => {
+      await service.createPerformance(sampleCreateInput);
+
+      // When GREEN, should verify db.transaction was called
+      expect(mockDb.transaction).toHaveBeenCalled();
+    });
+
+    it('should insert priceTiers, showtimes, and castings within transaction', async () => {
+      await service.createPerformance(sampleCreateInput);
+
+      const tx = mockDb._tx;
+      // When GREEN, should verify INSERT calls for priceTiers, showtimes, castings
+      // tx.insert should have been called multiple times (once for each child table)
+      expect(tx.insert).toHaveBeenCalled();
+    });
+
+    it('should insert-or-find venue by name', async () => {
+      await service.createPerformance(sampleCreateInput);
+
+      const tx = mockDb._tx;
+      // When GREEN, should verify venues INSERT ON CONFLICT or SELECT by name
+      expect(tx.insert).toHaveBeenCalled();
+    });
+  });
+
+  describe('updatePerformance', () => {
+    it('should update performance fields in a transaction', async () => {
+      const updateInput: UpdatePerformanceInput = {
+        title: 'Hamlet - Revised',
+        description: 'Updated description',
+      };
+
+      await service.updatePerformance('perf-id-123', updateInput);
+
+      // When GREEN, should verify db.transaction called with UPDATE performances
+      expect(mockDb.transaction).toHaveBeenCalled();
+    });
+
+    it('should replace priceTiers when provided (delete + insert)', async () => {
+      const updateInput: UpdatePerformanceInput = {
+        priceTiers: [
+          { tierName: 'VIP', price: 160000, sortOrder: 0 },
+          { tierName: 'R', price: 130000, sortOrder: 1 },
+        ],
+      };
+
+      await service.updatePerformance('perf-id-123', updateInput);
+
+      const tx = mockDb._tx;
+      // When GREEN, should verify DELETE price_tiers WHERE performanceId + INSERT new tiers
+      expect(tx.delete).toHaveBeenCalled();
+      expect(tx.insert).toHaveBeenCalled();
+    });
+  });
+
+  describe('deletePerformance', () => {
+    it('should delete performance by id (cascade handles children)', async () => {
+      await service.deletePerformance('perf-id-123');
+
+      // When GREEN, should verify DELETE FROM performances WHERE id = 'perf-id-123'
+      // Cascade will handle child tables (priceTiers, showtimes, castings, seatMaps)
+      expect(mockDb.delete).toHaveBeenCalled();
+    });
+  });
+
+  describe('createBanner', () => {
+    it('should insert banner and return created record', async () => {
+      const bannerInput: CreateBannerInput = {
+        imageUrl: 'https://r2.example.com/banners/spring.jpg',
+        linkUrl: '/performances/123',
+        sortOrder: 0,
+        isActive: true,
+      };
+
+      const result = await service.createBanner(bannerInput);
+
+      // When GREEN, should verify INSERT into banners and return the created record
+      expect(mockDb.insert).toHaveBeenCalled();
+    });
+  });
+
+  describe('updateBanner', () => {
+    it('should update banner fields by id', async () => {
+      await service.updateBanner('banner-id-123', {
+        imageUrl: 'https://r2.example.com/banners/updated.jpg',
+        isActive: false,
+      });
+
+      // When GREEN, should verify UPDATE banners SET ... WHERE id = 'banner-id-123'
+      expect(mockDb.update).toHaveBeenCalled();
+    });
+  });
+
+  describe('deleteBanner', () => {
+    it('should delete banner by id', async () => {
+      await service.deleteBanner('banner-id-123');
+
+      // When GREEN, should verify DELETE FROM banners WHERE id = 'banner-id-123'
+      expect(mockDb.delete).toHaveBeenCalled();
+    });
+  });
+
+  describe('reorderBanners', () => {
+    it('should update sort_order for each banner id in order', async () => {
+      const orderedIds = ['banner-3', 'banner-1', 'banner-2'];
+
+      await service.reorderBanners(orderedIds);
+
+      // When GREEN, should verify UPDATE banners SET sort_order=0 WHERE id='banner-3',
+      // UPDATE banners SET sort_order=1 WHERE id='banner-1', etc.
+      expect(mockDb.update).toHaveBeenCalled();
+    });
+  });
+
+  describe('saveSeatMap', () => {
+    it('should upsert seat map for performance', async () => {
+      const seatMapConfig: SeatMapConfigInput = {
+        tiers: [
+          { tierName: 'VIP', color: '#FFD700', seatIds: ['A1', 'A2', 'A3'] },
+          { tierName: 'R', color: '#4169E1', seatIds: ['B1', 'B2', 'B3', 'B4'] },
+        ],
+      };
+
+      await service.saveSeatMap('perf-id-123', 'https://r2.example.com/seatmaps/venue1.svg', seatMapConfig);
+
+      // When GREEN, should verify INSERT ON CONFLICT DO UPDATE on seat_maps table
+      expect(mockDb.insert).toHaveBeenCalled();
+    });
+  });
+});
