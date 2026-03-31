@@ -93,6 +93,10 @@
   }
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   font-family: var(--font-pretendard), -apple-system, "Malgun Gothic", sans-serif;
   color: var(--color-gray-900);
