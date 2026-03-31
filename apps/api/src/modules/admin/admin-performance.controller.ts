@@ -7,10 +7,8 @@ import {
   Param,
   Body,
   Query,
-  Req,
   UseGuards,
 } from '@nestjs/common';
-import type { Request } from 'express';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
@@ -101,19 +99,4 @@ export class AdminPerformanceController {
     );
   }
 
-  @Put('upload/local/:folder/:filename')
-  async uploadLocal(
-    @Param('folder') folder: string,
-    @Param('filename') filename: string,
-    @Req() req: Request,
-  ): Promise<{ success: true }> {
-    const key = `${folder}/${filename}`;
-    const buffers: Uint8Array[] = [];
-    for await (const chunk of req) {
-      buffers.push(chunk);
-    }
-    const buffer = Buffer.concat(buffers);
-    await this.uploadService.saveLocalFile(key, buffer);
-    return { success: true };
-  }
 }

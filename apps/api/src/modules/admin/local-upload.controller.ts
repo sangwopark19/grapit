@@ -1,17 +1,33 @@
-import { Controller, Get, Param, Res } from '@nestjs/common';
-import type { Response } from 'express';
+import { Controller, Get, Put, Param, Req, Res } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { UploadService } from './upload.service.js';
 
 /**
- * Public controller for serving locally uploaded files (dev mode only).
- * Separated from AdminPerformanceController so that <img src="..."> can
- * access files without JWT / admin role guards.
+ * Public controller for local file upload/serving (dev mode only).
+ * Separated from AdminPerformanceController so that presigned-URL-style
+ * PUT uploads and <img src="..."> GET requests work without JWT guards.
  */
 @Controller('admin')
 @Public()
 export class LocalUploadController {
   constructor(private readonly uploadService: UploadService) {}
+
+  @Put('upload/local/:folder/:filename')
+  async uploadLocal(
+    @Param('folder') folder: string,
+    @Param('filename') filename: string,
+    @Req() req: Request,
+  ): Promise<{ success: true }> {
+    const key = `${folder}/${filename}`;
+    const buffers: Uint8Array[] = [];
+    for await (const chunk of req) {
+      buffers.push(chunk);
+    }
+    const buffer = Buffer.concat(buffers);
+    await this.uploadService.saveLocalFile(key, buffer);
+    return { success: true };
+  }
 
   @Get('upload/local/:folder/:filename')
   async serveLocal(
