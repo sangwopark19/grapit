@@ -105,9 +105,10 @@ None yet.
 | 260331-mq2 | Rename middleware.ts to proxy.ts for Next.js 16 | 2026-03-31 | b99662b | [260331-mq2-rename-middleware-ts-to-proxy-ts-for-nex](./quick/260331-mq2-rename-middleware-ts-to-proxy-ts-for-nex/) |
 | 260331-n9m | Admin poster upload 500 fix: local dev mode fallback for UploadService | 2026-03-31 | a88a010 | [260331-n9m-admin-poster-upload-fix](./quick/260331-n9m-admin-poster-upload-fix/) |
 | 260331-o5k | Casting photo preview + venues.name UNIQUE constraint fix | 2026-03-31 | 7ba8d27 | [260331-o5k-casting-preview-save-fix](./quick/260331-o5k-casting-preview-save-fix/) |
+| 260331-ol3 | next/image localhost:8080 remotePatterns 허용 | 2026-03-31 | 59ce131 | [260331-ol3-next-image-localhost](./quick/260331-ol3-next-image-localhost/) |
 
 ## Session Continuity
 
-Last session: 2026-03-31T08:33:00Z
-Stopped at: Completed quick task 260331-o5k: Casting photo preview + performance save fix
+Last session: 2026-03-31T08:42:00Z
+Stopped at: Completed quick task 260331-ol3: next/image localhost remotePatterns fix
 Resume file: None
