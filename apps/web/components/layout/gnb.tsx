@@ -101,7 +101,7 @@ export function GNB() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 h-16 border-b border-[#E5E5E5] bg-white">
+      <header className="sticky top-0 z-50 h-16 border-b border-gray-200 bg-white">
         <nav className="mx-auto flex h-full max-w-[1200px] items-center px-6">
           {/* Logo */}
           <Link
@@ -207,7 +207,7 @@ export function GNB() {
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
                 className="flex items-center gap-2"
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-medium text-white">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-normal text-white">
                   {userInitials}
                 </div>
                 <ChevronDown

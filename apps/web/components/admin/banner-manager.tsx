@@ -121,7 +121,7 @@ export function BannerForm({
 
       {/* Link URL */}
       <div>
-        <label htmlFor="banner-link" className="mb-1 block text-sm font-medium">
+        <label htmlFor="banner-link" className="mb-1 block text-sm font-semibold">
           링크 URL (선택)
         </label>
         <Input
@@ -135,7 +135,7 @@ export function BannerForm({
 
       {/* Sort Order */}
       <div>
-        <label htmlFor="banner-sort" className="mb-1 block text-sm font-medium">
+        <label htmlFor="banner-sort" className="mb-1 block text-sm font-semibold">
           순서
         </label>
         <Input

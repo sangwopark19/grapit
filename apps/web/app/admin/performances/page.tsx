@@ -169,7 +169,7 @@ export default function AdminPerformancesPage() {
                     </div>
                   )}
                 </TableCell>
-                <TableCell className="font-medium">{perf.title}</TableCell>
+                <TableCell className="font-semibold">{perf.title}</TableCell>
                 <TableCell className="hidden md:table-cell">
                   {GENRE_LABELS[perf.genre as Genre]}
                 </TableCell>

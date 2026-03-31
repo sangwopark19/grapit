@@ -102,7 +102,7 @@ export function MobileMenu({
           {isAuthenticated ? (
             <div className="space-y-3">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-medium text-white">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-normal text-white">
                   {userName
                     ?.split(' ')
                     .map((n) => n[0])
@@ -110,7 +110,7 @@ export function MobileMenu({
                     .toUpperCase()
                     .slice(0, 2)}
                 </div>
-                <span className="text-base font-medium text-gray-900">
+                <span className="text-base font-normal text-gray-900">
                   {userName}
                 </span>
               </div>
@@ -136,7 +136,7 @@ export function MobileMenu({
             <Link
               href="/auth"
               onClick={onClose}
-              className="block w-full rounded-lg bg-primary px-4 py-3 text-center text-base font-medium text-white"
+              className="block w-full rounded-lg bg-primary px-4 py-3 text-center text-base font-semibold text-white"
             >
               로그인 / 회원가입
             </Link>
@@ -145,7 +145,7 @@ export function MobileMenu({
 
         {/* Genre tabs -- all 8 genres (no "더보기" on mobile) */}
         <div className="px-6 py-4">
-          <p className="mb-3 text-sm font-medium text-gray-500">카테고리</p>
+          <p className="mb-3 text-sm font-normal text-gray-500">카테고리</p>
           <div className="flex flex-col gap-1">
             {GENRES.map((genre) => (
               <Link

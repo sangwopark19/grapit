@@ -39,7 +39,7 @@ export function TierEditor({ tiers, onChange }: TierEditorProps) {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-medium">등급별 좌석 설정</h3>
+      <h3 className="text-sm font-semibold">등급별 좌석 설정</h3>
       {tiers.length === 0 ? (
         <p className="text-sm text-gray-500">
           등급을 추가하여 좌석을 배정해주세요.

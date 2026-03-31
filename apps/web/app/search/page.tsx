@@ -101,7 +101,7 @@ export default function SearchPage() {
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="mt-4 rounded-lg bg-primary px-6 py-2 text-sm font-medium text-white"
+              className="mt-4 rounded-lg bg-primary px-6 py-2 text-sm font-semibold text-white"
             >
               다시 시도
             </button>

@@ -204,7 +204,7 @@ export function PerformanceForm({
         <h2 className="mb-4 text-xl font-semibold">기본 정보</h2>
         <div className="grid gap-4">
           <div>
-            <label htmlFor="title" className="mb-1 block text-sm font-medium">
+            <label htmlFor="title" className="mb-1 block text-sm font-semibold">
               공연명 <span className="text-red-500">*</span>
             </label>
             <Input
@@ -221,7 +221,7 @@ export function PerformanceForm({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-medium">
+              <label className="mb-1 block text-sm font-semibold">
                 장르 <span className="text-red-500">*</span>
               </label>
               <Controller
@@ -253,7 +253,7 @@ export function PerformanceForm({
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium">
+              <label className="mb-1 block text-sm font-semibold">
                 관람연령 <span className="text-red-500">*</span>
               </label>
               <Controller
@@ -287,7 +287,7 @@ export function PerformanceForm({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="venueName" className="mb-1 block text-sm font-medium">
+              <label htmlFor="venueName" className="mb-1 block text-sm font-semibold">
                 장소 <span className="text-red-500">*</span>
               </label>
               <Input
@@ -302,7 +302,7 @@ export function PerformanceForm({
               )}
             </div>
             <div>
-              <label htmlFor="venueAddress" className="mb-1 block text-sm font-medium">
+              <label htmlFor="venueAddress" className="mb-1 block text-sm font-semibold">
                 주소 (선택)
               </label>
               <Input
@@ -315,7 +315,7 @@ export function PerformanceForm({
 
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
-              <label htmlFor="startDate" className="mb-1 block text-sm font-medium">
+              <label htmlFor="startDate" className="mb-1 block text-sm font-semibold">
                 시작일 <span className="text-red-500">*</span>
               </label>
               <Input
@@ -330,7 +330,7 @@ export function PerformanceForm({
               )}
             </div>
             <div>
-              <label htmlFor="endDate" className="mb-1 block text-sm font-medium">
+              <label htmlFor="endDate" className="mb-1 block text-sm font-semibold">
                 종료일 <span className="text-red-500">*</span>
               </label>
               <Input
@@ -345,7 +345,7 @@ export function PerformanceForm({
               )}
             </div>
             <div>
-              <label htmlFor="runtime" className="mb-1 block text-sm font-medium">
+              <label htmlFor="runtime" className="mb-1 block text-sm font-semibold">
                 공연시간 (선택)
               </label>
               <Input
@@ -497,7 +497,7 @@ export function PerformanceForm({
         <h2 className="mb-4 text-xl font-semibold">판매/상세 정보</h2>
         <div className="space-y-4">
           <div>
-            <label htmlFor="description" className="mb-1 block text-sm font-medium">
+            <label htmlFor="description" className="mb-1 block text-sm font-semibold">
               상세정보
             </label>
             <Textarea
@@ -508,7 +508,7 @@ export function PerformanceForm({
             />
           </div>
           <div>
-            <label htmlFor="salesInfo" className="mb-1 block text-sm font-medium">
+            <label htmlFor="salesInfo" className="mb-1 block text-sm font-semibold">
               판매정보
             </label>
             <Textarea

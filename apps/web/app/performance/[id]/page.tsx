@@ -59,7 +59,7 @@ export default function PerformanceDetailPage({
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="mt-4 rounded-lg bg-primary px-6 py-2 text-sm font-medium text-white"
+            className="mt-4 rounded-lg bg-primary px-6 py-2 text-sm font-semibold text-white"
           >
             다시 시도
           </button>
@@ -137,7 +137,7 @@ export default function PerformanceDetailPage({
                       key={tier.id}
                       className="flex items-center justify-between text-sm"
                     >
-                      <span className="font-medium text-gray-900">
+                      <span className="font-semibold text-gray-900">
                         {tier.tierName}
                       </span>
                       <span className="text-gray-600">

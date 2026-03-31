@@ -211,7 +211,7 @@ function BannerCard({
 
       {/* Info */}
       <div className="flex-1">
-        <p className="text-sm font-medium">
+        <p className="text-sm font-semibold">
           순서: {banner.sortOrder + 1}
         </p>
         {banner.linkUrl && (

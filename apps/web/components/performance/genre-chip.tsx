@@ -15,7 +15,7 @@ export function GenreChip({ label, isActive, onClick }: GenreChipProps) {
       type="button"
       onClick={onClick}
       className={cn(
-        'h-9 shrink-0 rounded-full px-4 text-sm font-medium transition-colors duration-150',
+        'h-9 shrink-0 rounded-full px-4 text-sm font-semibold transition-colors duration-150',
         isActive
           ? 'bg-primary text-white'
           : 'bg-[#F5F5F7] text-gray-900 hover:bg-gray-200',

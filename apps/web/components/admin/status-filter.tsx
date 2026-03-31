@@ -23,7 +23,7 @@ export function StatusFilter({ value, onChange }: StatusFilterProps) {
           type="button"
           onClick={() => onChange(option.value)}
           className={cn(
-            'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
+            'rounded-full px-4 py-1.5 text-sm font-semibold transition-colors',
             value === option.value
               ? 'bg-primary text-white'
               : 'bg-[#F5F5F7] text-gray-900 hover:bg-gray-200',

@@ -83,7 +83,7 @@ export function PaginationNav({
             onClick={() => handlePageChange(page)}
             aria-current={page === currentPage ? 'page' : undefined}
             className={cn(
-              'flex h-9 w-9 items-center justify-center rounded-lg text-sm font-medium',
+              'flex h-9 w-9 items-center justify-center rounded-lg text-sm font-normal',
               page === currentPage
                 ? 'bg-primary text-white'
                 : 'bg-[#F5F5F7] text-gray-900 hover:bg-gray-200',
