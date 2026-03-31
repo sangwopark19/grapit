@@ -11,18 +11,7 @@ import type {
   SeatMapConfigInput,
 } from '@grapit/shared/schemas/performance.schema';
 
-// Mock the service module -- it does not exist yet (RED state)
-vi.mock('./admin.service.js', () => {
-  return {
-    AdminService: vi.fn().mockImplementation(function (this: Record<string, unknown>, db: unknown) {
-      this.db = db;
-      return this;
-    }),
-  };
-});
-
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports
-type AdminServiceType = import('./admin.service.js').AdminService;
+import { AdminService } from './admin.service.js';
 
 /**
  * Phase 2 Plan 00: RED-state test stubs for AdminService
@@ -121,14 +110,12 @@ const sampleCreateInput: CreatePerformanceInput = {
 };
 
 describe('AdminService', () => {
-  let service: AdminServiceType;
+  let service: AdminService;
   let mockDb: ReturnType<typeof createMockDb>;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     mockDb = createMockDb();
-
-    const { AdminService } = await import('./admin.service.js');
-    service = new AdminService(mockDb as unknown as Parameters<typeof AdminService>[0]);
+    service = new AdminService(mockDb as unknown as ConstructorParameters<typeof AdminService>[0]);
   });
 
   describe('createPerformance', () => {

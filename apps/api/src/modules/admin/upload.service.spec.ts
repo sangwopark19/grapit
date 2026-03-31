@@ -11,18 +11,7 @@ vi.mock('@aws-sdk/client-s3', () => ({
   PutObjectCommand: vi.fn().mockImplementation((input: Record<string, unknown>) => ({ input })),
 }));
 
-// Mock the service module -- it does not exist yet (RED state)
-vi.mock('./upload.service.js', () => {
-  return {
-    UploadService: vi.fn().mockImplementation(function (this: Record<string, unknown>, configService: unknown) {
-      this.configService = configService;
-      return this;
-    }),
-  };
-});
-
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports
-type UploadServiceType = import('./upload.service.js').UploadService;
+import { UploadService } from './upload.service.js';
 
 /**
  * Phase 2 Plan 00: RED-state test stubs for UploadService (ADMN-03)
@@ -54,15 +43,13 @@ function createMockConfigService() {
 }
 
 describe('UploadService', () => {
-  let service: UploadServiceType;
+  let service: UploadService;
   let mockConfigService: ReturnType<typeof createMockConfigService>;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     vi.clearAllMocks();
     mockConfigService = createMockConfigService();
-
-    const { UploadService } = await import('./upload.service.js');
-    service = new UploadService(mockConfigService as unknown as Parameters<typeof UploadService>[0]);
+    service = new UploadService(mockConfigService as unknown as ConstructorParameters<typeof UploadService>[0]);
   });
 
   describe('generatePresignedUrl', () => {

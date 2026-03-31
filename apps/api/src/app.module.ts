@@ -9,6 +9,7 @@ import { UserModule } from './modules/user/user.module.js';
 import { SmsModule } from './modules/sms/sms.module.js';
 import { PerformanceModule } from './modules/performance/performance.module.js';
 import { SearchModule } from './modules/search/search.module.js';
+import { AdminModule } from './modules/admin/admin.module.js';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard.js';
 import { authConfig } from './config/auth.config.js';
 
@@ -27,6 +28,7 @@ import { authConfig } from './config/auth.config.js';
     SmsModule,
     PerformanceModule,
     SearchModule,
+    AdminModule,
   ],
   providers: [
     {
