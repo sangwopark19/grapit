@@ -70,11 +70,11 @@ export default function PerformanceDetailPage({
 
   return (
     <>
-      <main className="mx-auto max-w-[1200px] px-6 py-8">
+      <main className="mx-auto max-w-[1200px] px-6 pt-8 pb-20 lg:pb-8">
         {/* Top section: poster + info */}
         <div className="flex flex-col gap-8 lg:flex-row">
           {/* Poster */}
-          <div className="relative aspect-[2/3] w-full shrink-0 overflow-hidden rounded-lg bg-gray-200 lg:max-w-[380px]">
+          <div className="relative aspect-[2/3] w-full max-w-[280px] mx-auto shrink-0 overflow-hidden rounded-lg bg-gray-200 lg:max-w-[380px]">
             {performance.posterUrl ? (
               <Image
                 src={performance.posterUrl}
@@ -130,7 +130,7 @@ export default function PerformanceDetailPage({
             {/* Price table */}
             {performance.priceTiers.length > 0 && (
               <>
-                <Separator className="my-4" />
+                <Separator className="my-6" />
                 <div className="space-y-2">
                   {performance.priceTiers.map((tier) => (
                     <div
@@ -169,7 +169,7 @@ export default function PerformanceDetailPage({
               <TabsTrigger value="sales">판매정보</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="casting" className="py-8">
+            <TabsContent value="casting">
               {performance.castings.length > 0 ? (
                 <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4">
                   {performance.castings.map((cast) => (
@@ -210,9 +210,9 @@ export default function PerformanceDetailPage({
               )}
             </TabsContent>
 
-            <TabsContent value="detail" className="py-8">
+            <TabsContent value="detail">
               {performance.description ? (
-                <div className="prose max-w-none text-sm text-gray-900">
+                <div className="prose max-w-prose text-sm text-gray-900">
                   <p className="whitespace-pre-wrap">
                     {performance.description}
                   </p>
@@ -224,9 +224,9 @@ export default function PerformanceDetailPage({
               )}
             </TabsContent>
 
-            <TabsContent value="sales" className="py-8">
+            <TabsContent value="sales">
               {performance.salesInfo ? (
-                <div className="prose max-w-none text-sm text-gray-900">
+                <div className="prose max-w-prose text-sm text-gray-900">
                   <p className="whitespace-pre-wrap">
                     {performance.salesInfo}
                   </p>
