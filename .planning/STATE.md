@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 Phase: 3
 Plan: Not started
 Status: Ready to execute
-Last activity: 2026-03-31 - Completed quick task 260331-lt4: 탭 전환 시 정보패널 너비 변동 수정
+Last activity: 2026-03-31 - Completed quick task 260331-m0k: 필터 탭 클릭 시 UI 레이아웃 시프트 버그 수정
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -101,6 +101,7 @@ None yet.
 | 260331-l6q | Fix select box transparency + detail page poster alignment | 2026-03-31 | 8fbd009 | [260331-l6q-fix-select-box-z-index-bug-and-performan](./quick/260331-l6q-fix-select-box-z-index-bug-and-performan/) |
 | 260331-ldw | Detail page tab UI/UX: 2-column layout + TabsContent visual container | 2026-03-31 | 1d8f436 | [260331-ldw-ui-ux](./quick/260331-ldw-ui-ux/) |
 | 260331-lt4 | Fix info panel width collapse on tab switch (missing w-full on main) | 2026-03-31 | 1534fa4 | [260331-lt4-info-panel-width-fix](./quick/260331-lt4-info-panel-width-fix/) |
+| 260331-m0k | 필터 탭 클릭 시 UI 레이아웃 시프트 버그 수정 | 2026-03-31 | fdb4757 | [260331-m0k-ui](./quick/260331-m0k-ui/) |
 
 ## Session Continuity
 
