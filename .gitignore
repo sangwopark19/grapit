@@ -26,6 +26,9 @@ pgdata/
 # Local dev uploads (R2 fallback)
 uploads/
 
+# Local images
+image/
+
 # IDE
 .idea/
 .vscode/
