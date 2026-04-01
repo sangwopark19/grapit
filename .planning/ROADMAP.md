@@ -76,7 +76,7 @@ Plans:
 Plans:
 - [x] 03-01-PLAN.md -- Backend booking module (Redis seat locking, WebSocket gateway, REST API)
 - [x] 03-02-PLAN.md -- Frontend booking page (SVG seat map, date/showtime selection, seat panels)
-- [ ] 03-03-PLAN.md -- Real-time integration (CountdownTimer, WebSocket client, Socket.IO connection)
+- [x] 03-03-PLAN.md -- Real-time integration (CountdownTimer, WebSocket client, Socket.IO connection)
 
 ### Phase 4: Booking + Payment
 **Goal**: Users can complete the full booking-to-payment flow and manage their reservations
