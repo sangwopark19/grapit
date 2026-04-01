@@ -49,6 +49,19 @@ export class BookingController {
   }
 
   /**
+   * GET /api/v1/booking/my-locks/:showtimeId
+   * Auth required. Returns current user's locked seats for session restore.
+   */
+  @Get('my-locks/:showtimeId')
+  async getMyLocks(
+    @Param('showtimeId') showtimeId: string,
+    @Req() req: Request,
+  ) {
+    const user = req.user as { id: string };
+    return this.bookingService.getMyLocks(user.id, showtimeId);
+  }
+
+  /**
    * GET /api/v1/booking/schedules/:showtimeId/seats
    * Public endpoint. Returns all seat states for a showtime.
    */

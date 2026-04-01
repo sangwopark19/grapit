@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import type { SeatSelection, SeatState, SeatMapConfig } from '@grapit/shared';
@@ -8,6 +8,7 @@ import { usePerformanceDetail } from '@/hooks/use-performances';
 import {
   useShowtimes,
   useSeatStatus,
+  useMyLocks,
   useLockSeat,
   useUnlockSeat,
 } from '@/hooks/use-booking';
@@ -57,6 +58,7 @@ export function BookingPage({ performanceId }: { performanceId: string }) {
   useBookingSocket(selectedShowtimeId);
 
   const { data: seatStatusData } = useSeatStatus(selectedShowtimeId);
+  const { data: myLocksData } = useMyLocks(selectedShowtimeId);
   const lockSeat = useLockSeat();
   const unlockSeat = useUnlockSeat();
 
@@ -152,6 +154,30 @@ export function BookingPage({ performanceId }: { performanceId: string }) {
     }
     return map;
   }, [seatConfig, performance?.priceTiers]);
+
+  // Restore session: if user has existing locks from before refresh
+  useEffect(() => {
+    if (!myLocksData || myLocksData.seatIds.length === 0) return;
+    if (selectedSeats.length > 0) return; // already have local state
+
+    for (const seatId of myLocksData.seatIds) {
+      const info = tierInfoMap.get(seatId);
+      if (!info) continue;
+      const parts = seatId.split('-');
+      addSeat({
+        seatId,
+        tierName: info.tierName,
+        tierColor: info.color,
+        row: parts[0] ?? '',
+        number: parts[1] ?? '',
+        price: info.price,
+      });
+    }
+
+    if (myLocksData.expiresAt) {
+      setTimerExpiry(myLocksData.expiresAt);
+    }
+  }, [myLocksData, tierInfoMap, selectedSeats.length, addSeat, setTimerExpiry]);
 
   // Seat click handler (optimistic UI)
   const handleSeatClick = useCallback(

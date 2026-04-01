@@ -89,6 +89,31 @@ export class BookingService {
   }
 
   /**
+   * Returns the current user's locked seats for a showtime.
+   */
+  async getMyLocks(userId: string, showtimeId: string): Promise<{ seatIds: string[]; expiresAt: number | null }> {
+    const userSeats = await this.redis.smembers(`user-seats:${showtimeId}:${userId}`) as string[];
+
+    if (userSeats.length === 0) {
+      return { seatIds: [], expiresAt: null };
+    }
+
+    // Check the TTL of the first seat lock to estimate expiry
+    const firstSeatKey = `seat:${showtimeId}:${userSeats[0]}`;
+    const lockOwner = await this.redis.get(firstSeatKey);
+    const expiresAt = lockOwner === userId ? Date.now() + LOCK_TTL * 1000 : null;
+
+    // Filter to only seats still actually locked by this user
+    const validSeats: string[] = [];
+    for (const seatId of userSeats) {
+      const owner = await this.redis.get(`seat:${showtimeId}:${seatId}`);
+      if (owner === userId) validSeats.push(seatId);
+    }
+
+    return { seatIds: validSeats, expiresAt };
+  }
+
+  /**
    * Returns the status of all seats for a showtime.
    * Combines Redis locks + DB sold records.
    */

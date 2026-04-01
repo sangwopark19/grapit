@@ -31,6 +31,23 @@ export function useSeatStatus(showtimeId: string | null) {
   });
 }
 
+interface MyLocksResponse {
+  seatIds: string[];
+  expiresAt: number | null;
+}
+
+export function useMyLocks(showtimeId: string | null) {
+  return useQuery({
+    queryKey: ['my-locks', showtimeId],
+    queryFn: () =>
+      apiClient.get<MyLocksResponse>(
+        `/api/v1/booking/my-locks/${showtimeId}`,
+      ),
+    enabled: !!showtimeId,
+    staleTime: 0,
+  });
+}
+
 export function useLockSeat() {
   const queryClient = useQueryClient();
   return useMutation({

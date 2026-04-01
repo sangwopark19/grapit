@@ -21,7 +21,22 @@ class InMemoryRedis {
     if (opts?.ex) {
       const prev = this.ttls.get(key);
       if (prev) clearTimeout(prev);
-      this.ttls.set(key, setTimeout(() => { this.store.delete(key); this.ttls.delete(key); }, opts.ex * 1000));
+      this.ttls.set(key, setTimeout(() => {
+        this.store.delete(key);
+        this.ttls.delete(key);
+        // Clean up locked-seats and user-seats when a seat lock expires
+        // Key format: seat:${showtimeId}:${seatId}
+        const parts = key.split(':');
+        if (parts[0] === 'seat' && parts.length === 3) {
+          const [, showtimeId, seatId] = parts;
+          const lockedSet = this.sets.get(`locked-seats:${showtimeId}`);
+          if (lockedSet) lockedSet.delete(seatId);
+          // Clean user-seats for this user
+          const userId = value;
+          const userSet = this.sets.get(`user-seats:${showtimeId}:${userId}`);
+          if (userSet) userSet.delete(seatId);
+        }
+      }, opts.ex * 1000));
     }
     return 'OK';
   }
