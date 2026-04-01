@@ -48,8 +48,8 @@ export class BookingService {
     // 4. Track global locked seats (CRITICAL: populates set for getSeatStatus)
     await this.redis.sadd(`locked-seats:${showtimeId}`, seatId);
 
-    // 5. Broadcast real-time update
-    this.gateway.broadcastSeatUpdate(showtimeId, seatId, 'locked');
+    // 5. Broadcast real-time update (include userId so sender can ignore own events)
+    this.gateway.broadcastSeatUpdate(showtimeId, seatId, 'locked', userId);
 
     // 6. Return response
     return {
@@ -83,7 +83,7 @@ export class BookingService {
     await this.redis.srem(`locked-seats:${showtimeId}`, seatId);
 
     // 5. Broadcast real-time update
-    this.gateway.broadcastSeatUpdate(showtimeId, seatId, 'available');
+    this.gateway.broadcastSeatUpdate(showtimeId, seatId, 'available', userId);
 
     return true;
   }

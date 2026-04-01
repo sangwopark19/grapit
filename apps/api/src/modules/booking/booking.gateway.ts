@@ -62,10 +62,11 @@ export class BookingGateway implements OnGatewayConnection, OnGatewayDisconnect 
   /**
    * Broadcasts a seat status update to all clients in the showtime room.
    */
-  broadcastSeatUpdate(showtimeId: string, seatId: string, status: SeatState): void {
+  broadcastSeatUpdate(showtimeId: string, seatId: string, status: SeatState, userId?: string): void {
     this.server.to(`showtime:${showtimeId}`).emit('seat-update', {
       seatId,
       status,
+      userId,
     });
   }
 }

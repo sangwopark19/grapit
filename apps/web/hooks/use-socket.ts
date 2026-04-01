@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import type { SeatUpdateEvent, SeatStatusResponse } from '@grapit/shared';
 import { createBookingSocket } from '@/lib/socket-client';
 import { useBookingStore } from '@/stores/use-booking-store';
+import { useAuthStore } from '@/stores/use-auth-store';
 
 export function useBookingSocket(showtimeId: string | null): void {
   const socketRef = useRef<Socket | null>(null);
@@ -57,9 +58,11 @@ export function useBookingSocket(showtimeId: string | null): void {
         },
       );
 
-      // Race condition check: if another user locked a seat we selected
-      const store = useBookingStore.getState();
-      if (data.status === 'locked') {
+      // Race condition check: if ANOTHER user locked a seat we selected
+      // Ignore our own broadcasts (userId matches)
+      const myUserId = useAuthStore.getState().user?.id;
+      if (data.status === 'locked' && data.userId !== myUserId) {
+        const store = useBookingStore.getState();
         const isOurSeat = store.selectedSeats.some(
           (s) => s.seatId === data.seatId,
         );
