@@ -10,15 +10,17 @@ import { SmsModule } from './modules/sms/sms.module.js';
 import { PerformanceModule } from './modules/performance/performance.module.js';
 import { SearchModule } from './modules/search/search.module.js';
 import { AdminModule } from './modules/admin/admin.module.js';
+import { BookingModule } from './modules/booking/booking.module.js';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard.js';
 import { authConfig } from './config/auth.config.js';
+import { redisConfig } from './config/redis.config.js';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '../../.env',
-      load: [authConfig],
+      load: [authConfig, redisConfig],
     }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 60 }]),
     DrizzleModule,
@@ -29,6 +31,7 @@ import { authConfig } from './config/auth.config.js';
     PerformanceModule,
     SearchModule,
     AdminModule,
+    BookingModule,
   ],
   providers: [
     {
