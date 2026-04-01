@@ -15,7 +15,7 @@ import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js';
 import { BookingService } from './booking.service.js';
 import { lockSeatSchema, type LockSeatBody } from './dto/lock-seat.dto.js';
 
-@Controller('api/v1/booking')
+@Controller('booking')
 export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
 
