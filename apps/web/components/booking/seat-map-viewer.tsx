@@ -86,6 +86,9 @@ export function SeatMapViewer({
       const state = seatStates.get(seatId) ?? 'available';
       const isSelected = selectedSeatIds.has(seatId);
 
+      // Ensure instant color transition (D-12: no animation)
+      el.style.transition = 'none';
+
       if (isSelected && tierInfo) {
         // My selection: tier color + dark stroke + checkmark
         el.setAttribute('fill', tierInfo.color);
@@ -94,14 +97,14 @@ export function SeatMapViewer({
         el.style.cursor = 'pointer';
         el.style.opacity = '1';
       } else if (state === 'locked' || state === 'sold') {
-        // Locked/sold: gray
+        // Locked/sold: gray (from WebSocket or initial load)
         el.setAttribute('fill', LOCKED_COLOR);
         el.removeAttribute('stroke');
         el.setAttribute('stroke-width', '0');
         el.style.cursor = 'not-allowed';
         el.style.opacity = '0.6';
       } else if (tierInfo) {
-        // Available: tier color
+        // Available: tier color (restored from WebSocket unlock)
         el.setAttribute('fill', tierInfo.color);
         el.removeAttribute('stroke');
         el.setAttribute('stroke-width', '0');

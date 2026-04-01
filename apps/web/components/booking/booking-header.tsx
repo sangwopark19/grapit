@@ -1,18 +1,21 @@
 'use client';
 
-import { ChevronLeft, Clock } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { CountdownTimer } from './countdown-timer';
 
 interface BookingHeaderProps {
   performanceTitle: string;
   expiresAt: number | null;
   onBack: () => void;
+  onExpire: () => void;
 }
 
 export function BookingHeader({
   performanceTitle,
   expiresAt,
   onBack,
+  onExpire,
 }: BookingHeaderProps) {
   return (
     <header className="sticky top-0 z-50 flex h-12 items-center justify-between border-b bg-white px-4 shadow-sm lg:h-14 lg:px-6">
@@ -29,13 +32,8 @@ export function BookingHeader({
         {performanceTitle}
       </h1>
 
-      <div className="w-9">
-        {expiresAt !== null && (
-          <div className="flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-sm font-semibold text-white">
-            <Clock className="size-4" />
-            <span className="font-mono">--:--</span>
-          </div>
-        )}
+      <div>
+        <CountdownTimer expiresAt={expiresAt} onExpire={onExpire} />
       </div>
     </header>
   );

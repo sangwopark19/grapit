@@ -12,6 +12,8 @@ import {
   useUnlockSeat,
 } from '@/hooks/use-booking';
 import { useBookingStore } from '@/stores/use-booking-store';
+import { useBookingSocket } from '@/hooks/use-socket';
+import { ApiClientError } from '@/lib/api-client';
 import { BookingHeader } from './booking-header';
 import { DatePicker } from './date-picker';
 import { ShowtimeChips } from './showtime-chips';
@@ -19,6 +21,7 @@ import { SeatLegend } from './seat-legend';
 import { SeatMapViewer } from './seat-map-viewer';
 import { SeatSelectionPanel } from './seat-selection-panel';
 import { SeatSelectionSheet } from './seat-selection-sheet';
+import { TimerExpiredModal } from './timer-expired-modal';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const MAX_SEATS = 4;
@@ -42,12 +45,16 @@ export function BookingPage({ performanceId }: { performanceId: string }) {
     selectedShowtimeId,
     selectedSeats,
     timerExpiresAt,
+    isTimerExpired,
     setDate,
     setShowtime,
     addSeat,
     removeSeat,
     setTimerExpiry,
   } = useBookingStore();
+
+  // WebSocket real-time connection
+  useBookingSocket(selectedShowtimeId);
 
   const { data: seatStatusData } = useSeatStatus(selectedShowtimeId);
   const lockSeat = useLockSeat();
@@ -196,10 +203,21 @@ export function BookingPage({ performanceId }: { performanceId: string }) {
               setTimerExpiry(response.expiresAt);
             }
           },
-          onError: () => {
+          onError: (error: unknown) => {
             // Race condition: revert optimistic update
             removeSeat(seatId);
-            toast.error('이미 다른 사용자가 선택한 좌석입니다');
+            if (
+              error instanceof ApiClientError &&
+              error.statusCode === 409
+            ) {
+              toast.info('이미 다른 사용자가 선택한 좌석입니다', {
+                style: { backgroundColor: '#F3EFFF', color: '#6C3CE0' },
+              });
+            } else {
+              toast.error(
+                '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+              );
+            }
           },
         },
       );
@@ -242,6 +260,16 @@ export function BookingPage({ performanceId }: { performanceId: string }) {
   const handleBack = useCallback(() => {
     router.push(`/performance/${performanceId}`);
   }, [router, performanceId]);
+
+  // Timer expiry handler
+  const handleTimerExpire = useCallback(() => {
+    useBookingStore.getState().expireTimer();
+  }, []);
+
+  // Timer expiry modal reset handler
+  const handleTimerReset = useCallback(() => {
+    useBookingStore.getState().resetBooking();
+  }, []);
 
   // Date selection handler
   const handleDateSelect = useCallback(
@@ -296,6 +324,7 @@ export function BookingPage({ performanceId }: { performanceId: string }) {
         performanceTitle={performance.title}
         expiresAt={timerExpiresAt}
         onBack={handleBack}
+        onExpire={handleTimerExpire}
       />
 
       <main className="mx-auto w-full max-w-[1280px] px-4 py-4 lg:px-6 lg:py-8">
@@ -367,6 +396,9 @@ export function BookingPage({ performanceId }: { performanceId: string }) {
         onProceed={handleProceed}
         isLoading={lockSeat.isPending}
       />
+
+      {/* Timer expiry modal */}
+      <TimerExpiredModal open={isTimerExpired} onReset={handleTimerReset} />
     </div>
   );
 }
