@@ -28,14 +28,10 @@ export function SeatMapViewer({
   onSeatClick,
 }: SeatMapViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
   const [svgContent, setSvgContent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tooltipInfo, setTooltipInfo] = useState<{
-    text: string;
-    x: number;
-    y: number;
-  } | null>(null);
 
   // Build tier color map from seatConfig
   const tierColorMap = useMemo(() => {
@@ -90,21 +86,18 @@ export function SeatMapViewer({
       el.style.transition = 'none';
 
       if (isSelected && tierInfo) {
-        // My selection: tier color + dark stroke + checkmark
         el.setAttribute('fill', tierInfo.color);
         el.setAttribute('stroke', SELECTED_STROKE);
         el.setAttribute('stroke-width', '3');
         el.style.cursor = 'pointer';
         el.style.opacity = '1';
       } else if (state === 'locked' || state === 'sold') {
-        // Locked/sold: gray (from WebSocket or initial load)
         el.setAttribute('fill', LOCKED_COLOR);
         el.removeAttribute('stroke');
         el.setAttribute('stroke-width', '0');
         el.style.cursor = 'not-allowed';
         el.style.opacity = '0.6';
       } else if (tierInfo) {
-        // Available: tier color (restored from WebSocket unlock)
         el.setAttribute('fill', tierInfo.color);
         el.removeAttribute('stroke');
         el.setAttribute('stroke-width', '0');
@@ -128,7 +121,6 @@ export function SeatMapViewer({
       const state = seatStates.get(seatId) ?? 'available';
       const isSelected = selectedSeatIds.has(seatId);
 
-      // Allow click on available or already-selected seats
       if (state === 'available' || isSelected) {
         onSeatClick(seatId);
       }
@@ -136,14 +128,14 @@ export function SeatMapViewer({
     [seatStates, selectedSeatIds, onSeatClick],
   );
 
-  // Hover tooltip for desktop
+  // Hover tooltip — uses refs only, no state changes, no re-renders
   const handleMouseOver = useCallback(
     (e: React.MouseEvent) => {
       const target = (e.target as HTMLElement).closest<SVGElement>(
         '[data-seat-id]',
       );
       if (!target) {
-        setTooltipInfo(null);
+        if (tooltipRef.current) tooltipRef.current.style.display = 'none';
         return;
       }
 
@@ -152,14 +144,13 @@ export function SeatMapViewer({
 
       const state = seatStates.get(seatId) ?? 'available';
       if (state !== 'available' && !selectedSeatIds.has(seatId)) {
-        setTooltipInfo(null);
+        if (tooltipRef.current) tooltipRef.current.style.display = 'none';
         return;
       }
 
       const tierInfo = tierColorMap.get(seatId);
       if (!tierInfo) return;
 
-      // Parse row/number from seatId (e.g. "A-1" -> row="A", number="1")
       const parts = seatId.split('-');
       const row = parts[0] ?? seatId;
       const number = parts[1] ?? '';
@@ -167,12 +158,13 @@ export function SeatMapViewer({
       const rect = target.getBoundingClientRect();
       const containerRect = containerRef.current?.getBoundingClientRect();
 
-      if (containerRect) {
-        setTooltipInfo({
-          text: `${tierInfo.tierName} ${row}${number ? `열 ${number}번` : ''}`,
-          x: rect.left - containerRect.left + rect.width / 2,
-          y: rect.top - containerRect.top - 8,
-        });
+      if (containerRect && tooltipRef.current) {
+        const x = rect.left - containerRect.left + rect.width / 2;
+        const y = rect.top - containerRect.top - 8;
+        tooltipRef.current.textContent = `${tierInfo.tierName} ${row}${number ? `열 ${number}번` : ''}`;
+        tooltipRef.current.style.left = `${x}px`;
+        tooltipRef.current.style.top = `${y}px`;
+        tooltipRef.current.style.display = 'block';
 
         // Apply hover effect
         if (state === 'available' && !selectedSeatIds.has(seatId)) {
@@ -192,7 +184,7 @@ export function SeatMapViewer({
       );
       if (!target) return;
 
-      setTooltipInfo(null);
+      if (tooltipRef.current) tooltipRef.current.style.display = 'none';
 
       const seatId = target.getAttribute('data-seat-id');
       if (!seatId) return;
@@ -274,19 +266,12 @@ export function SeatMapViewer({
         </TransformComponent>
       </TransformWrapper>
 
-      {/* Tooltip */}
-      {tooltipInfo && (
-        <div
-          className="pointer-events-none absolute z-50 rounded-md bg-gray-900 px-3 py-1.5 text-xs text-white"
-          style={{
-            left: tooltipInfo.x,
-            top: tooltipInfo.y,
-            transform: 'translate(-50%, -100%)',
-          }}
-        >
-          {tooltipInfo.text}
-        </div>
-      )}
+      {/* Tooltip — positioned via ref, no state re-renders */}
+      <div
+        ref={tooltipRef}
+        className="pointer-events-none absolute z-50 rounded-md bg-gray-900 px-3 py-1.5 text-xs text-white"
+        style={{ display: 'none', transform: 'translate(-50%, -100%)' }}
+      />
     </div>
   );
 }
