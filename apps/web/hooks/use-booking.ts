@@ -8,13 +8,15 @@ import type {
 } from '@grapit/shared';
 
 export function useShowtimes(performanceId: string) {
+  // Showtimes are included in performance detail response.
+  // This hook is kept for potential future dedicated endpoint.
   return useQuery({
     queryKey: ['showtimes', performanceId],
     queryFn: () =>
       apiClient.get<Showtime[]>(
         `/api/v1/performances/${performanceId}/showtimes`,
       ),
-    enabled: !!performanceId,
+    enabled: false,
   });
 }
 

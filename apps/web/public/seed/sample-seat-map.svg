@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <!-- Stage -->
+  <rect x="200" y="20" width="400" height="60" rx="8" fill="#E5E7EB" stroke="#9CA3AF" stroke-width="1.5"/>
+  <text x="400" y="55" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="600" fill="#6B7280">STAGE</text>
+
+  <!-- VIP Row (Row A) - 10 seats -->
+  <text x="60" y="140" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="600" fill="#6B7280">A</text>
+  <rect data-seat-id="A-1" x="110" y="120" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="A-2" x="152" y="120" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="A-3" x="194" y="120" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="A-4" x="236" y="120" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="A-5" x="278" y="120" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="A-6" x="390" y="120" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="A-7" x="432" y="120" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="A-8" x="474" y="120" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="A-9" x="516" y="120" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="A-10" x="558" y="120" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+
+  <!-- R Row (Row B) - 10 seats -->
+  <text x="60" y="190" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="600" fill="#6B7280">B</text>
+  <rect data-seat-id="B-1" x="110" y="170" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="B-2" x="152" y="170" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="B-3" x="194" y="170" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="B-4" x="236" y="170" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="B-5" x="278" y="170" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="B-6" x="390" y="170" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="B-7" x="432" y="170" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="B-8" x="474" y="170" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="B-9" x="516" y="170" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="B-10" x="558" y="170" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+
+  <!-- S Row (Row C) - 12 seats -->
+  <text x="60" y="240" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="600" fill="#6B7280">C</text>
+  <rect data-seat-id="C-1" x="90" y="220" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="C-2" x="132" y="220" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="C-3" x="174" y="220" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="C-4" x="216" y="220" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="C-5" x="258" y="220" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="C-6" x="300" y="220" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="C-7" x="400" y="220" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="C-8" x="442" y="220" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="C-9" x="484" y="220" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="C-10" x="526" y="220" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="C-11" x="568" y="220" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="C-12" x="610" y="220" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+
+  <!-- S Row (Row D) - 12 seats -->
+  <text x="60" y="290" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="600" fill="#6B7280">D</text>
+  <rect data-seat-id="D-1" x="90" y="270" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="D-2" x="132" y="270" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="D-3" x="174" y="270" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="D-4" x="216" y="270" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="D-5" x="258" y="270" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="D-6" x="300" y="270" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="D-7" x="400" y="270" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="D-8" x="442" y="270" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="D-9" x="484" y="270" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="D-10" x="526" y="270" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="D-11" x="568" y="270" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="D-12" x="610" y="270" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+
+  <!-- A Row (Row E) - 14 seats -->
+  <text x="60" y="340" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="600" fill="#6B7280">E</text>
+  <rect data-seat-id="E-1" x="70" y="320" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="E-2" x="112" y="320" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="E-3" x="154" y="320" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="E-4" x="196" y="320" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="E-5" x="238" y="320" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="E-6" x="280" y="320" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="E-7" x="322" y="320" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="E-8" x="420" y="320" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="E-9" x="462" y="320" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="E-10" x="504" y="320" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="E-11" x="546" y="320" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="E-12" x="588" y="320" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="E-13" x="630" y="320" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="E-14" x="672" y="320" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+
+  <!-- A Row (Row F) - 14 seats -->
+  <text x="60" y="390" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="600" fill="#6B7280">F</text>
+  <rect data-seat-id="F-1" x="70" y="370" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="F-2" x="112" y="370" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="F-3" x="154" y="370" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="F-4" x="196" y="370" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="F-5" x="238" y="370" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="F-6" x="280" y="370" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="F-7" x="322" y="370" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="F-8" x="420" y="370" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="F-9" x="462" y="370" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="F-10" x="504" y="370" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="F-11" x="546" y="370" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="F-12" x="588" y="370" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="F-13" x="630" y="370" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+  <rect data-seat-id="F-14" x="672" y="370" width="32" height="32" rx="4" fill="#E5E7EB" stroke="#D1D5DB" cursor="pointer"/>
+
+  <!-- Seat labels (numbers) -->
+  <g font-family="sans-serif" font-size="10" fill="#9CA3AF" text-anchor="middle">
+    <!-- Row A numbers -->
+    <text x="126" y="140">1</text><text x="168" y="140">2</text><text x="210" y="140">3</text>
+    <text x="252" y="140">4</text><text x="294" y="140">5</text><text x="406" y="140">6</text>
+    <text x="448" y="140">7</text><text x="490" y="140">8</text><text x="532" y="140">9</text>
+    <text x="574" y="140">10</text>
+  </g>
+</svg>
