@@ -1,7 +1,8 @@
 ---
 phase: 3
 slug: seat-map-real-time
-status: draft
+status: approved
+reviewed_at: 2026-04-01
 shadcn_initialized: true
 preset: new-york
 created: 2026-04-01
