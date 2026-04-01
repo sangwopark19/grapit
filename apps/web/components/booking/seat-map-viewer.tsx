@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useRef, useState, useCallback, useMemo, useEffect } from 'react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { Loader2, RefreshCw } from 'lucide-react';
 import type { SeatMapConfig, SeatState } from '@grapit/shared';
@@ -29,7 +29,7 @@ export function SeatMapViewer({
 }: SeatMapViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const [svgContent, setSvgContent] = useState<string | null>(null);
+  const [rawSvg, setRawSvg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,7 +44,7 @@ export function SeatMapViewer({
     return map;
   }, [seatConfig]);
 
-  // Fetch SVG
+  // Fetch raw SVG
   useEffect(() => {
     if (!svgUrl) return;
     setIsLoading(true);
@@ -56,7 +56,7 @@ export function SeatMapViewer({
         return res.text();
       })
       .then((text) => {
-        setSvgContent(text);
+        setRawSvg(text);
         setIsLoading(false);
       })
       .catch(() => {
@@ -65,16 +65,15 @@ export function SeatMapViewer({
       });
   }, [svgUrl]);
 
-  // Apply seat states to SVG via DOM manipulation
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container || !svgContent) return;
+  // Pre-process SVG string with colors baked in — survives re-renders
+  const processedSvg = useMemo(() => {
+    if (!rawSvg) return null;
 
-    const seatElements = container.querySelectorAll<SVGElement>(
-      '[data-seat-id]',
-    );
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(rawSvg, 'image/svg+xml');
+    const seats = doc.querySelectorAll('[data-seat-id]');
 
-    seatElements.forEach((el) => {
+    seats.forEach((el) => {
       const seatId = el.getAttribute('data-seat-id');
       if (!seatId) return;
 
@@ -82,30 +81,26 @@ export function SeatMapViewer({
       const state = seatStates.get(seatId) ?? 'available';
       const isSelected = selectedSeatIds.has(seatId);
 
-      // Ensure instant color transition (D-12: no animation)
-      el.style.transition = 'none';
-
       if (isSelected && tierInfo) {
         el.setAttribute('fill', tierInfo.color);
         el.setAttribute('stroke', SELECTED_STROKE);
         el.setAttribute('stroke-width', '3');
-        el.style.cursor = 'pointer';
-        el.style.opacity = '1';
+        el.setAttribute('style', 'cursor:pointer;opacity:1;transition:none');
       } else if (state === 'locked' || state === 'sold') {
         el.setAttribute('fill', LOCKED_COLOR);
         el.removeAttribute('stroke');
         el.setAttribute('stroke-width', '0');
-        el.style.cursor = 'not-allowed';
-        el.style.opacity = '0.6';
+        el.setAttribute('style', 'cursor:not-allowed;opacity:0.6;transition:none');
       } else if (tierInfo) {
         el.setAttribute('fill', tierInfo.color);
         el.removeAttribute('stroke');
         el.setAttribute('stroke-width', '0');
-        el.style.cursor = 'pointer';
-        el.style.opacity = '1';
+        el.setAttribute('style', 'cursor:pointer;opacity:1;transition:none');
       }
     });
-  }, [svgContent, seatStates, selectedSeatIds, tierColorMap]);
+
+    return doc.documentElement.outerHTML;
+  }, [rawSvg, seatStates, selectedSeatIds, tierColorMap]);
 
   // Event delegation for seat clicks
   const handleClick = useCallback(
@@ -166,7 +161,6 @@ export function SeatMapViewer({
         tooltipRef.current.style.top = `${y}px`;
         tooltipRef.current.style.display = 'block';
 
-        // Apply hover effect
         if (state === 'available' && !selectedSeatIds.has(seatId)) {
           target.style.filter = 'brightness(1.15)';
           target.setAttribute('stroke', tierInfo.color);
@@ -192,7 +186,6 @@ export function SeatMapViewer({
       const isSelected = selectedSeatIds.has(seatId);
       if (isSelected) return;
 
-      // Remove hover effect
       target.style.filter = '';
       const state = seatStates.get(seatId) ?? 'available';
       if (state === 'available') {
@@ -200,7 +193,7 @@ export function SeatMapViewer({
         target.setAttribute('stroke-width', '0');
       }
     },
-    [seatStates, selectedSeatIds],
+    [seatStates, selectedSeatIds, tierColorMap],
   );
 
   if (error) {
@@ -229,7 +222,7 @@ export function SeatMapViewer({
     );
   }
 
-  if (!svgContent) {
+  if (!processedSvg) {
     return (
       <div className="flex min-h-[300px] items-center justify-center rounded-lg bg-gray-50 lg:min-h-[500px]">
         <p className="text-sm text-gray-500">
@@ -261,12 +254,11 @@ export function SeatMapViewer({
             onClick={handleClick}
             onMouseOver={handleMouseOver}
             onMouseOut={handleMouseOut}
-            dangerouslySetInnerHTML={{ __html: svgContent }}
+            dangerouslySetInnerHTML={{ __html: processedSvg }}
           />
         </TransformComponent>
       </TransformWrapper>
 
-      {/* Tooltip — positioned via ref, no state re-renders */}
       <div
         ref={tooltipRef}
         className="pointer-events-none absolute z-50 rounded-md bg-gray-900 px-3 py-1.5 text-xs text-white"
