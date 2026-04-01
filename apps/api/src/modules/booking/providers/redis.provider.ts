@@ -23,9 +23,28 @@ export const ioredisClientProvider: Provider = {
   useFactory: (config: ConfigService): IORedis => {
     const url = config.get<string>('redis.ioredisUrl', 'redis://localhost:6379');
 
-    return new IORedis(url, {
+    const client = new IORedis(url, {
       maxRetriesPerRequest: 3,
-      retryStrategy: (times: number) => Math.min(times * 100, 3000),
+      lazyConnect: true,
+      retryStrategy: (times: number) => {
+        if (times > 5) return null;
+        return Math.min(times * 500, 5000);
+      },
     });
+
+    client.on('error', (err: Error) => {
+      if (err.message.includes('ECONNREFUSED')) {
+        if (!ioredisWarned) {
+          ioredisWarned = true;
+          console.warn('[ioredis] Redis unavailable — Socket.IO multi-instance broadcast disabled. This is fine for local dev.');
+        }
+      }
+    });
+
+    client.connect().catch(() => {});
+
+    return client;
   },
 };
+
+let ioredisWarned = false;
