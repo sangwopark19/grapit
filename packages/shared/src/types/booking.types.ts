@@ -4,8 +4,8 @@ export interface SeatSelection {
   seatId: string;
   tierName: string;
   tierColor: string;
-  row: string;       // e.g. "A"
-  number: string;    // e.g. "1"
+  row: string;
+  number: string;
   price: number;
 }
 
@@ -18,12 +18,12 @@ export interface LockSeatResponse {
   success: boolean;
   lockId: string;
   seatId: string;
-  expiresAt: number;  // Unix ms timestamp
+  expiresAt: number;
 }
 
 export interface SeatStatusResponse {
   showtimeId: string;
-  seats: Record<string, SeatState>;  // seatId -> state
+  seats: Record<string, SeatState>;
 }
 
 export interface SeatUpdateEvent {

@@ -70,13 +70,13 @@ Plans:
   3. User can select seats and see them listed in a side panel with tier, row, number, and price
   4. Selected seat is locked via Redis SET NX for 10 minutes; lock auto-releases on TTL expiry
   5. Other users see seat selections/releases reflected in real time via WebSocket without page refresh
-**Plans**: 3 plans
+**Plans**: TBD
 **UI hint**: yes
 
 Plans:
-- [x] 03-01-PLAN.md — Backend booking module: seat_inventories schema + Redis locking + WebSocket gateway + REST API
-- [ ] 03-02-PLAN.md — Frontend booking page: date/showtime picker + SVG seat map + zoom/pan + selection panel
-- [ ] 03-03-PLAN.md — Real-time integration: Socket.IO client + live seat updates + countdown timer + race condition handling
+- [x] 03-01-PLAN.md -- Backend booking module (Redis seat locking, WebSocket gateway, REST API)
+- [x] 03-02-PLAN.md -- Frontend booking page (SVG seat map, date/showtime selection, seat panels)
+- [ ] 03-03-PLAN.md -- Real-time integration (CountdownTimer, WebSocket client, Socket.IO connection)
 
 ### Phase 4: Booking + Payment
 **Goal**: Users can complete the full booking-to-payment flow and manage their reservations
@@ -119,7 +119,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation + Auth | 5/5 | Complete | 2026-03-27 |
-| 2. Catalog + Admin | 6/6 | Complete |  |
-| 3. Seat Map + Real-Time | 1/3 | In progress | - |
+| 2. Catalog + Admin | 2/6 | In Progress|  |
+| 3. Seat Map + Real-Time | 0/3 | Not started | - |
 | 4. Booking + Payment | 0/3 | Not started | - |
 | 5. Polish + Launch | 0/2 | Not started | - |
