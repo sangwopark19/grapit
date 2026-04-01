@@ -6,12 +6,84 @@ import IORedis from 'ioredis';
 export const UPSTASH_REDIS = Symbol('UPSTASH_REDIS');
 export const IOREDIS_CLIENT = Symbol('IOREDIS_CLIENT');
 
+/**
+ * In-memory Redis mock for local dev when Upstash is not configured.
+ * Implements only the subset of commands used by BookingService.
+ */
+class InMemoryRedis {
+  private store = new Map<string, string>();
+  private sets = new Map<string, Set<string>>();
+  private ttls = new Map<string, NodeJS.Timeout>();
+
+  async set(key: string, value: string, opts?: { nx?: boolean; ex?: number }): Promise<string | null> {
+    if (opts?.nx && this.store.has(key)) return null;
+    this.store.set(key, value);
+    if (opts?.ex) {
+      const prev = this.ttls.get(key);
+      if (prev) clearTimeout(prev);
+      this.ttls.set(key, setTimeout(() => { this.store.delete(key); this.ttls.delete(key); }, opts.ex * 1000));
+    }
+    return 'OK';
+  }
+
+  async get(key: string): Promise<string | null> {
+    return this.store.get(key) ?? null;
+  }
+
+  async del(...keys: string[]): Promise<number> {
+    let count = 0;
+    for (const k of keys) { if (this.store.delete(k)) count++; }
+    return count;
+  }
+
+  async sadd(key: string, ...members: string[]): Promise<number> {
+    if (!this.sets.has(key)) this.sets.set(key, new Set());
+    const s = this.sets.get(key)!;
+    let added = 0;
+    for (const m of members) { if (!s.has(m)) { s.add(m); added++; } }
+    return added;
+  }
+
+  async srem(key: string, ...members: string[]): Promise<number> {
+    const s = this.sets.get(key);
+    if (!s) return 0;
+    let removed = 0;
+    for (const m of members) { if (s.delete(m)) removed++; }
+    return removed;
+  }
+
+  async smembers(key: string): Promise<string[]> {
+    return Array.from(this.sets.get(key) ?? []);
+  }
+
+  async scard(key: string): Promise<number> {
+    return this.sets.get(key)?.size ?? 0;
+  }
+
+  async expire(key: string, seconds: number): Promise<number> {
+    if (!this.store.has(key) && !this.sets.has(key)) return 0;
+    const prev = this.ttls.get(key);
+    if (prev) clearTimeout(prev);
+    this.ttls.set(key, setTimeout(() => {
+      this.store.delete(key);
+      this.sets.delete(key);
+      this.ttls.delete(key);
+    }, seconds * 1000));
+    return 1;
+  }
+}
+
 export const upstashRedisProvider: Provider = {
   provide: UPSTASH_REDIS,
   inject: [ConfigService],
-  useFactory: (config: ConfigService): Redis => {
+  useFactory: (config: ConfigService): Redis | InMemoryRedis => {
     const url = config.get<string>('redis.upstashUrl', '');
     const token = config.get<string>('redis.upstashToken', '');
+
+    if (!url || !token) {
+      console.warn('[upstash] No UPSTASH_REDIS_REST_URL/TOKEN — using in-memory mock. Seat locking works but is not persistent.');
+      return new InMemoryRedis() as unknown as Redis;
+    }
 
     return new Redis({ url, token });
   },
