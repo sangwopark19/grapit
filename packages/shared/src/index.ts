@@ -7,6 +7,7 @@ export * from './schemas/performance.schema';
 export * from './types/auth.types';
 export * from './types/user.types';
 export * from './types/performance.types';
+export * from './types/booking.types';
 
 // Constants
 export * from './constants/index';
