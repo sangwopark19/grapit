@@ -14,6 +14,7 @@ class InMemoryRedis {
   private store = new Map<string, string>();
   private sets = new Map<string, Set<string>>();
   private ttls = new Map<string, NodeJS.Timeout>();
+  private expiries = new Map<string, number>();
 
   async set(key: string, value: string, opts?: { nx?: boolean; ex?: number }): Promise<string | null> {
     if (opts?.nx && this.store.has(key)) return null;
@@ -21,17 +22,17 @@ class InMemoryRedis {
     if (opts?.ex) {
       const prev = this.ttls.get(key);
       if (prev) clearTimeout(prev);
+      this.expiries.set(key, Date.now() + opts.ex * 1000);
       this.ttls.set(key, setTimeout(() => {
         this.store.delete(key);
         this.ttls.delete(key);
+        this.expiries.delete(key);
         // Clean up locked-seats and user-seats when a seat lock expires
-        // Key format: seat:${showtimeId}:${seatId}
         const parts = key.split(':');
         if (parts[0] === 'seat' && parts.length === 3) {
           const [, showtimeId, seatId] = parts;
           const lockedSet = this.sets.get(`locked-seats:${showtimeId}`);
           if (lockedSet) lockedSet.delete(seatId);
-          // Clean user-seats for this user
           const userId = value;
           const userSet = this.sets.get(`user-seats:${showtimeId}:${userId}`);
           if (userSet) userSet.delete(seatId);
@@ -75,14 +76,24 @@ class InMemoryRedis {
     return this.sets.get(key)?.size ?? 0;
   }
 
+  async ttl(key: string): Promise<number> {
+    if (!this.store.has(key) && !this.sets.has(key)) return -2;
+    const expiry = this.expiries.get(key);
+    if (!expiry) return -1;
+    const remaining = Math.ceil((expiry - Date.now()) / 1000);
+    return remaining > 0 ? remaining : -2;
+  }
+
   async expire(key: string, seconds: number): Promise<number> {
     if (!this.store.has(key) && !this.sets.has(key)) return 0;
     const prev = this.ttls.get(key);
     if (prev) clearTimeout(prev);
+    this.expiries.set(key, Date.now() + seconds * 1000);
     this.ttls.set(key, setTimeout(() => {
       this.store.delete(key);
       this.sets.delete(key);
       this.ttls.delete(key);
+      this.expiries.delete(key);
     }, seconds * 1000));
     return 1;
   }

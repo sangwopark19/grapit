@@ -98,10 +98,10 @@ export class BookingService {
       return { seatIds: [], expiresAt: null };
     }
 
-    // Check the TTL of the first seat lock to estimate expiry
+    // Get actual remaining TTL from Redis
     const firstSeatKey = `seat:${showtimeId}:${userSeats[0]}`;
-    const lockOwner = await this.redis.get(firstSeatKey);
-    const expiresAt = lockOwner === userId ? Date.now() + LOCK_TTL * 1000 : null;
+    const remainingTtl = await (this.redis as any).ttl(firstSeatKey) as number;
+    const expiresAt = remainingTtl > 0 ? Date.now() + remainingTtl * 1000 : null;
 
     // Filter to only seats still actually locked by this user
     const validSeats: string[] = [];
