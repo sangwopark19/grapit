@@ -1,7 +1,8 @@
 ---
 phase: 4
 slug: booking-payment
-status: draft
+status: approved
+reviewed_at: 2026-04-02
 shadcn_initialized: true
 preset: new-york
 created: 2026-04-02
