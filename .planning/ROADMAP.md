@@ -88,13 +88,13 @@ Plans:
   3. User receives a booking number on the confirmation page after successful payment
   4. On payment failure or cancellation, seat locks are released and the user sees a clear error message with guidance
   5. User can view booking history, see booking details (number, seats, payment info, cancellation deadline), and cancel/refund before the deadline from My Page
-**Plans**: TBD
+**Plans**: 3 plans
 **UI hint**: yes
 
 Plans:
-- [ ] 04-01: TBD
-- [ ] 04-02: TBD
-- [ ] 04-03: TBD
+- [ ] 04-01-PLAN.md — Backend: DB schema (reservations, payments) + shared types + NestJS reservation/payment modules + Toss Payments client + admin booking service
+- [ ] 04-02-PLAN.md — Frontend booking flow: confirm page + Toss Payments widget + complete page
+- [ ] 04-03-PLAN.md — Frontend reservation management: mypage reservations + detail + cancel + admin bookings dashboard
 
 ### Phase 5: Polish + Launch
 **Goal**: The application handles edge cases gracefully, performs well on mobile, and is ready for real users
