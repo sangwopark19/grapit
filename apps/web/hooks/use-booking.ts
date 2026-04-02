@@ -5,6 +5,7 @@ import type {
   SeatStatusResponse,
   LockSeatRequest,
   LockSeatResponse,
+  UnlockAllResponse,
 } from '@grapit/shared';
 
 export function useShowtimes(performanceId: string) {
@@ -77,6 +78,24 @@ export function useUnlockSeat() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
         queryKey: ['seat-status', variables.showtimeId],
+      });
+    },
+  });
+}
+
+export function useUnlockAllSeats() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ showtimeId }: { showtimeId: string }) =>
+      apiClient.delete<UnlockAllResponse>(
+        `/api/v1/booking/seats/lock-all/${showtimeId}`,
+      ),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ['seat-status', variables.showtimeId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['my-locks', variables.showtimeId],
       });
     },
   });

@@ -11,6 +11,7 @@ import {
   useMyLocks,
   useLockSeat,
   useUnlockSeat,
+  useUnlockAllSeats,
 } from '@/hooks/use-booking';
 import { useBookingStore } from '@/stores/use-booking-store';
 import { useBookingSocket } from '@/hooks/use-socket';
@@ -61,6 +62,7 @@ export function BookingPage({ performanceId }: { performanceId: string }) {
   const { data: myLocksData } = useMyLocks(selectedShowtimeId);
   const lockSeat = useLockSeat();
   const unlockSeat = useUnlockSeat();
+  const unlockAll = useUnlockAllSeats();
 
   // All showtimes from either dedicated hook or performance detail
   const allShowtimes = useMemo(
@@ -302,10 +304,16 @@ export function BookingPage({ performanceId }: { performanceId: string }) {
     useBookingStore.getState().expireTimer();
   }, []);
 
-  // Timer expiry modal reset handler
+  // Timer expiry modal reset handler:
+  // Read showtimeId BEFORE resetBooking clears it, then fire-and-forget unlock-all.
+  // If API call fails, locks expire via TTL anyway -- no error toast needed.
   const handleTimerReset = useCallback(() => {
+    const { selectedShowtimeId: stId } = useBookingStore.getState();
+    if (stId) {
+      unlockAll.mutate({ showtimeId: stId });
+    }
     useBookingStore.getState().resetBooking();
-  }, []);
+  }, [unlockAll]);
 
   // Date selection handler
   const handleDateSelect = useCallback(
