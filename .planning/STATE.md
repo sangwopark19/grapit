@@ -116,9 +116,10 @@ None yet.
 | 260331-ol3 | next/image localhost:8080 remotePatterns 허용 | 2026-03-31 | 59ce131 | [260331-ol3-next-image-localhost](./quick/260331-ol3-next-image-localhost/) |
 | 260331-opp | next/image dev unoptimized + magic bytes content-type 감지 | 2026-03-31 | c8c2e7c | [260331-opp-next-image-dev-unoptimized](./quick/260331-opp-next-image-dev-unoptimized/) |
 | 260331-opp | CORP: cross-origin 헤더 추가 (Helmet same-origin 차단 해결) | 2026-03-31 | 97a25e8 | [260331-opp-next-image-dev-unoptimized](./quick/260331-opp-next-image-dev-unoptimized/) |
+| 260402-kl6 | Booking UI: seat checkmark overlay, button loading states, font-medium removal, timer modal width, destructive token | 2026-04-02 | e798fdc | [260402-kl6-ui-font-medium](./quick/260402-kl6-ui-font-medium/) |
 
 ## Session Continuity
 
-Last session: 2026-04-01T06:27:32.797Z
-Stopped at: Completed 03-03-PLAN.md Tasks 1-2, awaiting checkpoint Task 3 human verification
+Last session: 2026-04-02T05:52:52Z
+Stopped at: Completed quick-260402-kl6 booking UI polish
 Resume file: None
