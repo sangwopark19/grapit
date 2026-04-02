@@ -62,7 +62,7 @@ export function DatePicker({
             'size-8 flex items-center justify-center rounded-md hover:bg-gray-200 text-gray-600',
           weekdays: 'flex',
           weekday:
-            'w-full text-center text-sm font-medium text-gray-500',
+            'w-full text-center text-sm font-normal text-gray-500',
           week: 'flex',
           day: 'relative flex size-8 sm:size-10 items-center justify-center text-sm',
           day_button:

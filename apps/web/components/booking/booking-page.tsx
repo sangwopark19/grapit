@@ -369,7 +369,7 @@ export function BookingPage({ performanceId }: { performanceId: string }) {
           <div className="min-w-0 flex-1 space-y-6">
             {/* Date picker */}
             <div>
-              <h2 className="mb-2 text-sm font-medium text-gray-700">
+              <h2 className="mb-2 text-sm font-normal text-gray-700">
                 날짜 선택
               </h2>
               <DatePicker
@@ -382,7 +382,7 @@ export function BookingPage({ performanceId }: { performanceId: string }) {
             {/* Showtime chips */}
             {selectedDate && (
               <div>
-                <h2 className="mb-2 text-sm font-medium text-gray-700">
+                <h2 className="mb-2 text-sm font-normal text-gray-700">
                   회차 선택
                 </h2>
                 <ShowtimeChips

@@ -17,7 +17,7 @@ interface TimerExpiredModalProps {
 export function TimerExpiredModal({ open, onReset }: TimerExpiredModalProps) {
   return (
     <AlertDialog open={open}>
-      <AlertDialogContent size="sm">
+      <AlertDialogContent>
         <div className="flex flex-col items-center gap-4 text-center">
           <Clock className="size-12 text-gray-400" />
           <AlertDialogTitle className="text-xl font-semibold text-gray-900">

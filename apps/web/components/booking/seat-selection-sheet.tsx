@@ -158,7 +158,7 @@ export function SeatSelectionSheet({
       ) : (
         /* Collapsed view */
         <div className="flex items-center justify-between px-4">
-          <span className="text-sm font-medium text-gray-900">
+          <span className="text-sm font-normal text-gray-900">
             {selectedSeats.length}석 선택 | {totalPrice.toLocaleString()}원
           </span>
           <Button

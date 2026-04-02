@@ -50,7 +50,7 @@ export function CountdownTimer({ expiresAt, onExpire }: CountdownTimerProps) {
     <>
       <div
         className={`flex items-center gap-1 rounded-full px-3 py-1 transition-colors duration-300 ${
-          isWarning ? 'bg-[#C62828] text-white' : 'bg-primary text-white'
+          isWarning ? 'bg-destructive text-white' : 'bg-primary text-white'
         }`}
         aria-live="polite"
         aria-label={`남은 시간 ${minutes}분 ${seconds}초`}

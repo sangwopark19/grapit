@@ -54,7 +54,7 @@ export function ShowtimeChips({
             type="button"
             onClick={() => onSelect(showtime.id)}
             className={cn(
-              'h-9 shrink-0 rounded-lg px-4 text-sm font-medium transition-colors',
+              'h-9 shrink-0 rounded-lg px-4 text-sm font-normal transition-colors',
               isActive
                 ? 'bg-primary text-white'
                 : 'bg-gray-100 text-gray-900 hover:bg-gray-200',
