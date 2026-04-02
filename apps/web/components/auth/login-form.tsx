@@ -23,7 +23,7 @@ import { PasswordInput } from '@/components/auth/password-input';
 import { SocialLoginButton } from '@/components/auth/social-login-button';
 import Link from 'next/link';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 export function LoginForm() {
   const router = useRouter();

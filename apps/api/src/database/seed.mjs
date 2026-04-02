@@ -194,6 +194,44 @@ async function seed() {
     await Promise.all(castInserts);
     console.log(`Inserted ${castInserts.length} castings`);
 
+    // Seat maps (for selling/closing_soon performances that have showtimes)
+    const seatMapConfig = (tiers) => {
+      // Map tier names to seat rows from sample-seat-map.svg
+      const tierMapping = {
+        'VIP석': ['A-1','A-2','A-3','A-4','A-5','A-6','A-7','A-8','A-9','A-10'],
+        'R석': ['B-1','B-2','B-3','B-4','B-5','B-6','B-7','B-8','B-9','B-10'],
+        'S석': ['C-1','C-2','C-3','C-4','C-5','C-6','C-7','C-8','C-9','C-10','C-11','C-12','D-1','D-2','D-3','D-4','D-5','D-6','D-7','D-8','D-9','D-10','D-11','D-12'],
+        'A석': ['E-1','E-2','E-3','E-4','E-5','E-6','E-7','E-8','E-9','E-10','E-11','E-12','E-13','E-14','F-1','F-2','F-3','F-4','F-5','F-6','F-7','F-8','F-9','F-10','F-11','F-12','F-13','F-14'],
+        '일반': ['A-1','A-2','A-3','A-4','A-5','A-6','A-7','A-8','A-9','A-10','B-1','B-2','B-3','B-4','B-5','B-6','B-7','B-8','B-9','B-10','C-1','C-2','C-3','C-4','C-5','C-6','C-7','C-8','C-9','C-10','C-11','C-12','D-1','D-2','D-3','D-4','D-5','D-6','D-7','D-8','D-9','D-10','D-11','D-12'],
+        '청소년': ['E-1','E-2','E-3','E-4','E-5','E-6','E-7','E-8','E-9','E-10','E-11','E-12','E-13','E-14','F-1','F-2','F-3','F-4','F-5','F-6','F-7','F-8','F-9','F-10','F-11','F-12','F-13','F-14'],
+      };
+      const tierColors = { 'VIP석': '#6C3CE0', 'R석': '#2563EB', 'S석': '#16A34A', 'A석': '#F59E0B', '일반': '#2563EB', '청소년': '#16A34A' };
+
+      return {
+        tiers: tiers.map(t => ({
+          tierName: t,
+          color: tierColors[t] || '#6B7280',
+          seatIds: tierMapping[t] || [],
+        })),
+      };
+    };
+
+    // Add seat maps for first 3 performances (selling + closing_soon)
+    const seatMapPerfs = [
+      { idx: 0, tiers: ['VIP석', 'R석', 'S석', 'A석'] },
+      { idx: 1, tiers: ['VIP석', 'R석', 'S석'] },
+      { idx: 2, tiers: ['R석', 'S석', 'A석'] },
+    ];
+    for (const sm of seatMapPerfs) {
+      const config = seatMapConfig(sm.tiers);
+      const totalSeats = config.tiers.reduce((sum, t) => sum + t.seatIds.length, 0);
+      await client.query(
+        'INSERT INTO seat_maps (id, performance_id, svg_url, seat_config, total_seats) VALUES (gen_random_uuid(), $1, $2, $3, $4)',
+        [perfIds[sm.idx].id, '/seed/sample-seat-map.svg', JSON.stringify(config), totalSeats]
+      );
+    }
+    console.log(`Inserted ${seatMapPerfs.length} seat maps`);
+
     // Banners
     const bannerData = [
       { image: '/seed/banners/260324015208_26003900.gif', link: null, sort: 0 },

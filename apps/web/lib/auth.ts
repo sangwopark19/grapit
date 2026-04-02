@@ -1,7 +1,7 @@
 import { useAuthStore } from '@/stores/use-auth-store';
 import type { UserProfile } from '@grapit/shared';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 export async function initializeAuth(): Promise<void> {
   try {

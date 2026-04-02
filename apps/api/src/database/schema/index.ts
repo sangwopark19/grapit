@@ -9,3 +9,4 @@ export { priceTiers } from './price-tiers.js';
 export { castings } from './castings.js';
 export { seatMaps } from './seat-maps.js';
 export { banners } from './banners.js';
+export { seatInventories, seatStatusEnum } from './seat-inventories.js';

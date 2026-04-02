@@ -19,9 +19,9 @@
 
 ### Active
 
-- [ ] SVG 기반 좌석 배치도 (등급별 구분, 실시간 점유 상태, 확대/축소)
-- [ ] 예매 플로우 (날짜/회차 선택 → 좌석 선택 → 결제 → 완료)
-- [ ] 좌석 임시 점유 (Redis SET NX, 10분 TTL)
+- [x] SVG 기반 좌석 배치도 (등급별 구분, 실시간 점유 상태, 확대/축소) — Validated in Phase 3: Seat Map + Real-Time
+- [ ] 예매 플로우 (날짜/회차 선택 → 좌석 선택 → 결제 → 완료) — 좌석 선택까지 Phase 3 완료, 결제는 Phase 4
+- [x] 좌석 임시 점유 (Redis SET NX, 10분 TTL) — Validated in Phase 3: Seat Map + Real-Time
 - [ ] Toss Payments 결제 연동 (카드, 간편결제)
 - [ ] 예매 확인/취소/환불 (마이페이지)
 
@@ -112,4 +112,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-31 after Phase 2 completion*
+*Last updated: 2026-04-02 after Phase 3 completion*

@@ -2,6 +2,7 @@
 
 import { use } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { MapPin, Calendar, Clock, User, Ticket } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -247,27 +248,25 @@ export default function PerformanceDetailPage({
               </>
             )}
 
-            {/* CTA button -- disabled in Phase 2 */}
-            <button
-              type="button"
-              disabled
-              className="mt-6 hidden w-full cursor-not-allowed rounded-lg bg-primary py-3 text-base font-semibold text-white opacity-50 lg:block"
+            {/* CTA button */}
+            <Link
+              href={`/booking/${performance.id}`}
+              className="mt-6 hidden w-full rounded-lg bg-primary py-3 text-center text-base font-semibold text-white hover:bg-primary/90 transition-colors lg:block"
             >
-              추후 오픈 예정
-            </button>
+              예매하기
+            </Link>
           </div>
         </div>
       </main>
 
       {/* Mobile CTA fixed bottom bar */}
       <div className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center border-t bg-white px-6 shadow-[0_-4px_6px_rgba(0,0,0,0.05)] lg:hidden">
-        <button
-          type="button"
-          disabled
-          className="w-full cursor-not-allowed rounded-lg bg-primary py-3 text-base font-semibold text-white opacity-50"
+        <Link
+          href={`/booking/${performance.id}`}
+          className="w-full rounded-lg bg-primary py-3 text-center text-base font-semibold text-white hover:bg-primary/90 transition-colors"
         >
-          추후 오픈 예정
-        </button>
+          예매하기
+        </Link>
       </div>
     </>
   );

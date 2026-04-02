@@ -22,6 +22,13 @@
       "when": 1774945940592,
       "tag": "0002_huge_vengeance",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1775022426904,
+      "tag": "0003_sloppy_dark_beast",
+      "breakpoints": true
     }
   ]
 }
