@@ -132,10 +132,36 @@ describe('SeatMapViewer', () => {
     expect(onSeatClick).toHaveBeenCalledWith('A-1');
   });
 
-  it('does NOT call onSeatClick when clicking a locked/sold seat', async () => {
+  it('calls onSeatClick when clicking a locked seat (parent handles toast)', async () => {
     const onSeatClick = vi.fn();
     const seatStates = new Map<string, SeatState>([
       ['A-1', 'locked'],
+    ]);
+
+    const { container } = render(
+      <SeatMapViewer
+        svgUrl="https://example.com/seats.svg"
+        seatConfig={mockSeatConfig}
+        seatStates={seatStates}
+        selectedSeatIds={new Set()}
+        onSeatClick={onSeatClick}
+        maxSelect={4}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(container.querySelector('[data-seat-id="A-1"]')).toBeTruthy();
+    });
+
+    const seatA1 = container.querySelector('[data-seat-id="A-1"]')!;
+    fireEvent.click(seatA1);
+    expect(onSeatClick).toHaveBeenCalledWith('A-1');
+  });
+
+  it('does NOT call onSeatClick when clicking a sold seat', async () => {
+    const onSeatClick = vi.fn();
+    const seatStates = new Map<string, SeatState>([
+      ['A-1', 'sold'],
     ]);
 
     const { container } = render(
