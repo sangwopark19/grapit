@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState, useCallback, useEffect } from 'react';
+import { Loader2 } from 'lucide-react';
 import type { SeatSelection, Showtime } from '@grapit/shared';
 import { Button } from '@/components/ui/button';
 import { SeatRow } from './seat-row';
@@ -148,7 +149,9 @@ export function SeatSelectionSheet({
               disabled={isLoading}
               onClick={onProceed}
             >
-              다음
+              {isLoading ? (
+                <><Loader2 className="mr-2 size-4 animate-spin" />처리 중...</>
+              ) : '다음'}
             </Button>
           </div>
         </div>
@@ -163,7 +166,9 @@ export function SeatSelectionSheet({
             disabled={isLoading}
             onClick={onProceed}
           >
-            다음
+            {isLoading ? (
+              <><Loader2 className="mr-2 size-4 animate-spin" />처리 중...</>
+            ) : '다음'}
           </Button>
         </div>
       )}

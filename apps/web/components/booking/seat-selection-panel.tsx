@@ -1,5 +1,6 @@
 'use client';
 
+import { Loader2 } from 'lucide-react';
 import type { SeatSelection, Showtime } from '@grapit/shared';
 import { Button } from '@/components/ui/button';
 import { SeatRow } from './seat-row';
@@ -95,7 +96,9 @@ export function SeatSelectionPanel({
           disabled={selectedSeats.length === 0 || isLoading}
           onClick={onProceed}
         >
-          {selectedSeats.length === 0 ? '좌석을 선택해주세요' : '다음'}
+          {isLoading ? (
+            <><Loader2 className="mr-2 size-4 animate-spin" />처리 중...</>
+          ) : selectedSeats.length === 0 ? '좌석을 선택해주세요' : '다음'}
         </Button>
       </div>
     </div>

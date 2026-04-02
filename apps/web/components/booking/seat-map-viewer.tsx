@@ -86,6 +86,38 @@ export function SeatMapViewer({
         el.setAttribute('stroke', SELECTED_STROKE);
         el.setAttribute('stroke-width', '3');
         el.setAttribute('style', 'cursor:pointer;opacity:1;transition:none');
+
+        // Inject white checkmark centered on seat
+        const svgNs = 'http://www.w3.org/2000/svg';
+        const checkEl = doc.createElementNS(svgNs, 'text');
+        let cx: number | null = null;
+        let cy: number | null = null;
+        const tagName = el.tagName.toLowerCase();
+
+        if (tagName === 'rect') {
+          const rx = parseFloat(el.getAttribute('x') ?? '0');
+          const ry = parseFloat(el.getAttribute('y') ?? '0');
+          const rw = parseFloat(el.getAttribute('width') ?? '0');
+          const rh = parseFloat(el.getAttribute('height') ?? '0');
+          cx = rx + rw / 2;
+          cy = ry + rh / 2;
+        } else if (tagName === 'circle') {
+          cx = parseFloat(el.getAttribute('cx') ?? '0');
+          cy = parseFloat(el.getAttribute('cy') ?? '0');
+        }
+
+        if (cx !== null && cy !== null) {
+          checkEl.setAttribute('x', String(cx));
+          checkEl.setAttribute('y', String(cy));
+          checkEl.setAttribute('text-anchor', 'middle');
+          checkEl.setAttribute('dominant-baseline', 'central');
+          checkEl.setAttribute('fill', 'white');
+          checkEl.setAttribute('font-size', '12');
+          checkEl.setAttribute('font-weight', 'bold');
+          checkEl.setAttribute('pointer-events', 'none');
+          checkEl.textContent = '\u2713';
+          el.parentNode?.insertBefore(checkEl, el.nextSibling);
+        }
       } else if (state === 'locked' || state === 'sold') {
         el.setAttribute('fill', LOCKED_COLOR);
         el.removeAttribute('stroke');
