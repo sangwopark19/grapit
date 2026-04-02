@@ -7,7 +7,7 @@ export function SeatMapControls() {
   const { zoomIn, zoomOut, resetTransform } = useControls();
 
   return (
-    <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2">
+    <div className="absolute bottom-4 right-4 z-50 flex flex-col gap-2">
       <button
         type="button"
         onClick={() => zoomIn()}

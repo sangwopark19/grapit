@@ -112,6 +112,7 @@ export function SeatSelectionSheet({
         height: sheetHeight,
         transform: isDragging ? `translateY(${translateY}px)` : undefined,
         transition: isDragging ? 'none' : 'height 200ms ease-out',
+        paddingBottom: 'env(safe-area-inset-bottom)',
       }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}

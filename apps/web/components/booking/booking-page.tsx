@@ -324,8 +324,8 @@ export function BookingPage({ performanceId }: { performanceId: string }) {
           <Skeleton className="h-6 w-40" />
           <Skeleton className="size-9 rounded-md" />
         </div>
-        <div className="mx-auto w-full max-w-[1280px] px-4 py-4 lg:px-6 lg:py-8">
-          <div className="flex gap-8">
+        <div className="mx-auto w-full max-w-[1280px] px-4 py-4 pb-24 lg:px-6 lg:py-8 lg:pb-8">
+          <div className="flex flex-col lg:flex-row lg:gap-8">
             <div className="min-w-0 flex-1 space-y-6">
               <Skeleton className="h-[200px] w-full rounded-lg" />
               <div className="flex gap-2">
@@ -363,8 +363,8 @@ export function BookingPage({ performanceId }: { performanceId: string }) {
         onExpire={handleTimerExpire}
       />
 
-      <main className="mx-auto w-full max-w-[1280px] px-4 py-4 lg:px-6 lg:py-8">
-        <div className="flex gap-8">
+      <main className="mx-auto w-full max-w-[1280px] px-4 py-4 pb-24 lg:px-6 lg:py-8 lg:pb-8">
+        <div className="flex flex-col lg:flex-row lg:gap-8">
           {/* Left column */}
           <div className="min-w-0 flex-1 space-y-6">
             {/* Date picker */}

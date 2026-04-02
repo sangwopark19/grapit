@@ -64,9 +64,9 @@ export function DatePicker({
           weekday:
             'w-full text-center text-sm font-medium text-gray-500',
           week: 'flex',
-          day: 'relative flex size-10 items-center justify-center text-sm',
+          day: 'relative flex size-8 sm:size-10 items-center justify-center text-sm',
           day_button:
-            'size-10 rounded-full text-sm font-normal hover:bg-gray-200 focus-visible:ring-2 focus-visible:ring-primary',
+            'size-8 sm:size-10 rounded-full text-sm font-normal hover:bg-gray-200 focus-visible:ring-2 focus-visible:ring-primary',
           selected:
             '!bg-primary !text-white rounded-full font-semibold',
           today: 'font-semibold text-primary',
