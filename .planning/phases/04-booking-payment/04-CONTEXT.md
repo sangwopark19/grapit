@@ -39,6 +39,9 @@
 ### Admin 환불 처리
 - **D-16:** Admin 예매 관리 페이지: 예매 목록 테이블(예매번호, 사용자명, 공연명, 상태, 결제금액) + 상태 필터(전체/예매완료/취소) + 행별 환불 버튼. ADMN-04 충족
 
+### Toss Payments 연동 필수 규칙
+- **D-17:** Toss Payments 결제 시스템 개발 및 연동 시 토스페이먼츠 공식 MCP를 반드시 사용해야 한다. SDK API, 결제 플로우, webhook 처리, 에러 코드 등 모든 Toss Payments 관련 구현은 MCP를 통해 최신 공식 문서를 확인한 후 진행한다.
+
 ### Claude's Discretion
 - 예매번호 생성 형식 (GRP-YYYYMMDD-NNN 등)
 - Toss Payments webhook 처리 상세 (결제 확인, 가상계좌 입금 등)
