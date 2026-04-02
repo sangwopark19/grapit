@@ -6,13 +6,50 @@ import { DRIZZLE } from '../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../database/drizzle.provider.js';
 import { seatInventories } from '../../database/schema/seat-inventories.js';
 import { BookingGateway } from './booking.gateway.js';
-import type { LockSeatResponse, SeatState, SeatStatusResponse } from '@grapit/shared';
+import type { LockSeatResponse, SeatState, SeatStatusResponse, UnlockAllResponse } from '@grapit/shared';
 
 /** Maximum number of seats a user can lock per showtime (D-03) */
 const MAX_SEATS = 4;
 
 /** Lock TTL in seconds (10 minutes, per BOOK-03) */
 const LOCK_TTL = 600;
+
+/**
+ * Lua script for atomic seat locking.
+ * Cleans stale user-seats entries, checks count, SET NX, SADD + EXPIRE.
+ *
+ * KEYS[1] = user-seats:{showtimeId}:{userId}
+ * KEYS[2] = seat:{showtimeId}:{seatId}
+ * KEYS[3] = locked-seats:{showtimeId}
+ * ARGV[1] = userId
+ * ARGV[2] = LOCK_TTL (600)
+ * ARGV[3] = MAX_SEATS (4)
+ * ARGV[4] = seatId
+ * ARGV[5] = key prefix "seat:{showtimeId}:"
+ */
+const LOCK_SEAT_LUA = `
+local members = redis.call('SMEMBERS', KEYS[1])
+local alive = 0
+for i, sid in ipairs(members) do
+  if redis.call('EXISTS', ARGV[5] .. sid) == 1 then
+    alive = alive + 1
+  else
+    redis.call('SREM', KEYS[1], sid)
+    redis.call('SREM', KEYS[3], sid)
+  end
+end
+if alive >= tonumber(ARGV[3]) then
+  return {0, 'MAX_SEATS'}
+end
+local ok = redis.call('SET', KEYS[2], ARGV[1], 'NX', 'EX', tonumber(ARGV[2]))
+if not ok then
+  return {0, 'CONFLICT'}
+end
+redis.call('SADD', KEYS[1], ARGV[4])
+redis.call('EXPIRE', KEYS[1], tonumber(ARGV[2]))
+redis.call('SADD', KEYS[3], ARGV[4])
+return {1, KEYS[2], ARGV[4]}
+`;
 
 @Injectable()
 export class BookingService {
@@ -23,35 +60,33 @@ export class BookingService {
   ) {}
 
   /**
-   * Attempts to lock a seat for a user using Redis SET NX.
-   * Writes to both user-seats and locked-seats Redis sets.
+   * Attempts to lock a seat for a user using a single Lua script (redis.eval).
+   * Atomically: cleans stale user-seats, checks count, SET NX, SADD + EXPIRE.
    */
   async lockSeat(userId: string, showtimeId: string, seatId: string): Promise<LockSeatResponse> {
-    // 1. Check user seat count
-    const currentCount = await this.redis.scard(`user-seats:${showtimeId}:${userId}`);
-    if (currentCount >= MAX_SEATS) {
-      throw new ConflictException(`최대 ${MAX_SEATS}석까지 선택할 수 있습니다`);
-    }
-
-    // 2. Attempt atomic lock via SET NX
+    const userSeatsKey = `user-seats:${showtimeId}:${userId}`;
     const lockKey = `seat:${showtimeId}:${seatId}`;
-    const lockResult = await this.redis.set(lockKey, userId, { nx: true, ex: LOCK_TTL });
+    const lockedSeatsKey = `locked-seats:${showtimeId}`;
+    const keyPrefix = `seat:${showtimeId}:`;
 
-    if (lockResult === null) {
+    const result = await this.redis.eval<[string, string, string, string, string], [number, string, string?]>(
+      LOCK_SEAT_LUA,
+      [userSeatsKey, lockKey, lockedSeatsKey],
+      [userId, String(LOCK_TTL), String(MAX_SEATS), seatId, keyPrefix],
+    );
+
+    const [status, reason] = result;
+
+    if (status === 0) {
+      if (reason === 'MAX_SEATS') {
+        throw new ConflictException(`최대 ${MAX_SEATS}석까지 선택할 수 있습니다`);
+      }
       throw new ConflictException('이미 다른 사용자가 선택한 좌석입니다');
     }
 
-    // 3. Track user seats (with TTL matching lock)
-    await this.redis.sadd(`user-seats:${showtimeId}:${userId}`, seatId);
-    await this.redis.expire(`user-seats:${showtimeId}:${userId}`, LOCK_TTL);
-
-    // 4. Track global locked seats (CRITICAL: populates set for getSeatStatus)
-    await this.redis.sadd(`locked-seats:${showtimeId}`, seatId);
-
-    // 5. Broadcast real-time update (include userId so sender can ignore own events)
+    // Broadcast real-time update (include userId so sender can ignore own events)
     this.gateway.broadcastSeatUpdate(showtimeId, seatId, 'locked', userId);
 
-    // 6. Return response
     return {
       success: true,
       lockId: lockKey,
@@ -86,6 +121,42 @@ export class BookingService {
     this.gateway.broadcastSeatUpdate(showtimeId, seatId, 'available', userId);
 
     return true;
+  }
+
+  /**
+   * Unlocks ALL seats for a user in a showtime.
+   * Used by timer reset to release all locks at once.
+   * Not Lua-based because: called once per reset (no concurrency),
+   * and we need per-seat broadcast calls in Node.
+   */
+  async unlockAllSeats(userId: string, showtimeId: string): Promise<UnlockAllResponse> {
+    const userSeatsKey = `user-seats:${showtimeId}:${userId}`;
+    const lockedSeatsKey = `locked-seats:${showtimeId}`;
+
+    const members = await this.redis.smembers(userSeatsKey) as string[];
+
+    if (members.length === 0) {
+      return { unlockedSeats: [] };
+    }
+
+    const unlockedSeats: string[] = [];
+
+    for (const seatId of members) {
+      const lockKey = `seat:${showtimeId}:${seatId}`;
+      const owner = await this.redis.get(lockKey);
+
+      if (owner === userId) {
+        await this.redis.del(lockKey);
+        await this.redis.srem(lockedSeatsKey, seatId);
+        this.gateway.broadcastSeatUpdate(showtimeId, seatId, 'available', userId);
+        unlockedSeats.push(seatId);
+      }
+    }
+
+    // Delete the user-seats key entirely
+    await this.redis.del(userSeatsKey);
+
+    return { unlockedSeats };
   }
 
   /**

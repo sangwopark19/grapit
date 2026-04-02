@@ -62,6 +62,21 @@ export class BookingController {
   }
 
   /**
+   * DELETE /api/v1/booking/seats/lock-all/:showtimeId
+   * Auth required. Releases ALL seat locks for the authenticated user in a showtime.
+   * Used by timer reset to clean up all locks at once.
+   */
+  @Delete('seats/lock-all/:showtimeId')
+  @HttpCode(HttpStatus.OK)
+  async unlockAllSeats(
+    @Param('showtimeId') showtimeId: string,
+    @Req() req: Request,
+  ) {
+    const user = req.user as { id: string };
+    return this.bookingService.unlockAllSeats(user.id, showtimeId);
+  }
+
+  /**
    * GET /api/v1/booking/schedules/:showtimeId/seats
    * Public endpoint. Returns all seat states for a showtime.
    */
