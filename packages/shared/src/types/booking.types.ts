@@ -31,3 +31,7 @@ export interface SeatUpdateEvent {
   status: SeatState;
   userId?: string;
 }
+
+export interface UnlockAllResponse {
+  unlockedSeats: string[];
+}

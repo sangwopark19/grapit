@@ -14,6 +14,7 @@ function createMockRedis() {
     srem: vi.fn(),
     scard: vi.fn(),
     expire: vi.fn(),
+    eval: vi.fn(),
   };
 }
 
@@ -55,22 +56,23 @@ describe('BookingService', () => {
   });
 
   describe('lockSeat', () => {
-    it('calls redis.set with {nx: true, ex: 600} and returns LockSeatResponse on success', async () => {
-      mockRedis.scard.mockResolvedValue(3); // under limit
-      mockRedis.set.mockResolvedValue('OK');
-      mockRedis.sadd.mockResolvedValue(1);
-      mockRedis.expire.mockResolvedValue(1);
+    it('cleans stale user-seats entries before count check via Lua eval', async () => {
+      // Lua returns [1, lockKey, seatId] = success
+      const lockKey = `seat:${showtimeId}:${seatId}`;
+      mockRedis.eval.mockResolvedValue([1, lockKey, seatId]);
 
       const before = Date.now();
       const result = await service.lockSeat(userId, showtimeId, seatId);
       const after = Date.now();
 
-      // Verify redis.set called with correct args
-      expect(mockRedis.set).toHaveBeenCalledWith(
-        `seat:${showtimeId}:${seatId}`,
-        userId,
-        { nx: true, ex: 600 },
-      );
+      // Verify redis.eval called with script containing SMEMBERS + EXISTS loop
+      expect(mockRedis.eval).toHaveBeenCalledOnce();
+      const [script, keys, args] = mockRedis.eval.mock.calls[0] as [string, string[], unknown[]];
+      expect(script).toContain('SMEMBERS');
+      expect(script).toContain('EXISTS');
+      expect(keys).toContain(`user-seats:${showtimeId}:${userId}`);
+      expect(keys).toContain(`seat:${showtimeId}:${seatId}`);
+      expect(keys).toContain(`locked-seats:${showtimeId}`);
 
       // Verify response shape
       expect(result.success).toBe(true);
@@ -79,57 +81,27 @@ describe('BookingService', () => {
       expect(result.expiresAt).toBeLessThanOrEqual(after + 600_000);
     });
 
-    it('returns 409 when redis.set returns null (seat already locked)', async () => {
-      mockRedis.scard.mockResolvedValue(0);
-      mockRedis.set.mockResolvedValue(null);
+    it('rejects when live seat count >= MAX_SEATS after stale cleanup', async () => {
+      // Lua returns [0, "MAX_SEATS"] = max seats exceeded
+      mockRedis.eval.mockResolvedValue([0, 'MAX_SEATS']);
 
       await expect(service.lockSeat(userId, showtimeId, seatId))
         .rejects
         .toThrow(ConflictException);
-
-      // Verify sadd NOT called for locked-seats (lock failed)
-      const lockedSeatsCalls = mockRedis.sadd.mock.calls.filter(
-        (call: unknown[]) => typeof call[0] === 'string' && (call[0] as string).startsWith('locked-seats:'),
-      );
-      expect(lockedSeatsCalls).toHaveLength(0);
     });
 
-    it('rejects when user already has 4 locked seats (max seat limit D-03)', async () => {
-      mockRedis.scard.mockResolvedValue(4);
+    it('rejects when SET NX fails (seat taken)', async () => {
+      // Lua returns [0, "CONFLICT"] = seat already locked
+      mockRedis.eval.mockResolvedValue([0, 'CONFLICT']);
 
       await expect(service.lockSeat(userId, showtimeId, seatId))
         .rejects
-        .toThrow(/4/);
-    });
-
-    it('adds seatId to BOTH user-seats AND locked-seats Redis sets', async () => {
-      mockRedis.scard.mockResolvedValue(0);
-      mockRedis.set.mockResolvedValue('OK');
-      mockRedis.sadd.mockResolvedValue(1);
-      mockRedis.expire.mockResolvedValue(1);
-
-      await service.lockSeat(userId, showtimeId, seatId);
-
-      // Verify user-seats set
-      const userSeatsCalls = mockRedis.sadd.mock.calls.filter(
-        (call: unknown[]) => typeof call[0] === 'string' && (call[0] as string).startsWith('user-seats:'),
-      );
-      expect(userSeatsCalls).toHaveLength(1);
-      expect(userSeatsCalls[0]).toEqual([`user-seats:${showtimeId}:${userId}`, seatId]);
-
-      // Verify locked-seats set (CRITICAL)
-      const lockedSeatsCalls = mockRedis.sadd.mock.calls.filter(
-        (call: unknown[]) => typeof call[0] === 'string' && (call[0] as string).startsWith('locked-seats:'),
-      );
-      expect(lockedSeatsCalls).toHaveLength(1);
-      expect(lockedSeatsCalls[0]).toEqual([`locked-seats:${showtimeId}`, seatId]);
+        .toThrow(ConflictException);
     });
 
     it('calls gateway.broadcastSeatUpdate after successful lock', async () => {
-      mockRedis.scard.mockResolvedValue(0);
-      mockRedis.set.mockResolvedValue('OK');
-      mockRedis.sadd.mockResolvedValue(1);
-      mockRedis.expire.mockResolvedValue(1);
+      const lockKey = `seat:${showtimeId}:${seatId}`;
+      mockRedis.eval.mockResolvedValue([1, lockKey, seatId]);
 
       await service.lockSeat(userId, showtimeId, seatId);
 
@@ -140,6 +112,16 @@ describe('BookingService', () => {
         'locked',
         userId,
       );
+    });
+
+    it('does NOT broadcast when lock fails', async () => {
+      mockRedis.eval.mockResolvedValue([0, 'CONFLICT']);
+
+      await expect(service.lockSeat(userId, showtimeId, seatId))
+        .rejects
+        .toThrow(ConflictException);
+
+      expect(mockGateway.broadcastSeatUpdate).not.toHaveBeenCalled();
     });
   });
 
@@ -206,6 +188,69 @@ describe('BookingService', () => {
         'available',
         userId,
       );
+    });
+  });
+
+  describe('unlockAllSeats', () => {
+    it('unlocks all owned seats and returns seatIds', async () => {
+      mockRedis.smembers.mockResolvedValue(['A-1', 'A-2']);
+      mockRedis.get
+        .mockResolvedValueOnce(userId)   // A-1 owned
+        .mockResolvedValueOnce(userId);  // A-2 owned
+      mockRedis.del.mockResolvedValue(1);
+      mockRedis.srem.mockResolvedValue(1);
+
+      const result = await service.unlockAllSeats(userId, showtimeId);
+
+      expect(result.unlockedSeats).toEqual(['A-1', 'A-2']);
+
+      // Verify del called for each seat lock key
+      expect(mockRedis.del).toHaveBeenCalledWith(`seat:${showtimeId}:A-1`);
+      expect(mockRedis.del).toHaveBeenCalledWith(`seat:${showtimeId}:A-2`);
+
+      // Verify srem called for locked-seats for each seat
+      const lockedSeatsCalls = mockRedis.srem.mock.calls.filter(
+        (call: unknown[]) => typeof call[0] === 'string' && (call[0] as string).startsWith('locked-seats:'),
+      );
+      expect(lockedSeatsCalls).toHaveLength(2);
+
+      // Verify broadcast called for each unlocked seat
+      expect(mockGateway.broadcastSeatUpdate).toHaveBeenCalledTimes(2);
+      expect(mockGateway.broadcastSeatUpdate).toHaveBeenCalledWith(showtimeId, 'A-1', 'available', userId);
+      expect(mockGateway.broadcastSeatUpdate).toHaveBeenCalledWith(showtimeId, 'A-2', 'available', userId);
+
+      // Verify user-seats key deleted entirely at the end
+      expect(mockRedis.del).toHaveBeenCalledWith(`user-seats:${showtimeId}:${userId}`);
+    });
+
+    it('skips seats not owned by user', async () => {
+      mockRedis.smembers.mockResolvedValue(['A-1', 'A-2']);
+      mockRedis.get
+        .mockResolvedValueOnce(userId)        // A-1 owned
+        .mockResolvedValueOnce('other-user');  // A-2 NOT owned
+      mockRedis.del.mockResolvedValue(1);
+      mockRedis.srem.mockResolvedValue(1);
+
+      const result = await service.unlockAllSeats(userId, showtimeId);
+
+      // Only A-1 unlocked
+      expect(result.unlockedSeats).toEqual(['A-1']);
+
+      // Verify del called only for A-1
+      expect(mockRedis.del).toHaveBeenCalledWith(`seat:${showtimeId}:A-1`);
+
+      // Verify broadcast only for A-1
+      expect(mockGateway.broadcastSeatUpdate).toHaveBeenCalledTimes(1);
+      expect(mockGateway.broadcastSeatUpdate).toHaveBeenCalledWith(showtimeId, 'A-1', 'available', userId);
+    });
+
+    it('returns empty array when no seats locked', async () => {
+      mockRedis.smembers.mockResolvedValue([]);
+
+      const result = await service.unlockAllSeats(userId, showtimeId);
+
+      expect(result.unlockedSeats).toEqual([]);
+      expect(mockGateway.broadcastSeatUpdate).not.toHaveBeenCalled();
     });
   });
 
