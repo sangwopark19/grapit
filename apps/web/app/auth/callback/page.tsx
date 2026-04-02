@@ -33,7 +33,7 @@ function CallbackContent() {
       void (async () => {
         try {
           const userRes = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/v1/users/me`,
+            `${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/users/me`,
             {
               headers: {
                 Authorization: `Bearer ${accessToken}`,
