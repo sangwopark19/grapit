@@ -184,6 +184,15 @@ export function BookingPage({ performanceId }: { performanceId: string }) {
     (seatId: string) => {
       if (!selectedShowtimeId) return;
 
+      // Locked seat: show toast and return
+      const seatState = seatStatesMap.get(seatId);
+      if (seatState === 'locked' && !selectedSeatIds.has(seatId)) {
+        toast.info('이미 다른 사용자가 선택한 좌석입니다', {
+          style: { backgroundColor: '#F3EFFF', color: '#6C3CE0' },
+        });
+        return;
+      }
+
       // If already selected -> deselect
       if (selectedSeatIds.has(seatId)) {
         removeSeat(seatId);
@@ -250,6 +259,7 @@ export function BookingPage({ performanceId }: { performanceId: string }) {
     },
     [
       selectedShowtimeId,
+      seatStatesMap,
       selectedSeatIds,
       selectedSeats.length,
       tierInfoMap,

@@ -114,11 +114,8 @@ export function SeatMapViewer({
       if (!seatId) return;
 
       const state = seatStates.get(seatId) ?? 'available';
-      const isSelected = selectedSeatIds.has(seatId);
-
-      if (state === 'available' || isSelected) {
-        onSeatClick(seatId);
-      }
+      if (state === 'sold') return;
+      onSeatClick(seatId);
     },
     [seatStates, selectedSeatIds, onSeatClick],
   );

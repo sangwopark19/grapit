@@ -19,8 +19,8 @@ interface TimerExpiredModalProps {
 export function TimerExpiredModal({ open, onReset }: TimerExpiredModalProps) {
   return (
     <AlertDialog open={open}>
-      <AlertDialogContent size="sm" className="p-8">
-        <AlertDialogHeader className="flex flex-col items-center gap-4">
+      <AlertDialogContent>
+        <AlertDialogHeader className="items-center gap-4">
           <Clock className="size-12 text-gray-400" />
           <AlertDialogTitle className="text-xl font-semibold text-gray-900">
             시간이 만료되었습니다
@@ -30,10 +30,11 @@ export function TimerExpiredModal({ open, onReset }: TimerExpiredModalProps) {
             선택해주세요.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter className="mt-4">
+        <AlertDialogFooter className="mt-4 sm:justify-center">
           <AlertDialogAction
             onClick={onReset}
-            className="h-12 w-full"
+            size="lg"
+            className="w-full"
           >
             처음으로
           </AlertDialogAction>
