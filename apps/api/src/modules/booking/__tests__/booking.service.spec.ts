@@ -138,6 +138,7 @@ describe('BookingService', () => {
         showtimeId,
         seatId,
         'locked',
+        userId,
       );
     });
   });
@@ -203,6 +204,7 @@ describe('BookingService', () => {
         showtimeId,
         seatId,
         'available',
+        userId,
       );
     });
   });
