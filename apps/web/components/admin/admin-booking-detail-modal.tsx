@@ -147,7 +147,7 @@ export function AdminBookingDetailModal({
                 <Separator />
                 <InfoRow
                   label="결제일시"
-                  value={formatDateTime(booking.paymentInfo.paidAt)}
+                  value={booking.paymentInfo.paidAt ? formatDateTime(booking.paymentInfo.paidAt) : '—'}
                 />
                 <Separator />
               </>
