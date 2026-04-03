@@ -50,22 +50,22 @@ Requirements for initial release (MVP). Each maps to roadmap phases.
 - [ ] **PAY-02**: 카카오페이로 결제할 수 있다
 - [ ] **PAY-03**: 네이버페이로 결제할 수 있다
 - [ ] **PAY-04**: 계좌이체로 결제할 수 있다
-- [ ] **PAY-05**: 최종 결제 금액이 좌석 등급/수량 기반으로 정확히 표시된다
-- [ ] **PAY-06**: 결제 완료 시 예매번호가 발급되고 확인 페이지가 표시된다
-- [ ] **PAY-07**: 결제 실패/취소 시 좌석 점유가 해제되고 안내 메시지가 표시된다
+- [x] **PAY-05**: 최종 결제 금액이 좌석 등급/수량 기반으로 정확히 표시된다
+- [x] **PAY-06**: 결제 완료 시 예매번호가 발급되고 확인 페이지가 표시된다
+- [x] **PAY-07**: 결제 실패/취소 시 좌석 점유가 해제되고 안내 메시지가 표시된다
 
 ### Reservation Management
 
-- [ ] **RESV-01**: 마이페이지에서 예매 내역 목록을 조회할 수 있다
-- [ ] **RESV-02**: 예매 상세(예매번호, 좌석, 결제 정보, 취소마감시간)를 확인할 수 있다
-- [ ] **RESV-03**: 취소마감시간 전 예매를 취소하고 환불받을 수 있다
+- [x] **RESV-01**: 마이페이지에서 예매 내역 목록을 조회할 수 있다
+- [x] **RESV-02**: 예매 상세(예매번호, 좌석, 결제 정보, 취소마감시간)를 확인할 수 있다
+- [x] **RESV-03**: 취소마감시간 전 예매를 취소하고 환불받을 수 있다
 
 ### Admin
 
 - [x] **ADMN-01**: 관리자가 공연을 등록/수정/삭제할 수 있다 (제목, 장르, 장소, 기간, 가격, 포스터 등)
 - [x] **ADMN-02**: 관리자가 공연의 회차(날짜/시간)를 등록/수정/삭제할 수 있다
 - [x] **ADMN-03**: 관리자가 공연장의 SVG 좌석 배치도를 업로드하고 좌석 등급/가격을 설정할 수 있다
-- [ ] **ADMN-04**: 관리자가 예매 목록을 조회하고 환불 처리할 수 있다
+- [x] **ADMN-04**: 관리자가 예매 목록을 조회하고 환불 처리할 수 있다
 
 ### Infrastructure
 
@@ -149,18 +149,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BOOK-02 | Phase 3 | Pending |
 | BOOK-03 | Phase 3 | Pending |
 | BOOK-04 | Phase 3 | Pending |
-| BOOK-05 | Phase 4 | Pending |
+| BOOK-05 | Phase 4 | Complete |
 | PAY-01 | Phase 4 | Pending |
 | PAY-02 | Phase 4 | Pending |
 | PAY-03 | Phase 4 | Pending |
 | PAY-04 | Phase 4 | Pending |
-| PAY-05 | Phase 4 | Pending |
-| PAY-06 | Phase 4 | Pending |
-| PAY-07 | Phase 4 | Pending |
-| RESV-01 | Phase 4 | Pending |
-| RESV-02 | Phase 4 | Pending |
-| RESV-03 | Phase 4 | Pending |
-| ADMN-04 | Phase 4 | Pending |
+| PAY-05 | Phase 4 | Complete |
+| PAY-06 | Phase 4 | Complete |
+| PAY-07 | Phase 4 | Complete |
+| RESV-01 | Phase 4 | Complete |
+| RESV-02 | Phase 4 | Complete |
+| RESV-03 | Phase 4 | Complete |
+| ADMN-04 | Phase 4 | Complete |
 | INFR-01 | Phase 5 | Pending |
 | INFR-02 | Phase 5 | Pending |
 | INFR-03 | Phase 5 | Pending |

@@ -70,13 +70,13 @@ Plans:
   3. User can select seats and see them listed in a side panel with tier, row, number, and price
   4. Selected seat is locked via Redis SET NX for 10 minutes; lock auto-releases on TTL expiry
   5. Other users see seat selections/releases reflected in real time via WebSocket without page refresh
-**Plans**: 3 plans
+**Plans**: TBD
 **UI hint**: yes
 
 Plans:
-- [ ] 03-01-PLAN.md — Backend booking module: seat_inventories schema + Redis locking + WebSocket gateway + REST API
-- [ ] 03-02-PLAN.md — Frontend booking page: date/showtime picker + SVG seat map + zoom/pan + selection panel
-- [ ] 03-03-PLAN.md — Real-time integration: Socket.IO client + live seat updates + countdown timer + race condition handling
+- [ ] 03-01: TBD
+- [ ] 03-02: TBD
+- [ ] 03-03: TBD
 
 ### Phase 4: Booking + Payment
 **Goal**: Users can complete the full booking-to-payment flow and manage their reservations
@@ -88,13 +88,13 @@ Plans:
   3. User receives a booking number on the confirmation page after successful payment
   4. On payment failure or cancellation, seat locks are released and the user sees a clear error message with guidance
   5. User can view booking history, see booking details (number, seats, payment info, cancellation deadline), and cancel/refund before the deadline from My Page
-**Plans**: 3 plans
+**Plans**: TBD
 **UI hint**: yes
 
 Plans:
-- [ ] 04-01-PLAN.md — Backend: DB schema (reservations, payments) + shared types + NestJS reservation/payment modules + Toss Payments client + admin booking service
-- [ ] 04-02-PLAN.md — Frontend booking flow: confirm page + Toss Payments widget + complete page
-- [ ] 04-03-PLAN.md — Frontend reservation management: mypage reservations + detail + cancel + admin bookings dashboard
+- [x] 04-01-PLAN.md -- Backend: DB schema (reservations, payments), shared types, TossPaymentsClient, reservation/payment services
+- [ ] 04-02: TBD
+- [ ] 04-03: TBD
 
 ### Phase 5: Polish + Launch
 **Goal**: The application handles edge cases gracefully, performs well on mobile, and is ready for real users
@@ -119,7 +119,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation + Auth | 5/5 | Complete | 2026-03-27 |
-| 2. Catalog + Admin | 6/6 | Complete |  |
+| 2. Catalog + Admin | 2/6 | In Progress|  |
 | 3. Seat Map + Real-Time | 0/3 | Not started | - |
-| 4. Booking + Payment | 0/3 | Not started | - |
+| 4. Booking + Payment | 1/3 | In Progress | - |
 | 5. Polish + Launch | 0/2 | Not started | - |
