@@ -88,8 +88,8 @@ export function BookerInfoSection({ userName, userPhone, onUpdate }: BookerInfoS
                 {...register('phone', {
                   required: '연락처를 입력해주세요',
                   pattern: {
-                    value: /^010-\d{4}-\d{4}$/,
-                    message: '올바른 전화번호 형식이 아닙니다 (010-0000-0000)',
+                    value: /^010-?\d{4}-?\d{4}$/,
+                    message: '올바른 전화번호 형식이 아닙니다 (01012345678 또는 010-1234-5678)',
                   },
                 })}
                 placeholder="010-0000-0000"
