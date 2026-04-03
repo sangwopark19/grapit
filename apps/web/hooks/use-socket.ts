@@ -61,7 +61,7 @@ export function useBookingSocket(showtimeId: string | null): void {
             ...old,
             seats: {
               ...old.seats,
-              [data.seatId]: { status: data.status, userId: data.userId },
+              [data.seatId]: data.status as import('@grapit/shared').SeatState,
             },
           };
         },

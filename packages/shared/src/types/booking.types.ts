@@ -1,3 +1,22 @@
+// Real-time seat types (Phase 3 - booking gateway/service)
+export type SeatState = 'available' | 'locked' | 'sold';
+
+export interface LockSeatResponse {
+  success: boolean;
+  lockId: string;
+  seatId: string;
+  expiresAt: number;
+}
+
+export interface UnlockAllResponse {
+  unlockedSeats: string[];
+}
+
+export interface SeatStatusResponse {
+  showtimeId: string;
+  seats: Record<string, SeatState>;
+}
+
 export type ReservationStatus = 'PENDING_PAYMENT' | 'CONFIRMED' | 'CANCELLED' | 'FAILED';
 
 export type PaymentStatus = 'READY' | 'DONE' | 'CANCELED' | 'ABORTED' | 'EXPIRED';
@@ -5,6 +24,7 @@ export type PaymentStatus = 'READY' | 'DONE' | 'CANCELED' | 'ABORTED' | 'EXPIRED
 export interface SeatSelection {
   seatId: string;
   tierName: string;
+  tierColor?: string;
   price: number;
   row: string;
   number: string;

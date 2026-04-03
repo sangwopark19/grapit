@@ -4,26 +4,14 @@ import type {
   ConfirmPaymentRequest,
   ReservationDetail,
   SeatSelection,
+  SeatStatusResponse,
+  LockSeatResponse,
+  UnlockAllResponse,
 } from '@grapit/shared';
-
-// Phase 3 seat-related types (defined locally since not yet in shared package)
-interface SeatStatusResponse {
-  seats: Record<string, { status: string; userId?: string }>;
-}
 
 interface LockSeatRequest {
   showtimeId: string;
   seatId: string;
-}
-
-interface LockSeatResponse {
-  success: boolean;
-  expiresAt: number;
-  seatId: string;
-}
-
-interface UnlockAllResponse {
-  unlockedCount: number;
 }
 
 interface MyLocksResponse {
@@ -37,7 +25,7 @@ export function useShowtimes(performanceId: string) {
   return useQuery({
     queryKey: ['showtimes', performanceId],
     queryFn: () =>
-      apiClient.get<{ id: string; dateTime: string }[]>(
+      apiClient.get<import('@grapit/shared').Showtime[]>(
         `/api/v1/performances/${performanceId}/showtimes`,
       ),
     enabled: false,
