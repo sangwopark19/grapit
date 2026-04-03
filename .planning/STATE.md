@@ -117,7 +117,8 @@ None yet.
 | 260331-ol3 | next/image localhost:8080 remotePatterns 허용 | 2026-03-31 | 59ce131 | [260331-ol3-next-image-localhost](./quick/260331-ol3-next-image-localhost/) |
 | 260331-opp | next/image dev unoptimized + magic bytes content-type 감지 | 2026-03-31 | c8c2e7c | [260331-opp-next-image-dev-unoptimized](./quick/260331-opp-next-image-dev-unoptimized/) |
 | 260331-opp | CORP: cross-origin 헤더 추가 (Helmet same-origin 차단 해결) | 2026-03-31 | 97a25e8 | [260331-opp-next-image-dev-unoptimized](./quick/260331-opp-next-image-dev-unoptimized/) |
-| 260403-f4z | Fix redis eval not a function in BookingService lockSeat | 2026-04-03 | pending | [260403-f4z-fix-redis-eval-not-a-function-in-booking](./quick/260403-f4z-fix-redis-eval-not-a-function-in-booking/) |
+| 260403-f4z | Fix redis eval not a function in BookingService lockSeat | 2026-04-03 | 521e59d | [260403-f4z-fix-redis-eval-not-a-function-in-booking](./quick/260403-f4z-fix-redis-eval-not-a-function-in-booking/) |
+| 260403-f5a | Wire handleProceed to confirm page navigation | 2026-04-03 | 15e09a0 | - |
 
 ## Session Continuity
 
