@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed CORP cross-origin fix for local upload images
-last_updated: "2026-03-31T09:13:45.120Z"
-last_activity: 2026-03-31
+stopped_at: "Completed 04-02 auto tasks, checkpoint:human-verify pending"
+last_updated: "2026-04-03T00:58:11.912Z"
+last_activity: 2026-04-03
 progress:
   total_phases: 5
-  completed_phases: 2
-  total_plans: 11
-  completed_plans: 11
-  percent: 0
+  completed_phases: 3
+  total_plans: 18
+  completed_plans: 17
+  percent: 33
 ---
 
 # Project State
@@ -26,8 +26,8 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 ## Current Position
 
 Phase: 4
-Plan: 1 of 3 complete
-Status: Executing
+Plan: 2 of 3 complete
+Status: Ready to execute
 Last activity: 2026-04-03
 
 Progress: [███░░░░░░░] 33%
@@ -59,6 +59,7 @@ Progress: [███░░░░░░░] 33%
 | Phase 02 P04 | 12min | 2 tasks | 39 files |
 | Phase 02 P05 | 2min | 2 tasks | 4 files |
 | Phase 04 P01 | 8min | 2 tasks | 26 files |
+| Phase 04 P02 | 8min | 2 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -87,6 +88,9 @@ Recent decisions affecting current work:
 - [Phase 04]: Server-side amount recalculation from price_tiers before Toss confirm (fraud prevention)
 - [Phase 04]: Cancel deadline = showtime - 24h, enforced server-side with ForbiddenException
 - [Phase 04]: Proxy-based chainable mocks for Drizzle multi-join query tests
+- [Phase 04]: Toss SDK widget via forwardRef + useImperativeHandle for parent-controlled requestPayment
+- [Phase 04]: Layout-shell: hide GNB/Footer on /booking paths except /complete for standalone checkout
+- [Phase 04]: Complete page refresh recovery: query reservation by orderId if Zustand store is empty
 
 ### Pending Todos
 
@@ -116,6 +120,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T00:41:31Z
-Stopped at: Completed 04-01-PLAN.md (booking backend)
+Last session: 2026-04-03T00:58:11.910Z
+Stopped at: Completed 04-02 auto tasks, checkpoint:human-verify pending
 Resume file: None

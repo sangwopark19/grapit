@@ -46,10 +46,10 @@ Requirements for initial release (MVP). Each maps to roadmap phases.
 
 ### Payment
 
-- [ ] **PAY-01**: 신용/체크카드로 결제할 수 있다 (Toss Payments)
-- [ ] **PAY-02**: 카카오페이로 결제할 수 있다
-- [ ] **PAY-03**: 네이버페이로 결제할 수 있다
-- [ ] **PAY-04**: 계좌이체로 결제할 수 있다
+- [x] **PAY-01**: 신용/체크카드로 결제할 수 있다 (Toss Payments)
+- [x] **PAY-02**: 카카오페이로 결제할 수 있다
+- [x] **PAY-03**: 네이버페이로 결제할 수 있다
+- [x] **PAY-04**: 계좌이체로 결제할 수 있다
 - [x] **PAY-05**: 최종 결제 금액이 좌석 등급/수량 기반으로 정확히 표시된다
 - [x] **PAY-06**: 결제 완료 시 예매번호가 발급되고 확인 페이지가 표시된다
 - [x] **PAY-07**: 결제 실패/취소 시 좌석 점유가 해제되고 안내 메시지가 표시된다
@@ -150,10 +150,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BOOK-03 | Phase 3 | Pending |
 | BOOK-04 | Phase 3 | Pending |
 | BOOK-05 | Phase 4 | Complete |
-| PAY-01 | Phase 4 | Pending |
-| PAY-02 | Phase 4 | Pending |
-| PAY-03 | Phase 4 | Pending |
-| PAY-04 | Phase 4 | Pending |
+| PAY-01 | Phase 4 | Complete |
+| PAY-02 | Phase 4 | Complete |
+| PAY-03 | Phase 4 | Complete |
+| PAY-04 | Phase 4 | Complete |
 | PAY-05 | Phase 4 | Complete |
 | PAY-06 | Phase 4 | Complete |
 | PAY-07 | Phase 4 | Complete |

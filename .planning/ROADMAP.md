@@ -93,7 +93,7 @@ Plans:
 
 Plans:
 - [x] 04-01-PLAN.md -- Backend: DB schema (reservations, payments), shared types, TossPaymentsClient, reservation/payment services
-- [ ] 04-02: TBD
+- [x] 04-02: TBD
 - [ ] 04-03: TBD
 
 ### Phase 5: Polish + Launch
@@ -121,5 +121,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 1. Foundation + Auth | 5/5 | Complete | 2026-03-27 |
 | 2. Catalog + Admin | 2/6 | In Progress|  |
 | 3. Seat Map + Real-Time | 0/3 | Not started | - |
-| 4. Booking + Payment | 1/3 | In Progress | - |
+| 4. Booking + Payment | 2/3 | In Progress|  |
 | 5. Polish + Launch | 0/2 | Not started | - |
