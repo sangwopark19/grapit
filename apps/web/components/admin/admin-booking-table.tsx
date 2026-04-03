@@ -1,0 +1,167 @@
+'use client';
+
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import type { AdminBookingListItem, ReservationStatus } from '@grapit/shared';
+
+const STATUS_CONFIG: Record<
+  ReservationStatus,
+  { label: string; className: string }
+> = {
+  CONFIRMED: {
+    label: '예매완료',
+    className: 'bg-[#F0FDF4] text-[#15803D] border-transparent',
+  },
+  CANCELLED: {
+    label: '취소완료',
+    className: 'bg-[#FEF2F2] text-[#C62828] border-transparent',
+  },
+  PENDING_PAYMENT: {
+    label: '결제대기',
+    className: 'bg-[#FFFBEB] text-[#8B6306] border-transparent',
+  },
+  FAILED: {
+    label: '결제실패',
+    className: 'bg-[#FEF2F2] text-[#C62828] border-transparent',
+  },
+};
+
+function formatDateTime(dateString: string): string {
+  const date = new Date(dateString);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  const h = String(date.getHours()).padStart(2, '0');
+  const min = String(date.getMinutes()).padStart(2, '0');
+  return `${y}.${m}.${d} ${h}:${min}`;
+}
+
+function formatSeatSummary(seats: AdminBookingListItem['seats']): string {
+  if (seats.length === 0) return '-';
+  const first = seats[0];
+  const base = `${first.tierName} ${first.row}열${first.number}번`;
+  if (seats.length === 1) return base;
+  return `${base} 외 ${seats.length - 1}석`;
+}
+
+interface AdminBookingTableProps {
+  bookings: AdminBookingListItem[];
+  isLoading: boolean;
+  onRowClick: (id: string) => void;
+}
+
+export function AdminBookingTable({
+  bookings,
+  isLoading,
+  onRowClick,
+}: AdminBookingTableProps) {
+  return (
+    <div className="rounded-lg bg-white shadow-sm">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-[#F5F5F7]">
+            <TableHead scope="col" className="text-sm font-medium text-gray-600">
+              예매번호
+            </TableHead>
+            <TableHead scope="col" className="text-sm font-medium text-gray-600">
+              예매자
+            </TableHead>
+            <TableHead scope="col" className="hidden text-sm font-medium text-gray-600 md:table-cell">
+              공연명
+            </TableHead>
+            <TableHead scope="col" className="hidden text-sm font-medium text-gray-600 lg:table-cell">
+              공연일시
+            </TableHead>
+            <TableHead scope="col" className="hidden text-sm font-medium text-gray-600 lg:table-cell">
+              좌석
+            </TableHead>
+            <TableHead scope="col" className="text-sm font-medium text-gray-600">
+              결제금액
+            </TableHead>
+            <TableHead scope="col" className="text-sm font-medium text-gray-600">
+              상태
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {isLoading &&
+            Array.from({ length: 5 }).map((_, i) => (
+              <TableRow key={`skeleton-${i}`}>
+                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-32" /></TableCell>
+                <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-28" /></TableCell>
+                <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+              </TableRow>
+            ))}
+
+          {!isLoading && bookings.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={7} className="py-12 text-center">
+                <p className="text-base font-semibold text-gray-900">
+                  예매 내역이 없습니다
+                </p>
+                <p className="mt-1 text-sm text-gray-600">
+                  아직 예매가 접수되지 않았습니다
+                </p>
+              </TableCell>
+            </TableRow>
+          )}
+
+          {!isLoading &&
+            bookings.map((booking) => {
+              const statusConfig = STATUS_CONFIG[booking.status];
+              return (
+                <TableRow
+                  key={booking.id}
+                  role="button"
+                  className="cursor-pointer hover:bg-gray-50"
+                  onClick={() => onRowClick(booking.id)}
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onRowClick(booking.id);
+                    }
+                  }}
+                  aria-label={`${booking.userName} ${booking.performanceTitle} 예매 상세 보기`}
+                >
+                  <TableCell className="text-sm font-medium">
+                    {booking.reservationNumber}
+                  </TableCell>
+                  <TableCell className="text-sm">{booking.userName}</TableCell>
+                  <TableCell className="hidden max-w-[200px] truncate text-sm md:table-cell">
+                    {booking.performanceTitle}
+                  </TableCell>
+                  <TableCell className="hidden text-sm text-gray-600 lg:table-cell">
+                    {formatDateTime(booking.showDateTime)}
+                  </TableCell>
+                  <TableCell className="hidden text-sm text-gray-600 lg:table-cell">
+                    {formatSeatSummary(booking.seats)}
+                  </TableCell>
+                  <TableCell className="text-sm font-medium">
+                    {booking.totalAmount.toLocaleString('ko-KR')}원
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={statusConfig.className}>
+                      {statusConfig.label}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}

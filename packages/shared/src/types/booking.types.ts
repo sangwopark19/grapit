@@ -70,3 +70,7 @@ export interface ConfirmPaymentRequest {
 export interface CancelReservationRequest {
   reason: string;
 }
+
+export interface AdminRefundRequest {
+  reason: string;
+}

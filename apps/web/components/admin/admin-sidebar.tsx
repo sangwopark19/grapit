@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Theater, Image } from 'lucide-react';
+import { Theater, Image, Ticket } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
 const NAV_ITEMS = [
@@ -15,6 +15,11 @@ const NAV_ITEMS = [
     label: '배너 관리',
     href: '/admin/banners',
     icon: Image,
+  },
+  {
+    label: '예매 관리',
+    href: '/admin/bookings',
+    icon: Ticket,
   },
 ] as const;
 
