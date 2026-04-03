@@ -4,7 +4,13 @@ import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Socket } from 'socket.io-client';
 import { toast } from 'sonner';
-import type { SeatUpdateEvent, SeatStatusResponse } from '@grapit/shared';
+import type { SeatStatusResponse } from '@/hooks/use-booking';
+
+interface SeatUpdateEvent {
+  seatId: string;
+  status: string;
+  userId?: string;
+}
 import { createBookingSocket } from '@/lib/socket-client';
 import { useBookingStore } from '@/stores/use-booking-store';
 import { useAuthStore } from '@/stores/use-auth-store';
@@ -53,7 +59,10 @@ export function useBookingSocket(showtimeId: string | null): void {
           if (!old) return old;
           return {
             ...old,
-            seats: { ...old.seats, [data.seatId]: data.status },
+            seats: {
+              ...old.seats,
+              [data.seatId]: { status: data.status, userId: data.userId },
+            },
           };
         },
       );
