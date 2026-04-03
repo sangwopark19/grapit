@@ -44,40 +44,25 @@ describe('AdminBookingService', () => {
 
   describe('list', () => {
     it('should return bookings with stats (totalBookings, totalRevenue, cancelRate)', async () => {
-      // Mock: stats query (3 separate count/sum queries)
+      // Helper: creates a deeply chainable mock (supports any method chain)
+      function createChainMock(resolvedValue: unknown) {
+        const handler: ProxyHandler<object> = {
+          get(_target, prop) {
+            if (prop === 'then') {
+              return (resolve: (v: unknown) => void) => resolve(resolvedValue);
+            }
+            return (..._args: unknown[]) => new Proxy({}, handler);
+          },
+        };
+        return new Proxy({}, handler);
+      }
+
+      // Stats queries: totalBookings, totalRevenue, cancelledCount, then list query
       mockDb.select
-        .mockReturnValueOnce({
-          from: vi.fn().mockReturnValue({
-            where: vi.fn().mockResolvedValue([{ count: 10 }]),
-          }),
-        })
-        .mockReturnValueOnce({
-          from: vi.fn().mockReturnValue({
-            where: vi.fn().mockResolvedValue([{ sum: 1500000 }]),
-          }),
-        })
-        .mockReturnValueOnce({
-          from: vi.fn().mockReturnValue({
-            where: vi.fn().mockResolvedValue([{ count: 2 }]),
-          }),
-        })
-        .mockReturnValueOnce({
-          from: vi.fn().mockReturnValue({
-            innerJoin: vi.fn().mockReturnValue({
-              innerJoin: vi.fn().mockReturnValue({
-                innerJoin: vi.fn().mockReturnValue({
-                  where: vi.fn().mockReturnValue({
-                    orderBy: vi.fn().mockReturnValue({
-                      limit: vi.fn().mockReturnValue({
-                        offset: vi.fn().mockResolvedValue([]),
-                      }),
-                    }),
-                  }),
-                }),
-              }),
-            }),
-          }),
-        });
+        .mockReturnValueOnce(createChainMock([{ count: 10 }]))        // total bookings
+        .mockReturnValueOnce(createChainMock([{ sum: 1500000 }]))     // total revenue
+        .mockReturnValueOnce(createChainMock([{ count: 2 }]))         // cancelled count
+        .mockReturnValueOnce(createChainMock([]));                     // bookings list (empty for simplicity)
 
       const result = await service.getBookings({});
       expect(result).toHaveProperty('stats');

@@ -104,55 +104,51 @@ describe('ReservationService', () => {
   describe('list', () => {
     it('should return filtered reservations by status for given userId', async () => {
       const userId = randomUUID();
+      const reservationId = randomUUID();
 
-      // Mock transaction for getMyReservations
-      mockDb.select.mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          innerJoin: vi.fn().mockReturnValue({
-            innerJoin: vi.fn().mockReturnValue({
-              leftJoin: vi.fn().mockReturnValue({
-                where: vi.fn().mockReturnValue({
-                  orderBy: vi.fn().mockResolvedValue([
-                    {
-                      reservation: {
-                        id: randomUUID(),
-                        reservationNumber: 'GRP-20260403-ABCDE',
-                        status: 'CONFIRMED',
-                        totalAmount: 150000,
-                        createdAt: new Date(),
-                      },
-                      showtime: { dateTime: new Date() },
-                      performance: { title: '테스트 공연', posterUrl: null },
-                      venue: { name: '테스트 극장' },
-                    },
-                  ]),
-                }),
-              }),
-            }),
-          }),
-        }),
-      });
-
-      // Mock for seats sub-query
-      const originalSelect = mockDb.select;
-      let callCount = 0;
-      mockDb.select.mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          return originalSelect.getMockImplementation()?.() ?? originalSelect();
-        }
-        // Second call = seats query
-        return {
-          from: vi.fn().mockReturnValue({
-            where: vi.fn().mockResolvedValue([
-              { seatId: 'A-1', tierName: 'VIP', price: 100000, row: 'A', number: '1' },
-            ]),
-          }),
+      // Helper: creates a deeply chainable mock that supports any method sequence
+      function createChainMock(resolvedValue: unknown) {
+        const handler: ProxyHandler<object> = {
+          get(_target, prop) {
+            if (prop === 'then') {
+              return (resolve: (v: unknown) => void) => resolve(resolvedValue);
+            }
+            return (..._args: unknown[]) => new Proxy({}, handler);
+          },
         };
+        return new Proxy({}, handler);
+      }
+
+      let selectCall = 0;
+      mockDb.select.mockImplementation(() => {
+        selectCall++;
+        if (selectCall === 1) {
+          // Main query: reservations JOIN showtimes JOIN performances LEFT JOIN venues
+          return createChainMock([
+            {
+              reservation: {
+                id: reservationId,
+                reservationNumber: 'GRP-20260403-ABCDE',
+                status: 'CONFIRMED',
+                totalAmount: 150000,
+                createdAt: new Date(),
+              },
+              showtime: { dateTime: new Date() },
+              performance: { title: '테스트 공연', posterUrl: null },
+              venue: { name: '테스트 극장' },
+            },
+          ]);
+        }
+        // Subsequent calls = seats sub-query
+        return createChainMock([
+          { seatId: 'A-1', tierName: 'VIP', price: 100000, row: 'A', number: '1' },
+        ]);
       });
 
       const result = await service.getMyReservations(userId, 'CONFIRMED');
       expect(Array.isArray(result)).toBe(true);
+      expect(result).toHaveLength(1);
+      expect(result[0]?.performanceTitle).toBe('테스트 공연');
     });
   });
 
