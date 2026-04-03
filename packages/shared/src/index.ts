@@ -2,6 +2,7 @@
 export * from './schemas/auth.schema';
 export * from './schemas/user.schema';
 export * from './schemas/performance.schema';
+export * from './schemas/booking.schema';
 
 // Types
 export * from './types/auth.types';

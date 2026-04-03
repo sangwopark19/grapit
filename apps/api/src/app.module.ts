@@ -11,6 +11,8 @@ import { PerformanceModule } from './modules/performance/performance.module.js';
 import { SearchModule } from './modules/search/search.module.js';
 import { AdminModule } from './modules/admin/admin.module.js';
 import { BookingModule } from './modules/booking/booking.module.js';
+import { PaymentModule } from './modules/payment/payment.module.js';
+import { ReservationModule } from './modules/reservation/reservation.module.js';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard.js';
 import { authConfig } from './config/auth.config.js';
 import { redisConfig } from './config/redis.config.js';
@@ -32,6 +34,8 @@ import { redisConfig } from './config/redis.config.js';
     SearchModule,
     AdminModule,
     BookingModule,
+    PaymentModule,
+    ReservationModule,
   ],
   providers: [
     {
