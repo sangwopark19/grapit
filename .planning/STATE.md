@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 Phase: 5
 Plan: Not started
 Status: Ready to execute
-Last activity: 2026-04-03 - Completed quick task 260403-f4z: Fix redis eval in InMemoryRedis
+Last activity: 2026-04-06 - Completed quick task 260406-n1z: 토스 페이먼츠 테스트 키 적용
 
 Progress: [███░░░░░░░] 33%
 
@@ -119,6 +119,7 @@ None yet.
 | 260331-opp | CORP: cross-origin 헤더 추가 (Helmet same-origin 차단 해결) | 2026-03-31 | 97a25e8 | [260331-opp-next-image-dev-unoptimized](./quick/260331-opp-next-image-dev-unoptimized/) |
 | 260403-f4z | Fix redis eval not a function in BookingService lockSeat | 2026-04-03 | 521e59d | [260403-f4z-fix-redis-eval-not-a-function-in-booking](./quick/260403-f4z-fix-redis-eval-not-a-function-in-booking/) |
 | 260403-f5a | Wire handleProceed to confirm page navigation | 2026-04-03 | 15e09a0 | - |
+| 260406-n1z | 토스 페이먼츠 테스트 키 적용 | 2026-04-06 | 52cc483 | [260406-n1z-toss-payments-test-key](./quick/260406-n1z-toss-payments-test-key/) |
 
 ## Session Continuity
 
