@@ -10,6 +10,7 @@ import { GENRES, GENRE_LABELS } from '@grapit/shared';
 interface MobileMenuProps {
   isOpen: boolean;
   onClose: () => void;
+  onLogout: () => void;
   isAuthenticated?: boolean;
   userName?: string;
 }
@@ -17,6 +18,7 @@ interface MobileMenuProps {
 export function MobileMenu({
   isOpen,
   onClose,
+  onLogout,
   isAuthenticated = false,
   userName,
 }: MobileMenuProps) {
@@ -124,7 +126,7 @@ export function MobileMenu({
                   마이페이지
                 </Link>
                 <button
-                  onClick={onClose}
+                  onClick={() => { onLogout(); onClose(); }}
                   className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-500 hover:bg-gray-100"
                 >
                   <LogOut className="h-4 w-4" />
