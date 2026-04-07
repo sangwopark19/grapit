@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 Phase: 5
 Plan: Not started
 Status: Ready to execute
-Last activity: 2026-04-07 - Completed quick task 260407-gee: 예매하기 페이지 WebSocket 재연결 토스트 반복 노출 버그 수정
+Last activity: 2026-04-07 - Completed quick task 260407-gru: confirm 페이지 이동 시 disconnect 토스트 노출 방지
 
 Progress: [███░░░░░░░] 33%
 
@@ -123,6 +123,7 @@ None yet.
 | 260406-nee | 토스 페이먼츠 환경변수 로딩 수정 (next.config.ts 루트 .env 로드) | 2026-04-06 | 60cf9f7 | [260406-nee-toss-payments-fix](./quick/260406-nee-toss-payments-fix/) |
 | 260407-fbi | 결제 완료된 좌석이 다시 결제 가능한 버그 수정 | 2026-04-07 | ce3178b | [260407-fbi-paid-seat-rebookable-fix](./quick/260407-fbi-paid-seat-rebookable-fix/) |
 | 260407-gee | 예매하기 페이지 WebSocket 재연결 토스트 반복 노출 버그 수정 | 2026-04-07 | 53fe286 | [260407-gee-websocket](./quick/260407-gee-websocket/) |
+| 260407-gru | confirm 페이지 이동 시 disconnect 토스트 노출 방지 | 2026-04-07 | ed8dc53 | [260407-gru-confirm-disconnect-intentional-disconnec](./quick/260407-gru-confirm-disconnect-intentional-disconnec/) |
 
 ## Session Continuity
 
