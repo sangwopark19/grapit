@@ -3,7 +3,7 @@ status: complete
 phase: 04-booking-payment
 source: [04-01-SUMMARY.md, 04-02-SUMMARY.md, 04-03-SUMMARY.md]
 started: 2026-04-03T01:15:00Z
-updated: 2026-04-07T01:45:00Z
+updated: 2026-04-07T12:00:00Z
 ---
 
 ## Current Test
@@ -62,8 +62,7 @@ result: pass
 
 ### 12. 예매 취소 플로우
 expected: 상세 페이지에서 '예매 취소' 버튼 클릭 시 AlertDialog가 나타납니다. 취소 사유를 선택하고 환불 예상 금액을 확인한 후 확인 버튼으로 취소를 진행합니다. 취소 기한이 지나면 취소 버튼이 비활성화됩니다.
-result: skipped
-reason: "나중에 다시 테스트"
+result: pass
 
 ### 13. 관리자 예매 대시보드
 expected: /admin/bookings 페이지에 총 예매 수, 총 매출, 취소율 3개의 통계 카드가 표시됩니다. 각 카드에 아이콘, 라벨, 포맷된 값이 포함됩니다.
@@ -85,10 +84,10 @@ result: pass
 ## Summary
 
 total: 16
-passed: 14
+passed: 15
 issues: 1
 pending: 0
-skipped: 1
+skipped: 0
 blocked: 0
 
 ## Gaps
