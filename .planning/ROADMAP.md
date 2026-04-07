@@ -105,11 +105,13 @@ Plans:
   2. Page loads show skeleton UI placeholders instead of blank screens or layout shifts
   3. API errors display user-friendly Korean messages with retry buttons instead of raw error codes
   4. Sentry captures errors in production and CI/CD pipeline deploys to Cloud Run on merge to main
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 05-01: TBD
-- [ ] 05-02: TBD
+- [ ] 05-01-PLAN.md — Mobile responsive: MobileTabBar + LayoutShell 통합 + 전체 공개 페이지 반응형 CSS
+- [ ] 05-02-PLAN.md — Skeleton UI: 11개 컴포넌트별 스켈레톤 variant + barrel export
+- [ ] 05-03-PLAN.md — Error handling: API 에러 인터셉터 + NetworkBanner + 404 페이지 + error.tsx 개선
+- [ ] 05-04-PLAN.md — Production infra: Sentry 설정 + Dockerfiles + GitHub Actions CI/CD + Cloud Run 배포
 
 ## Progress
 
@@ -122,4 +124,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 2. Catalog + Admin | 2/6 | In Progress|  |
 | 3. Seat Map + Real-Time | 0/3 | Not started | - |
 | 4. Booking + Payment | 2/3 | In Progress|  |
-| 5. Polish + Launch | 0/2 | Not started | - |
+| 5. Polish + Launch | 0/4 | Not started | - |
