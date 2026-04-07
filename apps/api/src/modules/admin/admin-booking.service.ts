@@ -4,7 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
-import { eq, and, sql, ilike, or, desc } from 'drizzle-orm';
+import { eq, and, sql, ilike, or, desc, inArray } from 'drizzle-orm';
 import { DRIZZLE, type DrizzleDB } from '../../database/drizzle.provider.js';
 import {
   reservations,
@@ -116,14 +116,24 @@ export class AdminBookingService {
       .limit(limit)
       .offset(offset);
 
-    const bookings: AdminBookingListItem[] = [];
-    for (const row of rows) {
-      const seats = await this.db
-        .select()
-        .from(reservationSeats)
-        .where(eq(reservationSeats.reservationId, row.reservation.id));
+    // Batch-fetch all seats for all reservations (eliminates N+1)
+    const reservationIds = rows.map((r) => r.reservation.id);
+    const allSeats = reservationIds.length > 0
+      ? await this.db
+          .select()
+          .from(reservationSeats)
+          .where(inArray(reservationSeats.reservationId, reservationIds))
+      : [];
+    const seatsByReservation = new Map<string, typeof allSeats>();
+    for (const seat of allSeats) {
+      const existing = seatsByReservation.get(seat.reservationId) ?? [];
+      existing.push(seat);
+      seatsByReservation.set(seat.reservationId, existing);
+    }
 
-      bookings.push({
+    const bookings: AdminBookingListItem[] = rows.map((row) => {
+      const seats = seatsByReservation.get(row.reservation.id) ?? [];
+      return {
         id: row.reservation.id,
         reservationNumber: row.reservation.reservationNumber,
         userName: row.user.name,
@@ -140,8 +150,8 @@ export class AdminBookingService {
         totalAmount: row.reservation.totalAmount,
         status: row.reservation.status as ReservationStatus,
         createdAt: row.reservation.createdAt?.toISOString() ?? '',
-      });
-    }
+      };
+    });
 
     return {
       bookings,
