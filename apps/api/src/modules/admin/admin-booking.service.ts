@@ -13,8 +13,10 @@ import {
   showtimes,
   performances,
   users,
+  seatInventories,
 } from '../../database/schema/index.js';
 import { TossPaymentsClient } from '../payment/toss-payments.client.js';
+import { BookingGateway } from '../booking/booking.gateway.js';
 import type {
   AdminBookingListItem,
   BookingStats,
@@ -29,6 +31,7 @@ export class AdminBookingService {
   constructor(
     @Inject(DRIZZLE) private readonly db: DrizzleDB,
     private readonly tossClient: TossPaymentsClient,
+    private readonly bookingGateway: BookingGateway,
   ) {}
 
   async getBookings(params: {
@@ -268,6 +271,34 @@ export class AdminBookingService {
           })
           .where(eq(payments.reservationId, reservationId));
       }
+
+      // Restore seat_inventories to available
+      const cancelledSeats = await tx
+        .select({ seatId: reservationSeats.seatId })
+        .from(reservationSeats)
+        .where(eq(reservationSeats.reservationId, reservationId));
+
+      for (const seat of cancelledSeats) {
+        await tx
+          .update(seatInventories)
+          .set({ status: 'available', soldAt: null, lockedBy: null, lockedUntil: null })
+          .where(
+            and(
+              eq(seatInventories.showtimeId, reservation.showtimeId),
+              eq(seatInventories.seatId, seat.seatId),
+            ),
+          );
+      }
     });
+
+    // Broadcast available status via WebSocket
+    const freedSeats = await this.db
+      .select({ seatId: reservationSeats.seatId })
+      .from(reservationSeats)
+      .where(eq(reservationSeats.reservationId, reservationId));
+
+    for (const seat of freedSeats) {
+      this.bookingGateway.broadcastSeatUpdate(reservation.showtimeId, seat.seatId, 'available');
+    }
   }
 }

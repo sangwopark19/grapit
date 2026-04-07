@@ -11,7 +11,7 @@ import { BookerInfoSection } from '@/components/booking/booker-info-section';
 import { TermsAgreement } from '@/components/booking/terms-agreement';
 import { TossPaymentWidget, type TossPaymentWidgetRef } from '@/components/booking/toss-payment-widget';
 import { Button } from '@/components/ui/button';
-import { usePrepareReservation } from '@/hooks/use-booking';
+import { usePrepareReservation, useUnlockAllSeats } from '@/hooks/use-booking';
 import { useBookingStore } from '@/stores/use-booking-store';
 import { useAuthStore } from '@/stores/use-auth-store';
 
@@ -40,6 +40,7 @@ function ConfirmPageContent() {
 
   const paymentWidgetRef = useRef<TossPaymentWidgetRef>(null);
   const prepareMutation = usePrepareReservation();
+  const unlockAll = useUnlockAllSeats();
 
   // Generate orderId once per mount
   const orderId = useMemo(() => generateOrderId(), []);
@@ -87,9 +88,13 @@ function ConfirmPageContent() {
   }, [searchParams]);
 
   const handleExpire = useCallback(() => {
+    const { selectedShowtimeId } = useBookingStore.getState();
+    if (selectedShowtimeId) {
+      unlockAll.mutate({ showtimeId: selectedShowtimeId });
+    }
     toast.error('좌석 점유 시간이 만료되어 좌석 선택 화면으로 이동합니다.');
     router.replace(`/booking/${performanceId}`);
-  }, [performanceId, router]);
+  }, [performanceId, router, unlockAll]);
 
   const handleWidgetReady = useCallback(() => {
     setWidgetReady(true);
