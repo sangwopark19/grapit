@@ -18,6 +18,7 @@ const mockRegisterDto: RegisterBody = {
   country: 'KR',
   birthDate: '1995-05-15',
   phone: '010-9876-5432',
+  phoneVerificationCode: '000000',
   termsOfService: true,
   privacyPolicy: true,
   marketingConsent: false,
@@ -123,11 +124,17 @@ describe('AuthService', () => {
       }),
     };
 
+    const mockSmsService = {
+      verifyCode: vi.fn().mockResolvedValue({ verified: true }),
+      sendVerificationCode: vi.fn().mockResolvedValue({ success: true, message: '' }),
+    };
+
     // Instantiate AuthService directly (no NestJS DI overhead)
     authService = new AuthService(
       mockJwtService as unknown as JwtService,
       mockConfigService as unknown as ConfigService,
       mockUserRepo as any,
+      mockSmsService as any,
       mockDb as any,
     );
   });
@@ -358,6 +365,11 @@ describe('AuthService', () => {
     it('should update password hash with valid token', async () => {
       const userId = mockUser.id;
 
+      // Build a fake JWT with a valid base64url-encoded payload
+      const header = Buffer.from(JSON.stringify({ alg: 'HS256' })).toString('base64url');
+      const payload = Buffer.from(JSON.stringify({ sub: userId, purpose: 'password-reset' })).toString('base64url');
+      const fakeToken = `${header}.${payload}.fake-signature`;
+
       mockJwtService.verifyAsync.mockResolvedValue({
         sub: userId,
         purpose: 'password-reset',
@@ -371,7 +383,7 @@ describe('AuthService', () => {
         }),
       });
 
-      await authService.resetPassword('valid-reset-token', 'NewPass123!');
+      await authService.resetPassword(fakeToken, 'NewPass123!');
 
       expect(mockUserRepo.updatePassword).toHaveBeenCalledWith(
         userId,

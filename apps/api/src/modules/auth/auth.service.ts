@@ -3,6 +3,7 @@ import {
   Inject,
   ConflictException,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -12,6 +13,7 @@ import { eq, and } from 'drizzle-orm';
 import { DRIZZLE, type DrizzleDB } from '../../database/drizzle.provider.js';
 import * as schema from '../../database/schema/index.js';
 import { UserRepository } from '../user/user.repository.js';
+import { SmsService } from '../sms/sms.service.js';
 import type { RegisterBody } from './dto/register.dto.js';
 import type { SocialRegisterBody } from './dto/social-register.dto.js';
 import type { SocialProfile } from './interfaces/social-profile.interface.js';
@@ -49,10 +51,17 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly userRepository: UserRepository,
+    private readonly smsService: SmsService,
     @Inject(DRIZZLE) private readonly db: DrizzleDB,
   ) {}
 
   async register(dto: RegisterBody): Promise<AuthResult> {
+    // 0. Verify phone number
+    const verifyResult = await this.smsService.verifyCode(dto.phone, dto.phoneVerificationCode);
+    if (!verifyResult.verified) {
+      throw new BadRequestException('전화번호 인증이 완료되지 않았습니다');
+    }
+
     // 1. Check email uniqueness
     const existing = await this.userRepository.findByEmail(dto.email);
     if (existing) {
@@ -77,6 +86,7 @@ export class AuthService {
       country: dto.country,
       birthDate: dto.birthDate,
       marketingConsent: dto.marketingConsent,
+      isPhoneVerified: true,
     });
 
     // 4. Insert terms agreement
@@ -228,40 +238,36 @@ export class AuthService {
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
-    // 1. Verify JWT reset token
+    // 1. Extract sub from JWT payload without signature verification
+    let sub: string;
+    try {
+      const rawPayload = JSON.parse(
+        Buffer.from(token.split('.')[1]!, 'base64url').toString(),
+      ) as { sub: string };
+      sub = rawPayload.sub;
+    } catch {
+      throw new UnauthorizedException('유효하지 않은 재설정 토큰입니다');
+    }
+
+    // 2. Look up user to get passwordHash for secret reconstruction
+    const user = await this.userRepository.findById(sub);
+    if (!user) {
+      throw new UnauthorizedException('유효하지 않은 재설정 토큰입니다');
+    }
+
+    // 3. Verify JWT with the full secret (jwtSecret + passwordHash)
+    const secret =
+      this.configService.get<string>('auth.jwtSecret') +
+      (user.passwordHash ?? '');
+
     let payload: { sub: string; purpose: string };
     try {
-      // First verify without extra secret to get sub, then re-verify with full secret
-      const decoded = await this.jwtService.verifyAsync<{
+      payload = await this.jwtService.verifyAsync<{
         sub: string;
         purpose: string;
-      }>(token, {
-        secret: undefined, // Will try in two steps
-      });
-      payload = decoded;
+      }>(token, { secret });
     } catch {
-      // Try with user's password hash as additional entropy
-      try {
-        const partialDecoded = JSON.parse(
-          Buffer.from(token.split('.')[1]!, 'base64').toString(),
-        ) as { sub: string };
-
-        const user = await this.userRepository.findById(partialDecoded.sub);
-        if (!user) {
-          throw new UnauthorizedException('유효하지 않은 재설정 토큰입니다');
-        }
-
-        const secret =
-          this.configService.get<string>('auth.jwtSecret') +
-          (user.passwordHash ?? '');
-
-        payload = await this.jwtService.verifyAsync<{
-          sub: string;
-          purpose: string;
-        }>(token, { secret });
-      } catch {
-        throw new UnauthorizedException('유효하지 않은 재설정 토큰입니다');
-      }
+      throw new UnauthorizedException('유효하지 않은 재설정 토큰입니다');
     }
 
     if (payload.purpose !== 'password-reset') {

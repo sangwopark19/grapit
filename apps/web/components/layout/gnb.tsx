@@ -268,6 +268,7 @@ export function GNB() {
       <MobileMenu
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
+        onLogout={handleLogout}
         isAuthenticated={isAuthenticated}
         userName={user?.name}
       />
