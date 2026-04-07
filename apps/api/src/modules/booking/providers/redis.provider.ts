@@ -97,6 +97,53 @@ class InMemoryRedis {
     }, seconds * 1000));
     return 1;
   }
+
+  /**
+   * Implements the LOCK_SEAT_LUA script logic in JavaScript.
+   * Only supports the seat locking Lua script used by BookingService.
+   */
+  async eval(
+    _script: string,
+    keys: string[],
+    args: string[],
+  ): Promise<[number, string, string?]> {
+    const [userSeatsKey, lockKey, lockedSeatsKey] = keys;
+    const [userId, lockTtl, maxSeats, seatId, keyPrefix] = args;
+
+    // Step 1: Clean stale members and count alive
+    const members = Array.from(this.sets.get(userSeatsKey) ?? []);
+    let alive = 0;
+    for (const sid of members) {
+      if (this.store.has(`${keyPrefix}${sid}`)) {
+        alive++;
+      } else {
+        const userSet = this.sets.get(userSeatsKey);
+        if (userSet) userSet.delete(sid);
+        const lockedSet = this.sets.get(lockedSeatsKey);
+        if (lockedSet) lockedSet.delete(sid);
+      }
+    }
+
+    // Step 2: Check max seats
+    if (alive >= Number(maxSeats)) {
+      return [0, 'MAX_SEATS'];
+    }
+
+    // Step 3: SET NX with EX
+    const existing = this.store.get(lockKey);
+    if (existing !== undefined) {
+      return [0, 'CONFLICT'];
+    }
+
+    await this.set(lockKey, userId as string, { nx: true, ex: Number(lockTtl) });
+
+    // Step 4: SADD to user-seats and locked-seats, EXPIRE user-seats
+    await this.sadd(userSeatsKey, seatId as string);
+    await this.expire(userSeatsKey, Number(lockTtl));
+    await this.sadd(lockedSeatsKey, seatId as string);
+
+    return [1, lockKey, seatId as string];
+  }
 }
 
 export const upstashRedisProvider: Provider = {

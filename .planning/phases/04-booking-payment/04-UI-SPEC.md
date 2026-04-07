@@ -1,7 +1,8 @@
 ---
 phase: 4
 slug: booking-payment
-status: draft
+status: approved
+reviewed_at: 2026-04-02
 shadcn_initialized: true
 preset: new-york
 created: 2026-04-02
@@ -34,25 +35,25 @@ Declared values (must be multiples of 4):
 
 | Token | Value | Usage in Phase 4 |
 |-------|-------|-------------------|
-| xs | 4px | Icon-text gap in seat row items, checkbox-label gap, inline badge padding |
-| sm | 8px | Form field internal gaps, status filter chip gaps, booking card internal row spacing |
-| md | 16px | Checkout section internal padding, form field vertical gap, mypage card content padding |
-| lg | 24px | Checkout section-to-section gap, booking detail info block gaps, admin table header padding |
-| xl | 32px | Page-level vertical padding (checkout, complete, fail), mypage content area top padding |
-| 2xl | 48px | Gap between BookingHeader and checkout content |
-| 3xl | 64px | Not used in Phase 4 (payment pages are dense/focused) |
+| xs | 4px | Icon-text gap in payment method badges, seat row icon spacing, status badge internal padding |
+| sm | 8px | Form field internal gaps, seat summary row gaps, reservation card badge offset, stat card internal spacing |
+| md | 16px | Form field vertical gaps, card inner padding, section content padding, table cell padding |
+| lg | 24px | Section gaps (e.g., order summary to payment widget), card section separators, mypage tab content padding |
+| xl | 32px | Page-level vertical padding, gap between major sections (confirm page header to content) |
+| 2xl | 48px | Gap between booking header and confirm content area |
+| 3xl | 64px | Not used in Phase 4 (pages are content-dense) |
 
 Exceptions:
-- BookingHeader height: 48px mobile, 56px desktop (inherited from Phase 3)
-- Checkout page CTA button height: 52px (large action, matches UIUX-GUIDE Button Large)
-- Mypage booking card poster thumbnail: 80px x 80px (fixed aspect)
-- Admin booking table row height: 52px (consistent with admin performances table)
-- Complete/fail page icon container: 64px x 64px (centered success/failure icon)
-- Cancel confirmation modal width: 400px (matches UIUX-GUIDE Alert modal)
-- Checkout max-width: 720px (single-column focused flow, narrower than seat map page)
-- Mypage max-width: 960px (list + detail pages)
+- Toss Payments widget container: height determined by SDK (auto). Do not constrain.
+- Countdown timer bar height: 40px (inherited from Phase 3, sticky at top of confirm page)
+- Confirm page max-width: 720px (narrower than catalog for focused checkout flow)
+- Reservation detail page max-width: 720px (consistent with confirm page)
+- Admin booking table: full admin panel width (inherited from Phase 2 admin layout)
+- Admin stat card height: 100px (fixed for visual consistency)
+- CTA button height: 48px (primary), 40px (secondary)
+- Touch target minimum: 44px per WCAG
 
-**Source:** globals.css @theme --spacing-* tokens (Phase 1), Phase 3 UI-SPEC exceptions pattern
+**Source:** globals.css @theme --spacing-* tokens (Phase 1)
 
 ---
 
@@ -60,19 +61,20 @@ Exceptions:
 
 | Role | Size | Weight | Line Height | Usage in Phase 4 |
 |------|------|--------|-------------|-------------------|
-| Display | 28px | 600 (semibold) | 1.2 | Complete page "예매 완료!" heading, fail page "결제 실패" heading |
-| Heading | 20px | 600 (semibold) | 1.3 | Checkout section headings ("선택 좌석", "예매자 정보", "결제 정보"), mypage page title, booking detail heading, admin booking management heading |
-| Body | 16px | 400 (regular) | 1.5 | Checkout seat list rows, booking detail info text, CTA button text, form input text, mypage booking card primary text |
-| Caption | 14px | 400 (regular) | 1.5 | Checkout price labels, terms/policy text, booking card metadata (date, venue), admin table cell text, cancel policy description, status badges |
+| Display | 28px | 600 (semibold) | 1.2 | Booking confirmation number (large emphasis), admin dashboard section title |
+| Heading | 20px | 600 (semibold) | 1.3 | Page titles ("결제하기", "예매 완료", "예매 내역"), section headings ("예매자 정보", "결제 정보"), admin stat card values |
+| Body | 16px | 400 (regular) | 1.5 | Form labels, performance info text, seat details, CTA button text, payment method names, table cell text |
+| Caption | 14px | 400 (regular) | 1.5 | Price breakdown labels, terms agreement text, reservation meta info, cancellation deadline text, table header text, timestamp text |
 
 Font weights used: 400 (regular) and 600 (semibold). No other weights permitted.
 
 Additional numeric rendering:
-- Price values throughout: 16px, weight 600, formatted with comma separator + "원" suffix (e.g. "170,000원"). Use `toLocaleString('ko-KR')` + "원"
-- Booking number: 16px, weight 600, monospace fallback (`ui-monospace, SFMono-Regular, Menlo, monospace`) for fixed-width character rendering
-- Countdown timer (checkout page): inherited from Phase 3 BookingHeader (16px semibold monospace MM:SS)
+- Booking number: 28px, weight 600 (semibold), monospace fallback (`ui-monospace, SFMono-Regular, Menlo, monospace`) for fixed-width character rendering
+- Price values throughout: 16px, weight 600, formatted with Korean won (`toLocaleString('ko-KR')` + "원")
+- Total price (confirm page): 20px, weight 600, primary color (#6C3CE0)
+- Countdown timer MM:SS: 16px, weight 600, monospace (inherited from Phase 3)
 
-**Source:** globals.css @theme --text-* tokens, Phase 3 UI-SPEC type scale
+**Source:** globals.css @theme --text-* tokens, Phase 1/3 01/03-UI-SPEC.md type scale
 
 ---
 
@@ -82,304 +84,317 @@ Additional numeric rendering:
 
 | Role | Value | Usage |
 |------|-------|-------|
-| Dominant (60%) | #FFFFFF | Checkout page background, complete/fail page background, mypage background, modal backgrounds, admin page background |
-| Secondary (30%) | #F5F5F7 (Gray-100) | Checkout seat list section background, mypage booking card background on hover, admin table header background, booking detail info section background |
+| Dominant (60%) | #FFFFFF | Confirm page background, complete page background, mypage background, modal backgrounds, form backgrounds |
+| Secondary (30%) | #F5F5F7 (Gray-100) | Order summary card background, reservation card background, stat card background, table header row, terms section background, admin panel sidebar |
 | Accent (10%) | #6C3CE0 (Primary) | See reserved-for list below |
-| Destructive | #C62828 (Error) | Cancel/refund buttons, fail page icon, payment failure error text, destructive action confirmations |
+| Destructive | #C62828 (Error) | Cancel/refund buttons, cancellation deadline warning, timer warning state (under 3 minutes), error toasts |
 
 ### Accent (#6C3CE0) reserved for:
 
-1. "결제하기" primary CTA button on checkout page (bg: primary, text: white)
-2. "예매 내역 보기" primary CTA on complete page
-3. Checkout page total price highlight border-left (3px solid, inherited from Phase 3 panel pattern)
-4. Active tab indicator on mypage (예매내역/프로필 tab underline)
-5. Booking number text on complete page (emphasize the generated booking ID)
-6. Countdown timer bar in BookingHeader (normal state, inherited from Phase 3)
-7. Checkbox checked state on terms agreement
+1. "결제하기" primary CTA button on confirm page
+2. "예매내역 보기" button on complete page
+3. Countdown timer bar background (normal state, above 3 minutes, inherited from Phase 3)
+4. Booking number text highlight on complete page
+5. Total price text on confirm page
+6. Active tab indicator on mypage reservation filters
+7. Active filter chip on admin booking management
 
-### Semantic Status Colors
+### Reservation Status Badge Colors
 
-| Status | Text Color | Background | Badge Use |
-|--------|-----------|------------|-----------|
-| 예매완료 (CONFIRMED) | #15803D (Success) | #F0FDF4 (Success Surface) | Mypage booking card badge, booking detail status, admin table badge |
-| 취소/환불 (CANCELLED) | #C62828 (Error) | #FEF2F2 (Error Surface) | Mypage booking card badge, booking detail status, admin table badge |
-| 결제대기 (PENDING) | #8B6306 (Warning text) | #FFFBEB (Warning Surface) | Admin table badge (transient state during payment processing) |
+| Status | Background | Text | Border |
+|--------|-----------|------|--------|
+| 예매완료 (CONFIRMED) | #F0FDF4 (success-surface) | #15803D (success) | none |
+| 취소완료 (CANCELLED) | #FEF2F2 (error-surface) | #C62828 (error) | none |
+| 결제대기 (PENDING) | #FFFBEB (warning-surface) | #8B6306 (warning) | none |
+| 환불완료 (REFUNDED) | #F5F5F7 (gray-100) | #6B6B7B (gray-600) | none |
 
-### Complete/Fail Page Colors
+### Semantic Colors (inherited from Phase 1)
 
-| Element | Color |
-|---------|-------|
-| Complete page check icon | #15803D (Success) |
-| Complete page icon container background | #F0FDF4 (Success Surface) |
-| Fail page X icon | #C62828 (Error) |
-| Fail page icon container background | #FEF2F2 (Error Surface) |
+| Role | Text HEX | Surface HEX | Usage in Phase 4 |
+|------|----------|-------------|-------------------|
+| Error | #C62828 | #FEF2F2 | Payment failure toast, cancellation warning, validation errors, deadline passed text |
+| Success | #15803D | #F0FDF4 | Payment success, booking confirmed badge, refund complete toast |
+| Warning | #8B6306 | #FFFBEB | Cancellation deadline approaching, pending payment badge |
+| Info | #6C3CE0 | #F3EFFF | General notices, payment processing info |
 
-### Countdown Timer Colors (inherited from Phase 3)
-
-| State | Background | Text |
-|-------|-----------|------|
-| Normal (> 3 min) | #6C3CE0 (Primary) | #FFFFFF |
-| Warning (< 3 min) | #C62828 (Error) | #FFFFFF |
-
-**Source:** Phase 1 D-14/D-16, Phase 3 UI-SPEC color section, Phase 4 CONTEXT D-06/D-07, globals.css @theme
+**Source:** Phase 1 D-14/D-16, Phase 4 CONTEXT D-05/D-07, globals.css @theme
 
 ---
 
 ## Copywriting Contract
 
-### Checkout Page (D-02, D-03)
+### Confirm Page (D-01, D-02, D-03, D-04)
 
 | Element | Copy (Korean) |
 |---------|---------------|
-| Primary CTA (payment) | {총금액}원 결제하기 |
-| Primary CTA pattern | `{total.toLocaleString()}원 결제하기` (e.g. "300,000원 결제하기") |
-| Primary CTA disabled (terms unchecked) | 약관에 동의해주세요 |
-| Section heading: seats | 선택 좌석 |
-| Section heading: booker info | 예매자 정보 |
-| Section heading: payment summary | 결제 정보 |
-| Section heading: terms | 예매/취소 안내 |
-| Seat row pattern | {등급명} {열}{번} - {price}원 |
-| Performance info pattern | {공연명} \| {날짜} {시간} |
+| Page title | 결제하기 |
+| Countdown timer label | 남은시간 |
+| Performance info section heading | 공연 정보 |
+| Booker info section heading | 예매자 정보 |
+| Booker info edit button | 수정 |
+| Booker info name label | 이름 |
+| Booker info phone label | 연락처 |
+| Selected seats section heading | 선택 좌석 |
+| Seat row pattern | {등급명} {열}{번} |
+| Seat price pattern | {가격}원 |
+| Total count label | 총 {count}매 |
 | Total price label | 총 결제금액 |
 | Total price pattern | {total}원 |
-| Terms checkbox label (D-03) | 구매조건 확인 및 결제에 동의합니다 |
-| Cancel policy notice | 취소마감: 공연 전날 18:00까지. 이후 취소 불가 |
-| Booker name label | 이름 |
-| Booker phone label | 연락처 |
-| Countdown timer (inherited) | 남은시간 MM:SS |
+| Terms agreement heading | 약관 동의 |
+| Terms select all | 전체 동의 |
+| Terms item 1 | 예매/취소 규정에 동의합니다 (필수) |
+| Terms item 2 | 개인정보 제3자 제공에 동의합니다 (필수) |
+| Terms view link | 보기 |
+| Payment section heading | 결제 수단 |
+| Primary CTA | 결제하기 |
+| Primary CTA loading | 결제 처리 중... |
+| Primary CTA disabled (no terms) | 약관에 동의해주세요 |
 
-### Complete Page (D-06)
+### Complete Page (D-05)
 
-| Element | Copy |
-|---------|------|
-| Heading | 예매가 완료되었습니다! |
+| Element | Copy (Korean) |
+|---------|---------------|
+| Page title | 예매가 완료되었습니다 |
 | Booking number label | 예매번호 |
-| Booking number pattern | GRP-YYYYMMDD-NNN (e.g. GRP-20260402-001) |
-| Performance label | 공연 |
-| Date label | 날짜 |
-| Seats label | 좌석 |
-| Payment amount label | 결제금액 |
-| Primary CTA | 예매 내역 보기 |
-| Secondary CTA | 홈으로 |
-
-### Fail Page (D-07)
-
-| Element | Copy |
-|---------|------|
-| Heading | 결제에 실패했습니다 |
-| Error detail pattern | {Toss Payments 에러 메시지} |
-| Seat release notice | 선택한 좌석이 해제되었습니다. 다시 좌석을 선택해주세요. |
-| Primary CTA | 다시 예매하기 |
-| Secondary CTA | 홈으로 |
-
-### Mypage - Booking History (D-09, D-10)
-
-| Element | Copy |
-|---------|------|
-| Tab: bookings (default) | 예매내역 |
-| Tab: profile | 프로필 |
-| Status filter: all | 전체 |
-| Status filter: confirmed | 예매완료 |
-| Status filter: cancelled | 취소/환불 |
-| Booking card date pattern | YYYY.MM.DD (요일) HH:MM |
-| Booking card seat pattern | {등급명} {열}{번} 외 {n-1}석 (single seat: {등급명} {열}{번}) |
-| Booking card price pattern | {total}원 |
-
-### Mypage - Booking Detail (D-11)
-
-| Element | Copy |
-|---------|------|
-| Page heading | 예매 상세 |
-| Section: booking info | 예매 정보 |
-| Booking number label | 예매번호 |
-| Status label | 상태 |
-| Section: performance info | 공연 정보 |
+| Booking number pattern | {예매번호} |
+| Performance section heading | 공연 정보 |
 | Performance name label | 공연명 |
-| Date/time label | 관람일시 |
+| Date/time label | 공연일시 |
 | Venue label | 장소 |
-| Seats label | 좌석 |
-| Section: payment info | 결제 정보 |
-| Payment method label | 결제수단 |
+| Seats section heading | 좌석 정보 |
+| Seat row pattern | {등급명} {열}{번} - {가격}원 |
+| Payment section heading | 결제 정보 |
 | Payment amount label | 결제금액 |
-| Section: cancellation | 취소 안내 |
-| Cancel deadline label | 취소마감 |
-| Cancel deadline pattern | YYYY.MM.DD 18:00까지 |
-| Cancel deadline passed notice | 취소 마감 시간이 지났습니다 |
-| Cancel button (active) | 예매 취소 |
-| Cancel button (disabled) | 취소 불가 |
+| Payment method label | 결제수단 |
+| Payment date label | 결제일시 |
+| Cancellation deadline label | 취소마감시간 |
+| Cancellation deadline pattern | {YYYY.MM.DD HH:mm}까지 |
+| Primary CTA | 예매내역 보기 |
+| Secondary CTA | 홈으로 |
 
-### Cancel Confirmation Modal (D-14)
+### My Page Reservations (D-07, D-08)
 
-| Element | Copy |
-|---------|------|
-| Title | 정말 취소하시겠습니까? |
-| Body line 1 | 이 예매를 취소하면 전액 환불됩니다. |
-| Refund amount label | 환불 금액 |
-| Refund amount pattern | {total}원 |
-| Refund timeline | 환불은 결제 수단에 따라 3~7영업일 소요됩니다 |
+| Element | Copy (Korean) |
+|---------|---------------|
+| Tab/section heading | 예매 내역 |
+| Filter: all | 전체 |
+| Filter: confirmed | 예매완료 |
+| Filter: cancelled | 취소완료 |
+| Reservation card date pattern | {YYYY.MM.DD (요일) HH:mm} |
+| Reservation card seat summary | {등급명} {열}{번} 외 {count-1}석 (for 2+ seats) |
+| Reservation card seat summary (single) | {등급명} {열}{번} |
+| Reservation card price pattern | {total}원 |
+
+### Reservation Detail Page (D-08)
+
+| Element | Copy (Korean) |
+|---------|---------------|
+| Page title | 예매 상세 |
+| Booking number label | 예매번호 |
+| Performance info heading | 공연 정보 |
+| Seat info heading | 좌석 정보 |
+| Payment info heading | 결제 정보 |
+| Cancellation deadline label | 취소마감시간 |
+| Cancel button | 예매 취소 |
+| Cancel button disabled tooltip | 취소 마감시간이 지났습니다 |
+
+### Cancellation Modal (D-09)
+
+| Element | Copy (Korean) |
+|---------|---------------|
+| Modal title | 예매를 취소하시겠습니까? |
+| Modal body | 취소 후에는 복구할 수 없습니다. |
+| Reason select label | 취소 사유 |
+| Reason option 1 | 단순 변심 |
+| Reason option 2 | 일정 변경 |
+| Reason option 3 | 다른 좌석으로 재예매 |
+| Reason option 4 | 기타 |
+| Refund info label | 환불 예정 금액 |
+| Refund info pattern | {amount}원 |
+| Refund method label | 환불 수단 |
+| Refund method pattern | {결제수단}으로 환불 |
 | Confirm button | 예매 취소 |
-| Cancel button | 돌아가기 |
+| Confirm button loading | 취소 처리 중... |
+| Cancel button (close modal) | 돌아가기 |
 
-### Admin Booking Management (D-16)
+### Admin Booking Management (D-11, D-12)
 
-| Element | Copy |
-|---------|------|
-| Page heading | 예매 관리 |
+| Element | Copy (Korean) |
+|---------|---------------|
+| Page title | 예매 관리 |
+| Stat card 1 label | 총 예매수 |
+| Stat card 2 label | 총 매출액 |
+| Stat card 3 label | 취소율 |
 | Table header: booking number | 예매번호 |
-| Table header: user | 사용자 |
+| Table header: booker | 예매자 |
 | Table header: performance | 공연명 |
-| Table header: status | 상태 |
+| Table header: date | 공연일시 |
+| Table header: seats | 좌석 |
 | Table header: amount | 결제금액 |
-| Table header: action | 액션 |
-| Refund button | 환불 |
-| Refund confirm title | 환불 처리하시겠습니까? |
-| Refund confirm body | {사용자명}님의 예매({예매번호})를 환불합니다. 원래 결제 수단으로 {금액}원이 환불됩니다. |
-| Refund confirm action | 환불 처리 |
-| Refund confirm cancel | 취소 |
+| Table header: status | 상태 |
+| Search placeholder | 예매번호 또는 예매자명 검색 |
+| Filter: all | 전체 |
+| Filter: confirmed | 예매완료 |
+| Filter: cancelled | 취소완료 |
+| Filter: refunded | 환불완료 |
+| Detail modal title | 예매 상세 |
+| Admin refund button | 환불 처리 |
+| Refund reason input label | 환불 사유 |
+| Refund reason input placeholder | 환불 사유를 입력하세요 |
+| Refund confirm button | 환불 확인 |
+| Refund confirm loading | 환불 처리 중... |
 
 ### Empty States
 
 | Element | Copy |
 |---------|------|
-| Mypage no bookings (all) | 예매 내역이 없습니다. 마음에 드는 공연을 찾아보세요! |
-| Mypage no bookings (all) CTA | 공연 둘러보기 |
-| Mypage no bookings (confirmed filter) | 예매 완료된 내역이 없습니다 |
-| Mypage no bookings (cancelled filter) | 취소/환불 내역이 없습니다 |
-| Admin no bookings | 예매 내역이 없습니다 |
+| No reservations (mypage) | 예매 내역이 없습니다 |
+| No reservations body | 원하는 공연을 찾아 예매해보세요 |
+| No reservations CTA | 공연 둘러보기 |
+| No admin bookings | 예매 내역이 없습니다 |
+| No admin bookings body | 아직 예매가 접수되지 않았습니다 |
+| No search results (admin) | 검색 결과가 없습니다 |
+| No search results body (admin) | 검색어를 변경하여 다시 시도해주세요 |
 
 ### Error States
 
 | Element | Copy |
 |---------|------|
-| Checkout load failed | 주문 정보를 불러오지 못했습니다. 좌석 선택 페이지로 돌아가 다시 시도해주세요. |
-| Checkout load failed CTA | 좌석 선택으로 돌아가기 |
-| Payment API error | 결제 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요. |
-| Booking history load error | 예매 내역을 불러오지 못했습니다. 잠시 후 다시 시도해주세요. |
-| Booking history load error CTA | 새로고침 |
-| Booking detail load error | 예매 상세 정보를 불러오지 못했습니다. |
-| Cancel/refund failed | 취소 처리에 실패했습니다. 잠시 후 다시 시도해주세요. |
-| Admin refund failed | 환불 처리에 실패했습니다. 잠시 후 다시 시도해주세요. |
-| Timer expired on checkout (D-05) | 좌석 점유 시간이 만료되었습니다. 좌석 선택으로 돌아갑니다. |
-| Session expired (booking store empty) | 예매 정보가 없습니다. 좌석을 먼저 선택해주세요. |
+| Payment failed toast (D-06) | 결제에 실패했습니다. 다시 시도해주세요. |
+| Payment cancelled toast (D-06) | 결제가 취소되었습니다. |
+| Payment timeout toast | 결제 시간이 초과되었습니다. 다시 시도해주세요. |
+| Network error | 네트워크 연결을 확인해주세요 |
+| Seat lock expired (during payment) | 좌석 점유 시간이 만료되었습니다. 좌석을 다시 선택해주세요. |
+| Cancel failed toast | 취소 처리에 실패했습니다. 잠시 후 다시 시도해주세요. |
+| Refund failed toast (admin) | 환불 처리에 실패했습니다. 잠시 후 다시 시도해주세요. |
+| Booking data load error | 예매 정보를 불러오지 못했습니다. |
+| Booking data load error CTA | 다시 시도 |
+| Timer expired redirect | 좌석 점유 시간이 만료되어 좌석 선택 화면으로 이동합니다. |
+| API error (generic) | 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요. |
 
 ### Destructive Actions
 
 | Action | Confirmation Approach |
 |--------|----------------------|
-| Cancel booking (user, D-14) | AlertDialog modal: "정말 취소하시겠습니까?" + refund amount + refund timeline. Two buttons: "돌아가기" (cancel) and "예매 취소" (destructive). |
-| Refund booking (admin, D-16) | AlertDialog modal: "환불 처리하시겠습니까?" + user name + booking number + refund amount. Two buttons: "취소" (cancel) and "환불 처리" (destructive). |
-| Leave checkout page (browser back) | No confirmation. Timer continues. Seat locks persist via Redis TTL. User can return within TTL. |
+| Cancel reservation (user, D-09) | AlertDialog modal: reason select + refund amount preview + "예매 취소" destructive button + "돌아가기" ghost button. Non-dismissible by backdrop click. |
+| Admin refund (D-12) | Dialog modal inside booking detail modal: refund reason textarea (required) + refund amount display + "환불 확인" destructive button + "취소" ghost button. |
+| Payment cancellation (during payment) | Toss Payments SDK handles cancellation flow. On return, toast "결제가 취소되었습니다." and user remains on confirm page with seat locks intact (within TTL). |
+| Leave confirm page (browser back) | No confirmation dialog. Navigates back to seat selection. Seat locks remain (TTL-based release). Phase 5 may add beforeunload warning. |
 
-**Source:** Phase 4 CONTEXT D-01 through D-17, 04-UIUX-GUIDE.md patterns
+**Source:** Phase 4 CONTEXT D-01 through D-12, 04-UIUX-GUIDE.md patterns
 
 ---
 
 ## Component Inventory
 
-### New shadcn Components Required (Phase 4)
+### Existing shadcn Components Reused (Phase 4)
 
-| Component | Usage | shadcn Name | Already Installed |
-|-----------|-------|-------------|-------------------|
-| Checkbox | Terms agreement on checkout page | checkbox | Yes (Phase 1) |
-| Tabs | Mypage tab switching (예매내역/프로필) | tabs | Yes (Phase 2) |
-| Badge | Booking status badges (예매완료/취소/환불) | badge | Yes (Phase 2) |
-| Table | Admin booking management list | table | Yes (Phase 2) |
-| AlertDialog | Cancel/refund confirmation modals | alert-dialog | Yes (Phase 2) |
-| Card | Mypage booking cards, checkout info sections | card | Yes (Phase 2) |
-| Button | CTAs throughout | button | Yes (Phase 1) |
-| Input | Booker info fields (read-only, auto-filled) | input | Yes (Phase 1) |
-| Skeleton | Loading states for all pages | skeleton | Yes (Phase 2) |
-| Separator | Section dividers on checkout and detail pages | separator | Yes (Phase 1) |
-| Select | Admin status filter dropdown | select | Yes (Phase 2) |
-| Dialog | N/A (using AlertDialog for confirmations) | dialog | Yes (Phase 1) |
-| Sonner (Toast) | Payment success/failure toasts, cancel success toast | sonner | Yes (Phase 1) |
+All required shadcn primitives are already installed from Phase 1/2/3. No new shadcn installations needed.
 
-No new shadcn component installations are required for Phase 4. All needed primitives are already available.
+| Component | shadcn Name | Usage in Phase 4 |
+|-----------|-------------|-------------------|
+| Button | button | CTA buttons (결제하기, 예매내역 보기, 홈으로, 예매 취소, 환불 처리), form actions |
+| Card | card | Order summary sections, reservation cards, admin stat cards, payment info display |
+| Checkbox | checkbox | Terms agreement checkboxes on confirm page |
+| Dialog | dialog | Admin booking detail modal, admin refund confirmation |
+| AlertDialog | alert-dialog | User cancellation confirmation (non-dismissible) |
+| Badge | badge | Reservation status badges (예매완료, 취소완료, 결제대기, 환불완료) |
+| Table | table | Admin booking list table |
+| Input | input | Booker info edit fields, admin search, admin refund reason |
+| Select | select | Cancellation reason select, admin status filter |
+| Skeleton | skeleton | Page loading states |
+| Sonner (Toast) | sonner | Payment success/failure, cancellation result, refund result |
+| Tabs | tabs | Mypage sections (프로필/예매내역), reservation status filters |
+| Separator | separator | Section dividers within confirm/complete/detail pages |
+| Label | label | Form field labels |
+| Form | form | Booker info edit form |
+| Textarea | textarea | Admin refund reason input |
+| Tooltip | tooltip | Cancel button disabled state explanation |
+| Sheet | sheet | Not used in Phase 4 (confirm page is full-page, no bottom sheet) |
 
 ### Custom Components (Phase 4 Specific)
 
 | Component | Description | Key Props |
 |-----------|-------------|-----------|
-| CheckoutPage | Full checkout flow page. Reads from useBookingStore. Sections: performance/showtime info, seat list, total, booker info, terms checkbox, payment CTA. Validates terms agreement before Toss Payments redirect | performanceId: string |
-| CheckoutSeatSummary | Read-only list of selected seats with tier color dots, seat labels, individual prices. Shows total with left border accent | seats: SeatSelection[], total: number |
-| CheckoutBookerInfo | Displays logged-in user's name and phone (auto-filled from auth state, read-only). If editing needed, links to profile | user: { name: string, phone: string } |
-| CheckoutTerms | Checkbox with terms text + expandable cancel/refund policy details. Must be checked to enable payment button | checked: boolean, onChange: (checked: boolean) => void |
-| PaymentCompletePage | Success page with check icon, booking summary (number, performance, date, seats, amount), two CTAs. Fetches booking data from orderId query param | orderId: string (from URL search params) |
-| PaymentFailPage | Failure page with X icon, error message, seat release notice, two CTAs. Reads error code from URL params | code: string, message: string (from URL search params) |
-| BookingHistoryTab | Mypage tab content: status filter chips + booking card list + pagination. Uses React Query for data fetching | (none -- reads from query) |
-| BookingCard | Card in booking history list. Poster thumbnail (80x80) + performance name + date + seat summary + price + status badge. Clickable, navigates to detail | booking: BookingListItem |
-| BookingStatusBadge | Badge component for booking status. Maps status enum to label/color pair using semantic status colors | status: 'CONFIRMED' \| 'CANCELLED' |
-| BookingDetailPage | Full detail page for a single booking. Sections: booking info, performance info, payment info, cancellation section. Cancel button with deadline logic | bookingId: string |
-| CancelBookingModal | AlertDialog for cancellation confirmation. Shows refund amount and timeline. Calls cancel API on confirm. Loading state on confirm button | bookingId: string, refundAmount: number, onSuccess: () => void |
-| AdminBookingsPage | Admin booking management. Table with status filter + search + pagination. Refund button per row with confirmation dialog. Follows admin performance table pattern | (none -- reads from query) |
-| AdminRefundModal | AlertDialog for admin refund. Shows user name, booking number, refund amount. Calls admin refund API | bookingId: string, userName: string, bookingNumber: string, amount: number, onSuccess: () => void |
+| ConfirmHeader | Sticky top bar with back button, page title "결제하기", countdown timer. Height: 56px desktop, 48px mobile. Inherits BookingHeader pattern from Phase 3 | performanceTitle: string, expiresAt: number |
+| OrderSummary | Card showing performance info (poster thumbnail 80x112 + title + date/time + venue) and selected seats list with prices | performance: PerformanceInfo, seats: SeatSelection[], totalPrice: number |
+| BookerInfoSection | Displays booker name + phone (auto-filled from user profile). "수정" button toggles inline edit mode with react-hook-form + zod validation | user: UserProfile, onUpdate: (data: BookerInfo) => void |
+| TermsAgreement | Checkbox group: select-all + 2 required terms with "보기" links opening Dialog. Tracks agreement state | terms: TermItem[], agreed: boolean, onChange: (agreed: boolean) => void |
+| TossPaymentWidget | Wrapper around @tosspayments/tosspayments-sdk widget rendering. Handles SDK initialization, payment request, success/failure callbacks. Container with min-height for SDK content | orderId: string, orderName: string, amount: number, customerName: string, onSuccess: (paymentKey: string) => void, onFail: (error: PaymentError) => void |
+| BookingComplete | Complete page layout: success icon + heading + booking number (large emphasis) + performance/seat/payment info cards + CTAs | booking: BookingDetail |
+| ReservationList | Mypage reservation card list with status filter tabs. Paginated. Each card: poster thumbnail + performance name + date + seat summary + status badge | reservations: Reservation[], filter: ReservationStatus \| 'all' |
+| ReservationCard | Individual reservation card for mypage list. Clickable (navigates to detail). Poster thumbnail (60x84) left + info right + status badge top-right | reservation: Reservation |
+| ReservationDetail | Full reservation detail view: booking number, performance info, seat details, payment info, cancellation deadline, cancel button | reservation: ReservationDetail, onCancel: () => void |
+| CancelConfirmModal | AlertDialog with cancellation reason select + refund amount preview + destructive confirm button. Non-dismissible by backdrop | refundAmount: number, paymentMethod: string, onConfirm: (reason: string) => void, onClose: () => void, isLoading: boolean |
+| AdminBookingDashboard | Admin page: stat cards row + search/filter bar + booking table + row-click detail modal | stats: BookingStats, bookings: AdminBooking[], filters: BookingFilters |
+| AdminStatCard | Single stat card: label + large value + optional trend indicator | label: string, value: string \| number, icon: LucideIcon |
+| AdminBookingTable | Data table with columns: booking number, booker, performance, date, seats, amount, status. Row click opens detail modal. Sortable by date | bookings: AdminBooking[], onRowClick: (id: string) => void |
+| AdminBookingDetailModal | Dialog showing full booking detail + refund button. Refund triggers nested confirmation with reason textarea | booking: AdminBookingDetail, onRefund: (reason: string) => void, isLoading: boolean |
+| CountdownTimer | Inherited from Phase 3. Reused on confirm page header | expiresAt: number, onExpire: () => void |
 
 ### Existing Components Reused
 
 | Component | From Phase | Reuse Notes |
 |-----------|------------|-------------|
-| BookingHeader | Phase 3 | Reused on checkout page with countdown timer (D-05). Same sticky header, same timer, back button goes to seat selection |
-| CountdownTimer | Phase 3 | Reused in BookingHeader on checkout page. Same MM:SS format, same color transitions |
-| TimerExpiredModal | Phase 3 | Reused on checkout page. When timer expires, shows modal and redirects to seat selection |
-| useBookingStore | Phase 3 | Checkout reads selectedSeats, selectedShowtimeId, timerExpiresAt. No new store fields needed for checkout |
-| ProfileForm | Phase 1 | Moved to mypage "프로필" tab. No changes to component itself |
-| AuthGuard | Phase 1 | Wraps checkout page, mypage, booking detail (all require authentication) |
-| StatusFilter | Phase 2 | Adapted for booking statuses on mypage and admin (전체/예매완료/취소환불 instead of performance statuses) |
-| PaginationNav | Phase 2 | Reused for mypage booking history and admin booking list pagination |
-| Table components | Phase 2 | Reused for admin booking management table (same shadcn Table pattern) |
-| api-client.ts | Phase 1 | All payment/booking API calls use existing interceptor + 401 refresh pattern |
+| GNB | Phase 1 | Shown on complete page and mypage. Hidden on confirm page (dedicated checkout). |
+| Footer | Phase 1 | Shown on complete page and mypage. Hidden on confirm page. |
+| BookingHeader / CountdownTimer | Phase 3 | ConfirmHeader inherits the same pattern. Countdown timer reused exactly. |
+| AuthGuard | Phase 1 | All Phase 4 pages require authentication |
+| api-client.ts | Phase 1 | API calls for payment, booking, reservation endpoints |
+| ProfileForm (partial) | Phase 1 | BookerInfoSection references the profile display pattern but uses a lighter inline edit |
 
 ---
 
 ## Page Layouts
 
-### /booking/[performanceId]/checkout -- Checkout Page (D-01, D-02)
+### /booking/[performanceId]/confirm -- Order Confirm Page (D-01, D-02, D-03, D-04)
 
-Standalone page within booking flow. Uses BookingHeader (same as seat selection). No GNB, no Footer.
+Standalone checkout page. No GNB, no Footer. Focused payment experience. Countdown timer from Phase 3 continues.
 
 #### Desktop Layout (>= 1024px)
 
 ```
 +----------------------------------------------------------+
-| BookingHeader (sticky, h-14, white, border-b, shadow-sm) |
-| [< Back]  "공연명" (truncated)    [남은시간 09:42]        |
+| ConfirmHeader (sticky, h-14, white, border-b, shadow-sm) |
+| [< 뒤로]    "결제하기"          [남은시간 07:23]          |
 +----------------------------------------------------------+
-| max-w-[720px] mx-auto px-6 py-8                         |
+| max-w-[720px] mx-auto px-6 py-8                          |
 |                                                           |
-| +------------------------------------------------------+ |
-| | 공연 정보                                      (20px) | |
-| | 공연명 | 2026.04.10 (금) 19:00                        | |
-| +------------------------------------------------------+ |
+| +--- 공연 정보 -----------------------------------+       |
+| | [poster    ] 뮤지컬 <렘피카>                    |       |
+| | [80x112px  ] 2026.04.15 (화) 19:30              |       |
+| |              코엑스아티움 우리은행홀              |       |
+| +------------------------------------------------+       |
 |                                                           |
-| +------------------------------------------------------+ |
-| | 선택 좌석                                      (20px) | |
-| | +--------------------------------------------------+ | |
-| | | [VIP dot] VIP A-1              170,000원          | | |
-| | | [VIP dot] VIP A-2              170,000원          | | |
-| | | [R dot]   R   B-3              130,000원          | | |
-| | +--------------------------------------------------+ | |
-| | ---------------------------------------------------- | |
-| | 총 결제금액                            470,000원     | |
-| | (border-left 3px primary accent)                     | |
-| +------------------------------------------------------+ |
+| +--- 선택 좌석 -----------------------------------+       |
+| | VIP A열 1번                         170,000원   |       |
+| | VIP A열 2번                         170,000원   |       |
+| | ───────────────────────────────────────         |       |
+| | 총 2매                      총 결제금액         |       |
+| |                              340,000원 (20px)   |       |
+| +------------------------------------------------+       |
 |                                                           |
-| +------------------------------------------------------+ |
-| | 예매자 정보                                    (20px) | |
-| | 이름: 홍길동 (read-only)                              | |
-| | 연락처: 010-1234-5678 (read-only)                    | |
-| +------------------------------------------------------+ |
+| +--- 예매자 정보 ---------------------------------+       |
+| | 이름      홍길동                      [수정]    |       |
+| | 연락처    010-1234-5678               [수정]    |       |
+| +------------------------------------------------+       |
 |                                                           |
-| +------------------------------------------------------+ |
-| | 예매/취소 안내                                  (20px) | |
-| | - 취소마감: 공연 전날 18:00까지. 이후 취소 불가       | |
-| | - 전액 환불만 가능 (부분 취소 불가)                   | |
-| |                                                       | |
-| | [x] 구매조건 확인 및 결제에 동의합니다                 | |
-| +------------------------------------------------------+ |
+| +--- 약관 동의 -----------------------------------+       |
+| | [x] 전체 동의                                   |       |
+| | ──────────────────────────────                  |       |
+| | [x] 예매/취소 규정에 동의합니다 (필수)     [보기] |       |
+| | [x] 개인정보 제3자 제공에 동의합니다 (필수) [보기] |       |
+| +------------------------------------------------+       |
 |                                                           |
-| +------------------------------------------------------+ |
-| |    [ 470,000원 결제하기 ]  (h-[52px], primary, w-full)| |
-| +------------------------------------------------------+ |
+| +--- 결제 수단 -----------------------------------+       |
+| |                                                 |       |
+| |  [Toss Payments Widget - inline rendered]       |       |
+| |  (카드/카카오페이/네이버페이/계좌이체)            |       |
+| |                                                 |       |
+| +------------------------------------------------+       |
+|                                                           |
+| [           결제하기           ]  (Primary, h-12, w-full) |
+|                                                           |
 +----------------------------------------------------------+
 ```
 
@@ -387,234 +402,266 @@ Standalone page within booking flow. Uses BookingHeader (same as seat selection)
 
 ```
 +------------------------------------------+
-| BookingHeader (sticky, h-12)             |
-| [<]  "공연명..."    [남은시간 09:42]      |
+| ConfirmHeader (sticky, h-12)             |
+| [<]    "결제하기"    [남은시간 07:23]      |
 +------------------------------------------+
-| px-4 py-4 pb-24 (room for sticky CTA)   |
+| px-4 py-6                                |
 |                                           |
-| 공연 정보 section                         |
-| 공연명 | 날짜 시간                        |
+| 공연 정보                                 |
+| [poster] 뮤지컬 <렘피카>                  |
+|          2026.04.15 (화) 19:30            |
+|          코엑스아티움                      |
 |                                           |
-| Separator                                |
+| 선택 좌석                                 |
+| VIP A열 1번              170,000원        |
+| VIP A열 2번              170,000원        |
+| ─────────────────────────                |
+| 총 2매            총 결제금액 340,000원    |
 |                                           |
-| 선택 좌석 section                         |
-| Seat list (same as desktop)              |
-| Total with accent border                 |
+| 예매자 정보                               |
+| 이름    홍길동               [수정]       |
+| 연락처  010-1234-5678        [수정]       |
 |                                           |
-| Separator                                |
+| 약관 동의                                 |
+| [x] 전체 동의                             |
+| ────────────                             |
+| [x] 예매/취소 규정 동의 (필수)      [보기] |
+| [x] 개인정보 제3자 제공 동의 (필수)  [보기] |
 |                                           |
-| 예매자 정보 section                       |
-| 이름 / 연락처 (read-only)                |
-|                                           |
-| Separator                                |
-|                                           |
-| 예매/취소 안내 + 약관 동의 checkbox       |
-|                                           |
-+------------------------------------------+
-| Sticky bottom CTA (safe-area-inset)      |
-| [ 470,000원 결제하기 ] (h-[52px], w-full)|
-+------------------------------------------+
-```
-
-### /booking/complete -- Payment Complete Page (D-06)
-
-Standalone page. No GNB. Simple centered content.
-
-```
-+------------------------------------------+
-| GNB (standard, with home logo link)      |
-+------------------------------------------+
-| max-w-[480px] mx-auto px-4              |
-| text-center py-16                        |
-|                                           |
-|      +----------------------------+      |
-|      | [Check circle icon, 64px]  |      |
-|      | Success green bg circle    |      |
-|      +----------------------------+      |
-|                                           |
-|      예매가 완료되었습니다!               |
-|      (28px semibold, gray-900)           |
-|                                           |
-|  +------------------------------------+  |
-|  | 예매번호  GRP-20260402-001         |  |
-|  |          (primary color, monospace) |  |
-|  | 공연      뮤지컬 렘피카              |  |
-|  | 날짜      2026.04.10 (금) 19:00    |  |
-|  | 좌석      VIP A-1, VIP A-2         |  |
-|  | 결제금액   340,000원                |  |
-|  +------------------------------------+  |
-|  (Card with gray-100 bg, rounded-lg)    |
-|                                           |
-|  [ 예매 내역 보기 ] (primary, w-full)    |
-|  [ 홈으로 ]         (secondary, w-full)  |
+| 결제 수단                                 |
+| [Toss Payments Widget]                   |
 |                                           |
 +------------------------------------------+
-| Footer                                   |
+| [결제하기] (sticky bottom, h-12, w-full)  |
+| safe-area-inset-bottom padding           |
 +------------------------------------------+
 ```
 
-### /booking/fail -- Payment Fail Page (D-07)
+### /booking/[performanceId]/complete -- Booking Complete Page (D-05)
 
-```
-+------------------------------------------+
-| GNB (standard)                           |
-+------------------------------------------+
-| max-w-[480px] mx-auto px-4              |
-| text-center py-16                        |
-|                                           |
-|      +----------------------------+      |
-|      | [X circle icon, 64px]      |      |
-|      | Error red bg circle        |      |
-|      +----------------------------+      |
-|                                           |
-|      결제에 실패했습니다                   |
-|      (28px semibold, gray-900)           |
-|                                           |
-|      {에러 메시지}                        |
-|      (14px regular, gray-600)            |
-|                                           |
-|      선택한 좌석이 해제되었습니다.         |
-|      다시 좌석을 선택해주세요.             |
-|      (14px regular, gray-600)            |
-|                                           |
-|  [ 다시 예매하기 ] (primary, w-full)      |
-|  [ 홈으로 ]        (secondary, w-full)   |
-|                                           |
-+------------------------------------------+
-| Footer                                   |
-+------------------------------------------+
-```
-
-### /mypage -- Booking History Tab (D-09, D-10)
-
-Uses standard GNB/Footer layout. Tabs below page heading.
+Standard page layout with GNB and Footer. Celebratory confirmation.
 
 ```
 +----------------------------------------------------------+
-| GNB                                                       |
+|                       [GNB]                               |
 +----------------------------------------------------------+
-| max-w-[960px] mx-auto px-4 pt-12 pb-16                  |
+| max-w-[720px] mx-auto px-6 py-12                        |
 |                                                           |
-|  마이페이지                               (20px semibold) |
+|              [CheckCircle2 icon, 64px]                   |
+|              #15803D (success color)                     |
 |                                                           |
-|  [ 예매내역 ]  [ 프로필 ]    (Tabs, underline style)     |
-|  ~~~~~~~~~~                  (primary underline active)  |
+|          예매가 완료되었습니다                              |
+|          (20px, semibold, gray-900)                      |
 |                                                           |
-|  Status filters:                                         |
-|  [전체] [예매완료] [취소/환불]  (chip buttons)            |
+| +--- 예매번호 ------------------------------------+       |
+| |                                                 |       |
+| |     예매번호                                     |       |
+| |     GRP-20260415-001                            |       |
+| |     (28px, semibold, monospace, primary)         |       |
+| |                                                 |       |
+| +------------------------------------------------+       |
 |                                                           |
-|  +------------------------------------------------------+|
-|  | Booking Card (clickable)                              ||
-|  | +--------+  뮤지컬 렘피카                    [배지]   ||
-|  | |Poster  |  2026.04.10 (금) 19:00                    ||
-|  | |80x80   |  VIP A-1 외 1석                            ||
-|  | +--------+  340,000원                                 ||
-|  +------------------------------------------------------+|
+| +--- 공연 정보 -----------------------------------+       |
+| | 공연명       뮤지컬 <렘피카>                     |       |
+| | 공연일시     2026.04.15 (화) 19:30              |       |
+| | 장소         코엑스아티움 우리은행홀              |       |
+| +------------------------------------------------+       |
 |                                                           |
-|  +------------------------------------------------------+|
-|  | Booking Card 2 ...                                    ||
-|  +------------------------------------------------------+|
+| +--- 좌석 정보 -----------------------------------+       |
+| | VIP A열 1번                         170,000원   |       |
+| | VIP A열 2번                         170,000원   |       |
+| +------------------------------------------------+       |
 |                                                           |
-|  [ 1  2  3  >  ] (PaginationNav)                        |
+| +--- 결제 정보 -----------------------------------+       |
+| | 결제금액     340,000원                           |       |
+| | 결제수단     카카오페이                           |       |
+| | 결제일시     2026.04.10 14:32                    |       |
+| | 취소마감시간 2026.04.14 19:30까지                 |       |
+| +------------------------------------------------+       |
 |                                                           |
-+----------------------------------------------------------+
-| Footer                                                    |
-+----------------------------------------------------------+
-```
-
-### /mypage/bookings/[bookingId] -- Booking Detail (D-11)
-
-```
-+----------------------------------------------------------+
-| GNB                                                       |
-+----------------------------------------------------------+
-| max-w-[720px] mx-auto px-4 pt-12 pb-16                  |
-|                                                           |
-|  [< 뒤로]                                                |
-|  예매 상세                                (20px semibold) |
-|                                                           |
-|  +------------------------------------------------------+|
-|  | 예매 정보                                             ||
-|  | 예매번호   GRP-20260402-001                           ||
-|  | 상태       [예매완료] (badge)                          ||
-|  +------------------------------------------------------+|
-|                                                           |
-|  +------------------------------------------------------+|
-|  | 공연 정보                                             ||
-|  | 공연명     뮤지컬 렘피카                               ||
-|  | 관람일시   2026.04.10 (금) 19:00                      ||
-|  | 장소       코엑스아티움 우리은행홀                      ||
-|  | 좌석       VIP A-1, VIP A-2                           ||
-|  +------------------------------------------------------+|
-|                                                           |
-|  +------------------------------------------------------+|
-|  | 결제 정보                                             ||
-|  | 결제수단   카카오페이                                  ||
-|  | 결제금액   340,000원                                  ||
-|  +------------------------------------------------------+|
-|                                                           |
-|  +------------------------------------------------------+|
-|  | 취소 안내                                             ||
-|  | 취소마감   2026.04.09 18:00까지                       ||
-|  |                                                       ||
-|  | [ 예매 취소 ] (destructive variant, w-full)           ||
-|  |                                                       ||
-|  | OR (if deadline passed):                              ||
-|  | 취소 마감 시간이 지났습니다 (14px, gray-500)           ||
-|  | [ 취소 불가 ] (disabled button)                       ||
-|  +------------------------------------------------------+|
+| [   예매내역 보기   ]  (Primary, h-12, w-full)            |
+| [     홈으로        ]  (Ghost, h-12, w-full, mt-sm)       |
 |                                                           |
 +----------------------------------------------------------+
-| Footer                                                    |
+|                       [Footer]                            |
 +----------------------------------------------------------+
 ```
 
-### Admin /admin/bookings -- Booking Management (D-16)
+### /mypage -- Reservations Tab (D-07)
 
-Uses admin layout (no GNB/Footer, sidebar navigation).
+Added as a tab within existing mypage. Phase 1 mypage has profile only; Phase 4 adds reservations tab.
 
 ```
 +----------------------------------------------------------+
-| Admin Layout (sidebar + content area)                     |
+|                       [GNB]                               |
++----------------------------------------------------------+
+| max-w-[600px] mx-auto px-4 pt-12 pb-16                  |
 |                                                           |
-| 예매 관리                                 (28px semibold) |
+| 마이페이지                                                |
+| (20px, semibold)                                         |
 |                                                           |
-| Status filter:  [전체] [예매완료] [취소]                  |
-| Search:         [예매번호 또는 사용자명 검색]    (input)  |
+| [Tab: 프로필 | 예매 내역]                                  |
 |                                                           |
-| +------------------------------------------------------+ |
-| | Table                                                 | |
-| | 예매번호 | 사용자 | 공연명 | 상태 | 결제금액 | 액션   | |
-| |----------|--------|--------|------|---------|--------| |
-| | GRP-...  | 홍길동 | 렘피카 |[완료]| 340,000 |[환불]  | |
-| | GRP-...  | 김철수 | 위키드 |[취소]| 170,000 | -      | |
-| +------------------------------------------------------+ |
+| (When "예매 내역" tab active:)                            |
 |                                                           |
-| [ 1  2  3  >  ] (PaginationNav)                         |
+| [전체] [예매완료] [취소완료]  <- filter chips              |
+|                                                           |
+| +--- Reservation Card -------------------------+         |
+| | [poster   ] 뮤지컬 <렘피카>     [예매완료]    |         |
+| | [60x84px  ] 2026.04.15 (화) 19:30           |         |
+| |             VIP A열 1번 외 1석                |         |
+| |             340,000원                        |         |
+| +----------------------------------------------+         |
+|                                                           |
+| +--- Reservation Card -------------------------+         |
+| | [poster   ] 콘서트 <IU>        [취소완료]     |         |
+| | [60x84px  ] 2026.04.20 (토) 18:00           |         |
+| |             R B열 5번                        |         |
+| |             130,000원                        |         |
+| +----------------------------------------------+         |
+|                                                           |
+| (Empty state when no reservations:)                      |
+| 예매 내역이 없습니다                                      |
+| 원하는 공연을 찾아 예매해보세요                             |
+| [공연 둘러보기] (Primary button)                           |
+|                                                           |
++----------------------------------------------------------+
+|                       [Footer]                            |
 +----------------------------------------------------------+
 ```
 
-### Cancel Confirmation Modal (D-14)
+### /mypage/reservations/[id] -- Reservation Detail Page (D-08)
+
+```
++----------------------------------------------------------+
+|                       [GNB]                               |
++----------------------------------------------------------+
+| max-w-[720px] mx-auto px-6 py-8                          |
+|                                                           |
+| [< 뒤로]    예매 상세                                     |
+|             (20px, semibold)                              |
+|                                                           |
+| +--- 예매번호 + 상태 -------- [예매완료] badge ---+       |
+| |     GRP-20260415-001                            |       |
+| |     (20px, semibold, monospace)                  |       |
+| +------------------------------------------------+       |
+|                                                           |
+| +--- 공연 정보 -----------------------------------+       |
+| | 공연명       뮤지컬 <렘피카>                     |       |
+| | 공연일시     2026.04.15 (화) 19:30              |       |
+| | 장소         코엑스아티움 우리은행홀              |       |
+| +------------------------------------------------+       |
+|                                                           |
+| +--- 좌석 정보 -----------------------------------+       |
+| | VIP A열 1번                         170,000원   |       |
+| | VIP A열 2번                         170,000원   |       |
+| +------------------------------------------------+       |
+|                                                           |
+| +--- 결제 정보 -----------------------------------+       |
+| | 결제금액     340,000원                           |       |
+| | 결제수단     카카오페이                           |       |
+| | 결제일시     2026.04.10 14:32                    |       |
+| +------------------------------------------------+       |
+|                                                           |
+| +--- 취소 정보 -----------------------------------+       |
+| | 취소마감시간     2026.04.14 19:30까지            |       |
+| |                 (마감 전: gray-900 text)         |       |
+| |                 (마감 후: error text + 경고)      |       |
+| +------------------------------------------------+       |
+|                                                           |
+| [   예매 취소   ]  (Destructive button, h-12, w-full)     |
+| (마감 후: disabled + tooltip "취소 마감시간이 지났습니다")  |
+|                                                           |
++----------------------------------------------------------+
+|                       [Footer]                            |
++----------------------------------------------------------+
+```
+
+### /admin/bookings -- Admin Booking Management (D-11, D-12)
+
+Follows Phase 2 admin panel layout pattern. Sidebar + main content.
+
+```
++----------------------------------------------------------+
+| Admin Layout (inherited from Phase 2)                    |
++----------------------------------------------------------+
+| [Sidebar]  |  예매 관리 (20px heading)                    |
+|            |                                              |
+|            | +--stat--+ +--stat--+ +--stat--+            |
+|            | | 총 예매 | | 매출액  | | 취소율  |            |
+|            | |  1,234  | |  ₩52M  | |  3.2%  |            |
+|            | | h=100px | | h=100px | | h=100px |           |
+|            | +---------+ +---------+ +---------+           |
+|            |                                              |
+|            | [검색: 예매번호/예매자명]  [상태 필터 ▼]        |
+|            |                                              |
+|            | +--- Table ----------------------------+     |
+|            | | 예매번호 | 예매자 | 공연명 | 일시 |...  |     |
+|            | |----------|--------|--------|------|     |     |
+|            | | GRP-001  | 홍길동 | 렘피카 | 4/15 |     |     |
+|            | | GRP-002  | 김철수 | IU     | 4/20 |     |     |
+|            | +------------------------------------------+     |
+|            |                                              |
+|            | (Row click -> Admin Booking Detail Modal)    |
++----------------------------------------------------------+
+
+Admin Booking Detail Modal:
++--------------------------------------+
+| 예매 상세                    [X]     |
+|                                       |
+| 예매번호    GRP-20260415-001         |
+| 예매자      홍길동 / 010-1234-5678   |
+| 공연명      뮤지컬 <렘피카>           |
+| 공연일시    2026.04.15 (화) 19:30    |
+| 좌석        VIP A열 1번, VIP A열 2번 |
+| 결제금액    340,000원                |
+| 결제수단    카카오페이               |
+| 결제일시    2026.04.10 14:32         |
+| 상태        [예매완료] badge         |
+|                                       |
+| [  환불 처리  ] (Destructive, w-full)|
++--------------------------------------+
+
+Admin Refund Confirmation (nested):
++--------------------------------------+
+| 환불을 진행하시겠습니까?              |
+|                                       |
+| 환불 사유 *                           |
+| [                              ]     |
+| [  사유를 입력하세요             ]     |
+|                                       |
+| 환불 금액    340,000원               |
+| 환불 수단    카카오페이으로 환불       |
+|                                       |
+| [환불 확인]      [취소]              |
++--------------------------------------+
+```
+
+### Cancellation Confirm Modal (User, D-09)
 
 ```
 +--------------------------------------+
-| (AlertDialog, 400px width)           |
+| (AlertDialog, no backdrop dismiss)   |
 |                                       |
-|    정말 취소하시겠습니까?             |
-|    (20px semibold, gray-900)         |
+|    예매를 취소하시겠습니까?            |
+|    (20px, semibold, gray-900)        |
 |                                       |
-|    이 예매를 취소하면 전액 환불됩니다. |
-|    (14px regular, gray-600)          |
+|    취소 후에는 복구할 수 없습니다.     |
+|    (14px, regular, gray-600)         |
 |                                       |
-|    환불 금액: 340,000원               |
-|    (16px semibold, gray-900)         |
+|    취소 사유                          |
+|    [단순 변심            ▼]          |
+|    (Select dropdown)                 |
 |                                       |
-|    환불은 결제 수단에 따라            |
-|    3~7영업일 소요됩니다               |
-|    (14px regular, gray-500)          |
+|    환불 예정 금액                      |
+|    340,000원                          |
+|    (16px, semibold, gray-900)        |
 |                                       |
-|    [ 돌아가기 ]  [ 예매 취소 ]       |
-|    (secondary)   (destructive)       |
+|    카카오페이으로 환불                  |
+|    (14px, regular, gray-600)         |
+|                                       |
+|    [  예매 취소  ]  (Destructive btn) |
+|    [  돌아가기   ]  (Ghost button)    |
 +--------------------------------------+
 ```
 
@@ -622,74 +669,61 @@ Uses admin layout (no GNB/Footer, sidebar navigation).
 
 ## Interaction Contracts
 
-### Checkout Page Interactions (BOOK-05, PAY-05, D-01 through D-05)
+### Payment Flow (PAY-01 through PAY-07)
 
 | Interaction | Behavior |
 |-------------|----------|
-| Page load | Reads selectedSeats, selectedShowtimeId from useBookingStore. If store is empty (user navigated directly), redirect to seat selection page with toast "예매 정보가 없습니다. 좌석을 먼저 선택해주세요." |
-| Booker info auto-fill | Name and phone pre-filled from authenticated user state. Read-only display. No edit capability on checkout (edit via profile page). |
-| Terms checkbox toggle | Single checkbox (D-03). When checked, payment button enables with primary style. When unchecked, button shows disabled state with text "약관에 동의해주세요". |
-| Payment button click | Validates: terms checked + seats exist + timer not expired. Calls Toss Payments `requestPayment()` with redirect URLs. Button shows spinner + "결제 처리 중..." during API call. Page navigates to Toss payment window (redirect). |
-| Timer expires on checkout (D-05) | Same behavior as Phase 3: TimerExpiredModal appears. On "처음으로" click, resets booking store and navigates to seat selection page. Seat locks have auto-released server-side. |
-| Back button | Navigates back to seat selection page. Seat locks preserved (timer continues). User can return to checkout within TTL. |
-| Browser back / close | No beforeunload warning. Seat locks auto-release via Redis TTL. |
+| Confirm page load | Auto-populate booker info from user profile. Display selected seats from booking store (Zustand). Start/continue countdown timer from Phase 3 lock TTL. |
+| Booker info "수정" click | Inline fields become editable (input mode). "수정" changes to "저장"/"취소" buttons. Validation via zod (name required, phone format). |
+| Terms checkbox toggle | Individual checkbox toggles. "전체 동의" checks/unchecks all. CTA disabled until all required terms checked. |
+| Terms "보기" click | Opens Dialog with full terms text. Scrollable content. "확인" button closes. |
+| Toss Payment widget render | SDK initializes on page mount. Renders inline within container div. Payment method selection happens within widget (card, KakaoPay, NaverPay, bank transfer). |
+| "결제하기" CTA click | Validates: all required terms agreed. Triggers Toss Payments SDK `requestPayment()`. Button changes to loading state "결제 처리 중..." + spinner. Disabled during processing. |
+| Payment success (SDK callback) | Frontend receives paymentKey. Calls backend POST /api/v1/payments/confirm with { paymentKey, orderId, amount }. Backend verifies amount with Toss API. On backend success: navigate to complete page. |
+| Payment failure (SDK callback, D-06) | Toast "결제에 실패했습니다. 다시 시도해주세요." Stay on confirm page. Seat locks intact (within TTL). CTA returns to normal state. |
+| Payment user cancel (D-06) | Toast "결제가 취소되었습니다." Stay on confirm page. Seat locks intact. CTA returns to normal state. |
+| Timer expires during payment | If payment is mid-flow, let SDK complete or timeout. If timer expires before payment completion, show timer expired toast and redirect to seat selection page. Seat locks already released server-side. |
+| Browser back on confirm page | Navigate back to Phase 3 seat selection page. Seat locks remain via TTL. No confirmation dialog. |
 
-### Toss Payments Redirect Flow (D-04, PAY-01 through PAY-04)
-
-| Interaction | Behavior |
-|-------------|----------|
-| requestPayment() call | Frontend sends: orderId, amount, orderName, successUrl, failUrl. Toss SDK redirects browser to payment page. |
-| Payment success redirect | Browser redirects to `/booking/complete?paymentKey=xxx&orderId=xxx&amount=xxx`. Frontend calls backend confirm API with these params. Backend verifies with Toss, creates reservation, releases Redis locks, marks seats sold, broadcasts via WebSocket. |
-| Payment fail redirect | Browser redirects to `/booking/fail?code=xxx&message=xxx`. Backend releases Redis seat locks for this session (D-08). Page displays error + seat release notice. |
-| Payment cancel (user closes Toss window) | Same as failure redirect. Toss redirects to failUrl with cancel code. |
-
-### Complete Page Interactions (D-06)
+### Booking Complete (D-05)
 
 | Interaction | Behavior |
 |-------------|----------|
-| Page load | Fetches booking details using orderId from URL params. Displays booking summary. Clears useBookingStore (booking flow complete). |
-| "예매 내역 보기" CTA | Navigates to `/mypage/bookings/{bookingId}`. |
-| "홈으로" CTA | Navigates to `/`. |
-| Direct URL access without valid orderId | Shows error state: "예매 정보를 불러오지 못했습니다" + "홈으로" button. |
+| Complete page load | Display booking number prominently (28px, monospace, primary color). All booking details in read-only cards. |
+| "예매내역 보기" click | Navigate to /mypage?tab=reservations |
+| "홈으로" click | Navigate to / (home page) |
+| Complete page refresh | Safe -- data fetched from server by booking ID in URL. No ephemeral state dependency. |
 
-### Fail Page Interactions (D-07)
-
-| Interaction | Behavior |
-|-------------|----------|
-| Page load | Reads error code and message from URL search params. Clears useBookingStore. Server has already released seat locks (D-08). |
-| "다시 예매하기" CTA | Navigates to `/performance/{performanceId}` (performance detail, user starts fresh from showtime selection). |
-| "홈으로" CTA | Navigates to `/`. |
-
-### Mypage Booking History Interactions (D-09, D-10, RESV-01)
+### Reservation Management (RESV-01, RESV-02, RESV-03)
 
 | Interaction | Behavior |
 |-------------|----------|
-| Tab switch (예매내역/프로필) | Tabs component switches content. Default tab: 예매내역. URL does not change (client-side tab state). |
-| Status filter chip click | Filters booking list by status. Resets pagination to page 1. Uses React Query with filter param. |
-| Booking card click | Navigates to `/mypage/bookings/{bookingId}` detail page. |
-| Pagination | Standard PaginationNav. 10 bookings per page. |
+| Mypage "예매 내역" tab click | Switches to reservation list view. Fetches reservations via React Query. |
+| Status filter chip click | Filters reservation list client-side (or refetch with filter query param). Active chip: primary bg + white text. Inactive: gray-100 bg + gray-900 text. |
+| Reservation card click | Navigate to /mypage/reservations/[id] detail page. |
+| "예매 취소" click (D-09) | Opens CancelConfirmModal (AlertDialog). Pre-populated with refund amount and payment method. |
+| Cancel reason select | Required before confirming. Dropdown with 4 options. |
+| Cancel confirm click | Calls backend DELETE /api/v1/reservations/[id]. Button shows loading "취소 처리 중..." Backend calls Toss Payments cancel API. On success: toast "예매가 취소되었습니다" + refresh detail page (status changes to CANCELLED). On failure: toast error. |
+| Cancel button disabled (D-10) | When current time > performance start - 24h. Button disabled. Tooltip on hover: "취소 마감시간이 지났습니다". Cancellation deadline displayed in error color text. |
 
-### Booking Detail Interactions (D-11, D-12, D-13, RESV-02, RESV-03)
-
-| Interaction | Behavior |
-|-------------|----------|
-| Page load | Fetches booking detail by bookingId. Displays all sections. Calculates cancel deadline (performance date - 1 day at 18:00). |
-| Cancel button click (before deadline) | Opens CancelBookingModal (AlertDialog). Shows refund amount and timeline. |
-| Cancel confirmation | Calls cancel API. Button shows spinner + "취소 처리 중...". On success: toast "예매가 취소되었습니다", refetch booking detail (status updates to CANCELLED), cancel button disappears. On failure: toast "취소 처리에 실패했습니다." |
-| Cancel button (after deadline, D-12) | Button disabled with text "취소 불가". Below button: "취소 마감 시간이 지났습니다" in gray-500. |
-| Back button | Navigates to `/mypage` (booking history tab). |
-
-### Admin Booking Management Interactions (D-16, ADMN-04)
+### Admin Booking Management (ADMN-04, D-11, D-12)
 
 | Interaction | Behavior |
 |-------------|----------|
-| Status filter | Chip buttons: 전체, 예매완료, 취소. Filters table. |
-| Search | Input with 300ms debounce (same pattern as admin performances). Searches by booking number or user name. |
-| Refund button click | Opens AdminRefundModal. Shows user, booking number, refund amount. |
-| Refund confirmation | Calls admin refund API. On success: toast "환불이 완료되었습니다", refetch table. On failure: toast "환불 처리에 실패했습니다." |
-| Refund button visibility | Only shown for CONFIRMED status rows. CANCELLED rows show dash (-). |
-| Table row click | No action (unlike performances table). Admin views summary in table, refunds via button. |
-| Pagination | Standard PaginationNav. 20 bookings per page. |
+| Admin bookings page load | Fetch stats (total bookings, revenue, cancel rate) + booking list. Display stat cards + table. |
+| Search input | Debounced (300ms) search by booking number or booker name. Filters table. |
+| Status filter select | Dropdown filter. Refetches or filters table by status. |
+| Table row click | Opens AdminBookingDetailModal with full booking info. |
+| Admin "환불 처리" click (D-12) | Opens nested refund confirmation within detail modal. Refund reason textarea required. |
+| Admin refund confirm | Calls backend POST /api/v1/admin/bookings/[id]/refund. Button shows loading "환불 처리 중..." On success: close modals, toast "환불이 완료되었습니다", refresh table. On failure: toast error. |
+
+### Countdown Timer on Confirm Page (D-04)
+
+| Interaction | Behavior |
+|-------------|----------|
+| Timer display | Continues from Phase 3. Shows remaining TTL of seat locks. Same visual treatment: primary bg > 3min, error bg <= 3min. |
+| Timer expiry on confirm page | Toast "좌석 점유 시간이 만료되어 좌석 선택 화면으로 이동합니다." Redirect to /booking/[performanceId] (seat selection page). Seat locks expired server-side. |
+| Timer NOT resettable | Timer is fixed to original lock TTL. Cannot extend from confirm page. |
 
 ---
 
@@ -697,14 +731,16 @@ Uses admin layout (no GNB/Footer, sidebar navigation).
 
 | Page/Component | Loading Pattern |
 |----------------|-----------------|
-| Checkout page initial | Skeleton: performance info bar (h-8 w-full) + 3 seat row skeletons (h-12 each) + total skeleton (h-16) + booker info skeletons (2 rows h-10) + terms skeleton (h-6) + CTA skeleton (h-[52px]) |
-| Complete page | Centered Loader2 spinner (32px, animate-spin, gray-400) while fetching booking data from orderId. Then content fades in. |
-| Fail page | No loading needed (error info from URL params). Immediate render. |
-| Mypage booking history | 3 booking card skeletons: poster rectangle (80x80) + 3 text line skeletons. Consistent with Phase 2 card loading. |
-| Mypage booking detail | Skeleton sections: 4 info blocks (each: label skeleton h-4 w-20 + value skeleton h-5 w-48). Cancel section skeleton (button h-12 w-full). |
-| Admin bookings table | 5 table row skeletons (consistent with admin performances skeleton). Each row: 6 cell skeletons matching column widths. |
-| Payment processing (after button click) | Button spinner + "결제 처리 중..." text. Button disabled. No page skeleton (Toss redirect handles the rest). |
-| Cancel/refund API call | Modal confirm button shows spinner + "취소 처리 중..." / "환불 처리 중..." text. Buttons disabled during request. |
+| Confirm page initial | Skeleton: poster placeholder (80x112) + 3 text lines + seat list (3 rows) + terms area + payment widget placeholder (200px height rect) |
+| Toss Payment widget loading | Container with centered Loader2 spinner (32px, animate-spin, gray-400) until SDK renders |
+| Complete page initial | Skeleton: icon placeholder + heading + 4 info cards (each 3 rows) |
+| Mypage reservation list | Skeleton: 3 reservation cards (poster rect 60x84 + 3 text lines each) |
+| Reservation detail page | Skeleton: heading + 4 section cards (each 3-4 rows) |
+| Admin bookings page | Skeleton: 3 stat cards (100px height) + table header + 5 table rows |
+| "결제하기" button submit | Button text -> spinner + "결제 처리 중..." Disabled. |
+| "예매 취소" button submit | Button text -> spinner + "취소 처리 중..." Disabled. |
+| "환불 처리" button submit (admin) | Button text -> spinner + "환불 처리 중..." Disabled. |
+| Reservation list filter change | Fade transition on list (opacity 0.5 during fetch, 150ms). keepPreviousData for layout stability. |
 
 ---
 
@@ -712,11 +748,9 @@ Uses admin layout (no GNB/Footer, sidebar navigation).
 
 | Breakpoint | Width | Key Changes |
 |------------|-------|-------------|
-| Mobile | 0-767px | Full-width single column. Checkout px-4. Sticky bottom CTA with safe-area-inset. Mypage booking cards stack vertically. Poster thumbnail 60px on mobile (smaller). |
-| Tablet | 768-1023px | Same as mobile for checkout (single column flow). Mypage max-w-[720px]. Admin table scrolls horizontally if needed. |
-| Desktop | 1024px+ | Checkout max-w-[720px] centered. Mypage max-w-[960px]. Admin uses full content area. BookingHeader h-14. |
-
-Note: Checkout page is always single-column (no split layout). The focused payment flow benefits from a narrow, scannable layout at all breakpoints.
+| Mobile | 0-767px | Full-width layout, px-4 padding, confirm CTA sticky bottom with safe-area-inset, reservation cards full-width, admin table horizontal scroll, single column stat cards |
+| Tablet | 768-1023px | Same as mobile for confirm page (720px max-width fits). Mypage centered at 600px. Admin stat cards 3-column row. |
+| Desktop | 1024px+ | Confirm page max-w-[720px] centered. Mypage max-w-[600px] centered. Admin full sidebar + content layout. |
 
 ---
 
@@ -724,19 +758,18 @@ Note: Checkout page is always single-column (no split layout). The focused payme
 
 | Requirement | Implementation |
 |-------------|----------------|
-| Checkout form | `role="form"`, `aria-labelledby` pointing to each section heading. Booker info fields: `aria-readonly="true"`. Terms checkbox: `aria-required="true"`. |
-| Terms checkbox | Label wraps checkbox + text. `aria-describedby` links to cancel policy details. Screen reader: "구매조건 확인 및 결제에 동의합니다, 필수, 체크되지 않음" |
-| Payment button disabled state | `aria-disabled="true"` with `aria-describedby` pointing to reason text ("약관에 동의해주세요"). Not just visual graying. |
-| Complete page icon | `aria-hidden="true"` on decorative check/X icons. Screen reader gets heading text only. |
-| Booking status badge | `aria-label="상태: 예매완료"` (not just visual color). |
-| Cancel deadline past | `aria-disabled="true"` on cancel button. `aria-describedby` linking to "취소 마감 시간이 지났습니다" text. |
-| Cancel confirmation modal | `role="alertdialog"`, `aria-modal="true"`, `aria-labelledby` on title, `aria-describedby` on body. Focus trap. Escape closes. |
-| Mypage tabs | shadcn Tabs provides `role="tablist"`, `role="tab"`, `aria-selected`, keyboard arrow navigation out of the box. |
-| Admin table | Table uses semantic `<th scope="col">` headers (already in shadcn Table pattern from Phase 2). |
-| Price values | `aria-label` on total amount: "총 결제금액 삼십사만원" (use Intl.NumberFormat for Korean reading). Or simpler: "총 결제금액 340,000원". |
-| Countdown timer | Inherited from Phase 3: `aria-live="polite"`, announced every 60 seconds. |
-| Focus management on page transitions | Complete/fail page: focus moves to heading on mount. Booking detail: focus on heading. Modal open: focus on first interactive element. |
-| Color contrast | All status badge text/background combinations pass WCAG AA 4.5:1. Success #15803D on #F0FDF4 = 5.2:1. Error #C62828 on #FEF2F2 = 6.8:1. |
+| Confirm page form | All inputs have associated `<label>` via shadcn Form. Required fields marked with `aria-required="true"`. Error messages linked via `aria-describedby`. |
+| Terms checkboxes | `role="group"` with `aria-label="약관 동의"`. Individual checkboxes labeled with full terms name. "(필수)" included in label for screen readers. |
+| Payment widget | Toss Payments SDK handles its own internal accessibility. Container has `aria-label="결제 수단 선택"`. |
+| Countdown timer | `aria-live="polite"` on timer container (inherited from Phase 3). `aria-label="남은 시간 {MM}분 {SS}초"`. Warning transition announced via `aria-live="assertive"`. |
+| Booking number | `aria-label="예매번호 {number}"` for screen reader. Large visual treatment (28px) for sighted users. |
+| Status badges | `aria-label="{상태명}"` on badge elements. Color + text label (not color-only). |
+| Reservation cards | Cards are `<a>` or use `role="link"` with `aria-label="{공연명} {날짜} {상태} 예매 상세 보기"`. |
+| Cancel button disabled | `aria-disabled="true"` + `aria-describedby` linked to tooltip text "취소 마감시간이 지났습니다". Not just `disabled` attribute. |
+| Admin table | `role="table"` via shadcn Table. Sortable columns have `aria-sort`. Row click has `role="button"` or uses `<button>` wrapper. |
+| Cancel confirmation modal | `role="alertdialog"`, `aria-modal="true"`, `aria-labelledby` heading, `aria-describedby` body. Focus trapped. Escape does not close (non-dismissible). |
+| Focus management | On page navigation to complete page, focus moves to main heading. On modal open, focus moves to first interactive element. On modal close, focus returns to trigger element. |
+| Color contrast | All text/background combinations pass WCAG AA (4.5:1). Status badges use text + surface color pairs already verified in Phase 1 UI-SPEC. |
 
 ---
 
@@ -744,16 +777,15 @@ Note: Checkout page is always single-column (no split layout). The focused payme
 
 | State | Tool | Description |
 |-------|------|-------------|
-| Selected seats (checkout) | Zustand (useBookingStore) | Read-only on checkout page. Same store from Phase 3. Cleared on complete/fail page mount. |
-| Timer state (checkout) | Zustand (useBookingStore) | Countdown continues on checkout. Same timerExpiresAt from Phase 3 seat selection. |
-| Booking history list | React Query | `GET /api/v1/reservations?status={filter}&page={n}`. Cached, refetched on filter/page change. |
-| Booking detail | React Query | `GET /api/v1/reservations/{bookingId}`. Cached per bookingId. Invalidated after cancel. |
-| Admin booking list | React Query | `GET /api/v1/admin/reservations?status={filter}&search={q}&page={n}`. Same pattern as admin performances. |
-| Payment confirmation | React Query mutation | `POST /api/v1/payments/confirm` with paymentKey, orderId, amount from Toss redirect params. |
-| Cancel booking | React Query mutation | `POST /api/v1/reservations/{bookingId}/cancel`. Invalidates booking detail + booking list queries on success. |
-| Admin refund | React Query mutation | `POST /api/v1/admin/reservations/{bookingId}/refund`. Invalidates admin booking list on success. |
-| Terms agreement | Component-local useState | `checked: boolean`. No global state needed. Resets on page mount. |
-| Mypage active tab | Component-local useState | Tab index. No URL param needed. Defaults to booking history. |
+| Selected seats (from Phase 3) | Zustand (useBookingStore) | `selectedSeats: SeatSelection[]`. Read on confirm page. Cleared after successful payment. |
+| Timer state (from Phase 3) | Zustand (useBookingStore) | `expiresAt: number`. Continues countdown on confirm page. |
+| Booker info | Zustand (useAuthStore) | User profile (name, phone). Pre-fills confirm page. Editable inline. |
+| Terms agreement | Component-local state | `useState` in TermsAgreement component. Not persisted. |
+| Payment processing | Component-local state | `useState` for isProcessing flag in TossPaymentWidget. |
+| Reservation list | React Query | `GET /api/v1/reservations`. Cached, invalidated on cancel. |
+| Reservation detail | React Query | `GET /api/v1/reservations/:id`. Cached per ID. |
+| Admin bookings | React Query | `GET /api/v1/admin/bookings`. Paginated. Filtered by status/search. |
+| Admin stats | React Query | `GET /api/v1/admin/bookings/stats`. Cached with staleTime. |
 
 ---
 
@@ -763,12 +795,14 @@ Areas marked as "Claude's Discretion" in Phase 4 CONTEXT.md, resolved here:
 
 | Area | Decision | Rationale |
 |------|----------|-----------|
-| Booking number format | `GRP-YYYYMMDD-NNN` where NNN is zero-padded daily sequential number (e.g. GRP-20260402-001). Generated server-side. | Short, readable, includes date for quick reference. GRP prefix identifies Grapit. Daily reset of sequence keeps numbers short. |
-| Toss Payments webhook | Implement `/api/v1/payments/webhook` endpoint. Handles: DONE (payment confirmed), CANCELED (payment canceled), PARTIAL_CANCELED (not used in v1). Idempotent processing keyed on paymentKey. Webhook as secondary confirmation path (primary is redirect confirm). | Defense-in-depth: even if redirect confirm fails, webhook ensures payment state consistency. |
-| Payment DB tables | `reservations` table: id, userId, performanceId, showtimeId, bookingNumber, status (PENDING/CONFIRMED/CANCELLED), totalAmount, paymentMethod, tossPaymentKey, tossOrderId, cancelledAt, createdAt, updatedAt. `reservation_seats` table: id, reservationId, seatInventoryId, seatId, tierName, price. | Normalized design separates booking metadata from seat details. Supports multi-seat bookings. tossPaymentKey/tossOrderId enable refund API calls. |
-| Booker info display | Auto-fill from logged-in user's name and phone. Read-only on checkout page. No separate input fields. If user needs to change, link text "프로필에서 수정" navigates to profile tab. | Minimizes checkout friction. User already provided info during registration (Phase 1 D-03). |
-| Payment button amount format | Display as "{comma-formatted number}원 결제하기" (e.g. "470,000원 결제하기"). Use `toLocaleString('ko-KR')` for comma formatting. | Korean payment UX convention. Shows exact amount on button for transparency. |
-| Admin pagination/search | 20 items per page. Search by booking number (exact prefix match) or user name (partial match). 300ms debounce on search input. Same pattern as admin performances page. | Consistent with existing admin UX. 20 rows fits more data for admin workflow. |
+| Booking number format | `GRP-YYYYMMDD-NNN` where GRP = Grapit prefix, YYYYMMDD = booking date, NNN = zero-padded sequential number per day. Generated server-side. | Short, readable, human-friendly for phone/email support. Sequential per day avoids collision without UUIDs in user-facing context |
+| Toss Payments SDK initialization | Initialize on confirm page mount via `loadTossPayments(clientKey)`. Render payment widget in designated container div. Use `requestPayment()` for checkout. Backend confirms via `POST /confirm` with paymentKey + orderId + amount verification | Standard Toss Payments integration flow per official docs. Frontend never handles sensitive payment data |
+| Payment server-side verification | Backend receives { paymentKey, orderId, amount }. Calls Toss Payments Confirm API. Verifies amount matches calculated total from seat selections. If mismatch, rejects payment and returns error | Amount verification prevents client-side price tampering. Critical security measure |
+| DB schema design | `reservations` table (id, userId, performanceId, showtimeId, bookingNumber, status enum, totalAmount, cancelReason, cancelledAt, createdAt). `payments` table (id, reservationId, paymentKey, method, amount, status, paidAt, cancelledAt). `reservation_seats` join table (reservationId, seatId, tierName, price) | Normalized schema separates booking, payment, and seat concerns. Supports future partial refund extension |
+| Refund amount calculation | Full refund only (D-09). Refund amount = payment.amount. No partial refund logic | Phase 4 scope is full cancellation only. Simplifies implementation significantly |
+| Reservation state machine | PENDING (created, awaiting payment) -> CONFIRMED (payment success) -> CANCELLED (user/admin cancel). No EXPIRED state -- PENDING reservations that timeout are cleaned up by background job | Clean three-state machine. Background cleanup via pg-boss handles edge cases |
+| Admin stats aggregation | SQL aggregation queries: COUNT for total bookings, SUM for revenue, percentage calculation for cancel rate. Filterable by date range (default: last 30 days) | Direct SQL aggregation is sufficient for expected data volume. No need for materialized views at MVP scale |
+| Error handling strategy | Payment timeout: 30s client-side timeout on SDK. Network error: retry toast with manual retry. Concurrent modification: 409 status -> redirect to seat selection. Server error: generic error toast | Covers all failure modes. User always has a clear next action |
 
 ---
 
@@ -776,7 +810,7 @@ Areas marked as "Claude's Discretion" in Phase 4 CONTEXT.md, resolved here:
 
 | Registry | Blocks Used | Safety Gate |
 |----------|-------------|-------------|
-| shadcn official | (all already installed from Phase 1/2: button, card, tabs, badge, table, alert-dialog, dialog, checkbox, input, skeleton, separator, select, sonner) | not required |
+| shadcn official | (all already installed from Phase 1/2: button, card, dialog, alert-dialog, badge, skeleton, table, tabs, input, select, checkbox, separator, label, form, textarea, tooltip, sonner) | not required |
 | Third-party | none | not applicable |
 
 **Note:** @tosspayments/tosspayments-sdk is an npm package, not a shadcn registry block. No new shadcn component installations are needed for Phase 4.

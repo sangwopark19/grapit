@@ -131,6 +131,18 @@ export function SeatMapViewer({
       }
     });
 
+    // Ensure viewBox exists (required — without it SVG disappears when width/height are removed)
+    const svgEl = doc.documentElement;
+    if (!svgEl.getAttribute('viewBox')) {
+      const w = svgEl.getAttribute('width') || '800';
+      const h = svgEl.getAttribute('height') || '600';
+      svgEl.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    }
+    // Remove fixed dimensions and make responsive
+    svgEl.removeAttribute('width');
+    svgEl.removeAttribute('height');
+    svgEl.setAttribute('style', 'width:100%;height:auto;display:block;');
+
     return doc.documentElement.outerHTML;
   }, [rawSvg, seatStates, selectedSeatIds, tierColorMap]);
 
@@ -262,7 +274,7 @@ export function SeatMapViewer({
   }
 
   return (
-    <div className="relative rounded-lg bg-gray-50">
+    <div className="relative overflow-hidden rounded-lg bg-gray-50">
       <TransformWrapper
         initialScale={1}
         minScale={0.5}
@@ -275,6 +287,8 @@ export function SeatMapViewer({
         <TransformComponent
           wrapperClass="w-full min-h-[300px] lg:min-h-[500px]"
           contentClass="w-full"
+          wrapperStyle={{ width: '100%', maxWidth: '100%' }}
+          contentStyle={{ width: '100%' }}
         >
           <div
             ref={containerRef}

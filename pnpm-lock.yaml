@@ -201,6 +201,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.95.2
         version: 5.95.2(react@19.2.4)
+      '@tosspayments/tosspayments-sdk':
+        specifier: ^2.6.0
+        version: 2.6.0
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -3081,6 +3084,9 @@ packages:
 
   '@tokenizer/token@0.3.0':
     resolution: {integrity: sha512-OvjF+z51L3ov0OyAU0duzsYuvO01PH7x4t6DJx+guahgTnBHkhJdG7soQeTSFLWN3efnHyibZ4Z8l2EuWwJN3A==}
+
+  '@tosspayments/tosspayments-sdk@2.6.0':
+    resolution: {integrity: sha512-d/9tCj5d+Jbj312bWYXo9dtGNzQaWRxTKWmw6rTwuDgw5g4mrJWV9dP9qiN6/x9PYaphbYDjxGenguHoVQXTGA==}
 
   '@turbo/darwin-64@2.8.20':
     resolution: {integrity: sha512-FQ9EX1xMU5nbwjxXxM3yU88AQQ6Sqc6S44exPRroMcx9XZHqqppl5ymJF0Ig/z3nvQNwDmz1Gsnvxubo+nXWjQ==}
@@ -8686,6 +8692,8 @@ snapshots:
       - supports-color
 
   '@tokenizer/token@0.3.0': {}
+
+  '@tosspayments/tosspayments-sdk@2.6.0': {}
 
   '@turbo/darwin-64@2.8.20':
     optional: true

@@ -283,17 +283,25 @@ export function BookingPage({ performanceId }: { performanceId: string }) {
     [selectedShowtimeId, removeSeat, unlockSeat],
   );
 
-  // "Next" button handler
+  // "Next" button handler — navigate to confirm page
   const handleProceed = useCallback(() => {
-    const totalPrice = selectedSeats.reduce((sum, s) => sum + s.price, 0);
-    // eslint-disable-next-line no-console
-    console.log({
-      showtimeId: selectedShowtimeId,
+    if (!selectedShowtimeId || !performance) return;
+
+    const selectedSt = allShowtimes.find((st) => st.id === selectedShowtimeId);
+
+    useBookingStore.getState().setBookingData({
       selectedSeats,
-      totalPrice,
+      showtimeId: selectedShowtimeId,
+      performanceId,
+      performanceTitle: performance.title,
+      showDateTime: selectedSt?.dateTime ?? null,
+      venue: performance.venue?.name ?? null,
+      posterUrl: performance.posterUrl ?? null,
+      expiresAt: timerExpiresAt,
     });
-    toast.info('결제 기능은 준비 중입니다');
-  }, [selectedShowtimeId, selectedSeats]);
+
+    router.push(`/booking/${performanceId}/confirm`);
+  }, [selectedShowtimeId, selectedSeats, performance, allShowtimes, performanceId, timerExpiresAt, router]);
 
   const handleBack = useCallback(() => {
     router.push(`/performance/${performanceId}`);

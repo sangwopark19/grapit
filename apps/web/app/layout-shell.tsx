@@ -7,8 +7,10 @@ import { Footer } from '@/components/layout/footer';
 export function LayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAdmin = pathname.startsWith('/admin');
-  const isBooking = pathname.startsWith('/booking');
-  const hideShell = isAdmin || isBooking;
+  // Hide GNB/Footer on booking seat selection and confirm pages, but show on complete page
+  const isBookingCheckout =
+    pathname.startsWith('/booking') && !pathname.endsWith('/complete');
+  const hideShell = isAdmin || isBookingCheckout;
 
   return (
     <>

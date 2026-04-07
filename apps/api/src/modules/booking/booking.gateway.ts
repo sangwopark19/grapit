@@ -14,7 +14,22 @@ import type { SeatState } from '@grapit/shared';
 @WebSocketGateway({
   namespace: '/booking',
   cors: {
-    origin: process.env['FRONTEND_URL'] ?? 'http://localhost:3000',
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      const allowedOrigin =
+        process.env['FRONTEND_URL'] ?? 'http://localhost:3000';
+      if (
+        process.env['NODE_ENV'] !== 'production' ||
+        !origin ||
+        origin === allowedOrigin
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error('CORS not allowed'));
+      }
+    },
     credentials: true,
   },
 })

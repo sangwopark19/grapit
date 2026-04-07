@@ -11,6 +11,14 @@ interface BookingState {
   isTimerExpired: boolean;
   isConnected: boolean;
 
+  // Confirm page fields
+  performanceId: string | null;
+  performanceTitle: string | null;
+  showDateTime: string | null;
+  venue: string | null;
+  posterUrl: string | null;
+  expiresAt: number | null;
+
   setDate: (date: Date | null) => void;
   setShowtime: (id: string | null) => void;
   addSeat: (seat: SeatSelection) => void;
@@ -19,16 +27,33 @@ interface BookingState {
   setTimerExpiry: (expiresAt: number) => void;
   expireTimer: () => void;
   setConnected: (connected: boolean) => void;
+  setBookingData: (data: {
+    selectedSeats: SeatSelection[];
+    showtimeId: string | null;
+    performanceId: string | null;
+    performanceTitle: string | null;
+    showDateTime: string | null;
+    venue: string | null;
+    posterUrl: string | null;
+    expiresAt: number | null;
+  }) => void;
+  clearBooking: () => void;
   resetBooking: () => void;
 }
 
 const initialState = {
   selectedDate: null,
   selectedShowtimeId: null,
-  selectedSeats: [],
+  selectedSeats: [] as SeatSelection[],
   timerExpiresAt: null,
   isTimerExpired: false,
   isConnected: false,
+  performanceId: null,
+  performanceTitle: null,
+  showDateTime: null,
+  venue: null,
+  posterUrl: null,
+  expiresAt: null,
 };
 
 export const useBookingStore = create<BookingState>((set) => ({
@@ -64,6 +89,20 @@ export const useBookingStore = create<BookingState>((set) => ({
   expireTimer: () => set({ isTimerExpired: true }),
 
   setConnected: (connected) => set({ isConnected: connected }),
+
+  setBookingData: (data) =>
+    set({
+      selectedSeats: data.selectedSeats,
+      selectedShowtimeId: data.showtimeId,
+      performanceId: data.performanceId,
+      performanceTitle: data.performanceTitle,
+      showDateTime: data.showDateTime,
+      venue: data.venue,
+      posterUrl: data.posterUrl,
+      expiresAt: data.expiresAt,
+    }),
+
+  clearBooking: () => set(initialState),
 
   resetBooking: () => set(initialState),
 }));

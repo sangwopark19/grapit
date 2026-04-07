@@ -6,49 +6,45 @@
 <domain>
 ## Phase Boundary
 
-좌석 선택 완료 후 결제까지의 전체 플로우를 완성한다. `/booking/[performanceId]/checkout` 주문확인 페이지에서 Toss Payments 리다이렉트 결제를 처리하고, 결제 성공/실패 후 안내 페이지를 제공한다. 마이페이지에 예매 내역 탭을 추가하여 예매 조회/취소/환불을 지원하고, Admin에서 예매 목록 조회 및 환불 처리를 제공한다.
+Phase 3의 좌석 선택 완료("다음" 버튼) 이후부터 결제 확인 → Toss Payments 결제 → 예매 완료 → 마이페이지 예매 내역 조회/취소/환불 → Admin 예매 조회/환불 처리까지의 전체 예매 트랜잭션 플로우를 완성한다.
 
 </domain>
 
 <decisions>
 ## Implementation Decisions
 
-### 결제 진입 화면
-- **D-01:** "다음" 버튼 클릭 시 `/booking/[performanceId]/checkout` 별도 URL로 이동. 좌석선택→주문확인→결제 단계 분리 (NOL 티켓 방식)
-- **D-02:** 주문확인 페이지 구성: 공연명/날짜/회차 + 좌석리스트(등급/열/번호/가격) + 총 결제금액 + 예매자정보(이름/연락처) + 취소/환불 규정 안내 + 약관동의 + 결제버튼
-- **D-03:** "구매조건 확인 및 결제 동의" 체크박스 1개 필수 (전자상거래법 준수)
-- **D-04:** Toss Payments 리다이렉트 방식으로 결제창 호출. 모바일에서 안정적
-- **D-05:** checkout 페이지에도 BookingHeader의 카운트다운 타이머 유지. 기존 10분 TTL 그대로, 만료 시 좌석 해제 + 좌석선택으로 돌려보냄
+### 결제 확인 화면 (주문서)
+- **D-01:** Phase 3 "다음" 클릭 시 별도 주문서 페이지(`/booking/[performanceId]/confirm`)로 이동. 공연 정보 + 예매자 정보 + 선택 좌석/금액 요약 + 약관 동의 + 결제 위젯 + 결제하기 버튼을 한 페이지에 배치
+- **D-02:** 예매자 정보는 회원 정보(이름/전화번호)를 자동 채우기하고 [수정] 버튼으로 변경 가능. 가입 시 이미 수집된 정보 활용 (Phase 1 D-03)
+- **D-03:** Toss Payments 결제 위젯을 주문서 페이지 하단에 인라인 렌더링. 페이지 이탈 없이 결제 수단 선택 → 결제 진행. NOL 티켓 방식
+- **D-04:** Phase 3의 임시점유 카운트다운 타이머를 주문서 페이지 상단에도 고정 표시. 10분 TTL 내 결제 완료 필요 안내
 
-### 결제 완료 & 확인
-- **D-06:** 결제 성공 시 `/booking/complete?orderId=xxx` 전용 페이지. 체크마크 아이콘 + "예매 완료!" + 예매번호/공연/날짜/좌석/결제금액 요약 + "예매 내역 보기" / "홈으로" CTA
-- **D-07:** 결제 실패/취소 시 `/booking/fail?code=xxx` 전용 페이지. X 아이콘 + 에러 메시지 + "선택한 좌석이 해제되었습니다" 안내 + "다시 예매하기" / "홈으로" CTA
-- **D-08:** 결제 실패/취소 시 서버에서 해당 좌석 Redis 점유 즉시 해제
+### 결제 결과 처리
+- **D-05:** 결제 성공 시 전용 완료 페이지(`/booking/[performanceId]/complete`)로 이동. 예매번호 + 공연정보 + 좌석 + 결제금액/수단 + 취소마감시간 + [예매내역 보기]/[홈으로] 버튼 표시
+- **D-06:** 결제 실패/취소 시 좌석 선택 화면으로 복귀. 에러 메시지(토스트) 표시 + 좌석 점유 유지(TTL 내). 재시도 안내. 별도 실패 페이지 없음
 
-### 마이페이지 예매 관리
-- **D-09:** 마이페이지 탭 분리: [예매내역](기본 탭) / [프로필]. 기존 ProfileForm은 프로필 탭으로 이동
-- **D-10:** 예매내역 탭: 상태 필터(예매완료/취소·환불) + 카드형 목록(포스터 썸네일 + 공연명 + 날짜 + 좌석 + 금액 + 상태 배지). 클릭 시 상세 페이지 이동
-- **D-11:** 예매 상세: `/mypage/bookings/[bookingId]` 별도 페이지. 예매번호, 상태, 공연정보(공연명/날짜/장소/좌석), 결제정보(결제수단/금액), 취소마감시간, 취소 버튼
+### 예매 내역 관리 (마이페이지)
+- **D-07:** 마이페이지에 예매 내역 탭/섹션 추가. 카드형 목록(포스터 썸네일 + 공연명 + 날짜/시간 + 좌석 요약 + 상태 배지). 상단 상태 필터(전체/예매완료/취소완료)
+- **D-08:** 카드 클릭 시 별도 예매 상세 페이지(`/mypage/reservations/[id]`)로 이동. 예매번호, 공연정보, 좌석 상세, 결제정보(금액/수단/일시), 취소마감시간, 취소 버튼 표시
+- **D-09:** 전체 취소만 허용 (부분 취소 없음). 취소 버튼 클릭 → 확인 모달(취소 사유 선택 + 환불 예정 금액 안내) → 확인 → Toss Payments 환불 API → 취소 완료
+- **D-10:** 취소 마감시간은 공연 시작시간 24시간 전. 마감 이후에는 취소 버튼 비활성 + "취소 마감시간이 지났습니다" 안내
 
-### 취소/환불 정책
-- **D-12:** 취소 마감: 공연 전날 18:00까지 취소 가능. 마감 후 취소 버튼 비활성화 + "취소 마감 시간이 지났습니다" 안내
-- **D-13:** 전액 환불만 지원. 부분 취소(일부 좌석만) 없음. 예매 전체 취소 + 전액 환불
-- **D-14:** 취소 확인 모달: "정말 취소하시겠습니까?" + 환불 금액/예상 환불일 표시. 실수 방지
-- **D-15:** 환불은 Toss Payments 취소 API 호출. 원래 결제 수단으로 자동 환불
-
-### Admin 환불 처리
-- **D-16:** Admin 예매 관리 페이지: 예매 목록 테이블(예매번호, 사용자명, 공연명, 상태, 결제금액) + 상태 필터(전체/예매완료/취소) + 행별 환불 버튼. ADMN-04 충족
+### Admin 예매 관리
+- **D-11:** Admin 예매 관리 화면은 대시보드 + 테이블 결합. 상단에 통계 카드(총 예매수, 매출액, 취소율) + 하단에 테이블(예매번호, 예매자, 공연명, 날짜, 좌석, 금액, 상태) + 상태 필터 + 검색(예매번호/예매자명). Phase 2 Admin 패턴(D-16) 확장
+- **D-12:** 테이블 행 클릭 → 예매 상세 모달. 환불 버튼 + 환불 사유 입력 + 확인으로 Toss Payments 환불 API 호출. 개별 환불 처리 방식
 
 ### Toss Payments 연동 필수 규칙
-- **D-17:** Toss Payments 결제 시스템 개발 및 연동 시 토스페이먼츠 공식 MCP를 반드시 사용해야 한다. SDK API, 결제 플로우, webhook 처리, 에러 코드 등 모든 Toss Payments 관련 구현은 MCP를 통해 최신 공식 문서를 확인한 후 진행한다.
+- **D-13:** Toss Payments 결제 시스템 개발/연동 시 반드시 `mcp__tosspayments__*` MCP 도구를 사용하여 공식 문서를 참조할 것. SDK 버전, API 엔드포인트, 파라미터 등을 MCP에서 확인 후 구현
 
 ### Claude's Discretion
-- 예매번호 생성 형식 (GRP-YYYYMMDD-NNN 등)
-- Toss Payments webhook 처리 상세 (결제 확인, 가상계좌 입금 등)
-- 결제 관련 DB 테이블 설계 (reservations, payments 등)
-- 주문확인 페이지에서 예매자정보 표시 방식 (로그인 사용자 정보 자동 입력 vs 별도 입력)
-- 결제 버튼 금액 포맷팅 (숫자 콤마 등)
-- Admin 예매 목록 페이지네이션/검색 방식
+- 예매번호 포맷 (GRP-YYYYMMDD-NNN 등)
+- Toss Payments SDK 초기화 및 결제 요청/승인/취소 API 호출 구조
+- 결제 승인 서버사이드 검증 로직 (금액 위변조 방지)
+- 예매/결제 DB 스키마 (reservations, payments 테이블 설계)
+- 환불 금액 계산 로직 (전액 환불)
+- 예매 상태 머신 (PENDING → CONFIRMED → CANCELLED 등)
+- Admin 통계 카드 집계 쿼리 방식
+- 에러 핸들링 전략 (결제 타임아웃, 네트워크 에러 등)
 
 </decisions>
 
@@ -57,37 +53,31 @@
 
 **Downstream agents MUST read these before planning or implementing.**
 
+### Toss Payments (최우선)
+- **MCP 도구 필수 사용**: `mcp__tosspayments__get-v2-documents`, `mcp__tosspayments__document-by-id` — Toss Payments API 문서, SDK 사용법, 결제/승인/취소 API 스펙을 반드시 MCP에서 조회하여 구현
+- `CLAUDE.md` §Technology Stack — `@tosspayments/tosspayments-sdk 2.5.x` (프론트엔드 SDK). `@tosspayments/sdk`는 deprecated
+
 ### 아키텍처 & API
-- `docs/03-ARCHITECTURE.md` — 시스템 아키텍처, API 엔드포인트 설계, DB 스키마. 특히 결제 시퀀스, 예매 상태 머신
+- `docs/03-ARCHITECTURE.md` — 시스템 아키텍처, 결제 플로우 시퀀스, API 엔드포인트 설계. 특히 §결제 플로우, §에러 처리
 - `docs/03-ARCHITECTURE.md` §ERD — 예매/결제 관련 테이블 관계
 
-### 기존 예매 모듈 (Phase 3)
-- `apps/api/src/modules/booking/booking.service.ts` — Redis 좌석 잠금 로직 (lockSeat, unlockSeat, getSeatStatus). 결제 성공 시 좌석 확정, 실패 시 해제 로직 추가 필요
-- `apps/api/src/modules/booking/booking.controller.ts` — 기존 booking API (seats/lock, seats/lock/:id 등). 결제 관련 엔드포인트 추가 필요
-- `apps/api/src/modules/booking/booking.gateway.ts` — WebSocket 게이트웨이. 결제 완료 시 좌석 상태 broadcast 필요
-- `apps/api/src/database/schema/seat-inventories.ts` — seat_inventories 테이블. 결제 확정 시 sold 상태 업데이트
-
-### 기존 프론트엔드 예매 컴포넌트
-- `apps/web/components/booking/booking-page.tsx` — 좌석 선택 페이지. useBookingStore 상태 관리. "다음" 버튼에서 checkout으로 이동 연결 필요
-- `apps/web/stores/use-booking-store.ts` — Zustand 예매 스토어 (selectedSeats, selectedShowtimeId, timerExpiresAt). checkout 페이지에서도 사용
-- `apps/web/hooks/use-booking.ts` — 예매 관련 React Query 훅 (useSeatStatus, useLockSeat 등)
-
-### 기존 마이페이지
-- `apps/web/app/mypage/page.tsx` — 현재 ProfileForm만 있음. 탭 구조로 리팩토링 + 예매내역 탭 추가 필요
+### 기존 DB 스키마 (Phase 3에서 추가된 것 포함)
+- `apps/api/src/database/schema/` — 전체 스키마. 특히 performances, showtimes, seat-maps, price-tiers 테이블
+- `packages/shared/src/types/performance.types.ts` — PriceTier, Showtime, SeatMapConfig 등 공유 타입
 
 ### UI/UX & PRD
-- `docs/04-UIUX-GUIDE.md` — 디자인 토큰, 컴포넌트 패턴. Primary/Secondary 컬러는 Phase 1 D-14~D-16 Grapit 고유 컬러 사용
-- `docs/02-PRD.md` — 결제/예매 관련 기능 요구사항, 사용자 플로우
-- `docs/01-SITE-ANALYSIS-REPORT.md` — NOL 티켓 예매/결제 플로우 분석
-
-### 기술 스택 참조
-- `CLAUDE.md` §Technology Stack — @tosspayments/tosspayments-sdk 2.5.x, pg-boss (결제 후처리 job), zod (DTO 검증)
-- `CLAUDE.md` §Redis Client Strategy — @upstash/redis (좌석 잠금/해제)
+- `docs/04-UIUX-GUIDE.md` — 디자인 토큰, 컴포넌트 패턴
+- `docs/02-PRD.md` — 예매/결제 요구사항, 사용자 플로우
+- `docs/01-SITE-ANALYSIS-REPORT.md` — NOL 티켓 예매 플로우 분석, 결제 화면 참조
 
 ### 이전 Phase 컨텍스트
-- `.planning/phases/01-foundation-auth/01-CONTEXT.md` — 브랜드 컬러(D-14~D-16), 마이페이지 기본 구조(D-12: 예매 내역은 Phase 4에서 추가)
-- `.planning/phases/02-catalog-admin/02-CONTEXT.md` — Admin 패널 구조(D-13~D-16)
-- `.planning/phases/03-seat-map-real-time/03-CONTEXT.md` — 예매 플로우(D-01~D-13), 좌석 점유/타이머/실시간 UX
+- `.planning/phases/03-seat-map-real-time/03-CONTEXT.md` — 좌석 선택 플로우(D-01~D-13), "다음" 버튼이 Phase 4 진입점. 타이머(D-10~D-11), 좌석 점유(D-12~D-13)
+- `.planning/phases/02-catalog-admin/02-CONTEXT.md` — Admin 테이블 패턴(D-16), 상세 페이지 구성(D-09~D-12)
+- `.planning/phases/01-foundation-auth/01-CONTEXT.md` — 브랜드 컬러(D-14~D-16), 마이페이지 구조(D-12), 회원 정보 수집 항목(D-03)
+
+### 기술 스택
+- `CLAUDE.md` §Technology Stack — React Query, Zustand, zod, react-hook-form 등 프론트엔드 라이브러리
+- `CLAUDE.md` §Redis Client Strategy — @upstash/redis(좌석 잠금) vs ioredis(WebSocket pub/sub) 구분
 
 </canonical_refs>
 
@@ -95,40 +85,41 @@
 ## Existing Code Insights
 
 ### Reusable Assets
-- `apps/web/components/booking/booking-page.tsx` — 좌석 선택 완료 후 "다음" 버튼 → checkout 라우팅 연결점
-- `apps/web/components/booking/booking-header.tsx` — BookingHeader + CountdownTimer → checkout 페이지에서 재사용
-- `apps/web/stores/use-booking-store.ts` — selectedSeats, timerExpiresAt 등 → checkout 페이지에서 그대로 사용
-- `apps/web/components/ui/` — shadcn 컴포넌트 (button, card, tabs, dialog, skeleton, sonner, checkbox 등)
 - `apps/web/lib/api-client.ts` — API 클라이언트 (인터셉터, 401 리프레시). 결제/예매 API 호출에 재사용
-- `apps/web/hooks/use-booking.ts` — 기존 예매 React Query 훅. 예매 관리 훅 추가 필요
-- `apps/api/src/modules/booking/` — booking 모듈 (service, controller, gateway, providers). 결제/예매 관리 로직 확장
-- `apps/api/src/database/schema/` — 기존 스키마. reservations, payments 테이블 추가 필요
+- `apps/web/hooks/use-performances.ts`, `use-admin.ts` — React Query 훅 패턴 참조하여 use-booking.ts, use-reservations.ts 생성
+- `apps/web/stores/use-auth-store.ts` — Zustand 스토어 패턴 참조. 예매 플로우 상태 관리에 활용
+- `apps/web/components/ui/` — shadcn 컴포넌트 (button, card, tabs, dialog, skeleton, sonner, sheet 등)
+- `apps/web/app/mypage/page.tsx` — 현재 프로필만 표시. 예매 내역 탭/섹션 추가 필요
+- `apps/api/src/database/schema/price-tiers.ts` — 등급별 가격 스키마. 결제 금액 계산에 참조
+- `packages/shared/src/types/performance.types.ts` — PriceTier, Showtime 등 공유 타입
 
 ### Established Patterns
 - 상태관리: React Query (서버 상태) + Zustand (클라이언트 상태) + URL searchParams
 - 유효성 검증: zod (프론트/백 공유)
 - UI: shadcn/ui New York style + Tailwind v4 @theme 디자인 토큰
-- API: NestJS 모듈 패턴 (auth, admin, booking, performance 모듈)
+- API: NestJS 모듈 패턴 (auth, admin, performance, search + Phase 3의 booking, seat 모듈)
 - DB: Drizzle ORM schema (apps/api/src/database/schema/)
+- Admin: 테이블 + 상단 필터 + 검색 패턴 (Phase 2)
 
 ### Integration Points
-- booking-page.tsx "다음" 버튼 → `/booking/[performanceId]/checkout` 라우팅
-- Toss Payments 리다이렉트 콜백 → `/booking/complete` 또는 `/booking/fail`
-- 결제 성공 → Redis 좌석 잠금 해제 + seat_inventories sold 상태 + reservations 레코드 생성
-- 결제 실패 → Redis 좌석 잠금 해제 + WebSocket broadcast
-- 마이페이지 탭 → 기존 ProfileForm을 프로필 탭으로, 예매내역을 기본 탭으로
-- Admin → 기존 admin 모듈에 예매 관리 페이지/API 추가
+- Phase 3 "다음" 버튼 → `/booking/[performanceId]/confirm` 주문서 페이지로 라우팅
+- Phase 3 좌석 점유 데이터(Redis) → 주문서에서 선택 좌석 정보 표시 + TTL 타이머 계속
+- Phase 3 WebSocket → 결제 완료 시 좌석 상태 확정 브로드캐스트
+- price_tiers 테이블 → 결제 금액 계산 소스
+- 마이페이지 (`/mypage`) → 예매 내역 탭/섹션 추가
+- Admin 패널 → 예매 관리 메뉴 추가
+- NestJS modules → reservation, payment 모듈 추가 필요
 
 </code_context>
 
 <specifics>
 ## Specific Ideas
 
-- NOL 티켓의 주문확인 페이지 참조 (좌석리스트 + 총액 + 약관동의 + 결제버튼)
-- Toss Payments 리다이렉트 결제: requestPayment() → successUrl/failUrl 콜백 패턴
-- 결제 완료 페이지는 체크마크 아이콘으로 성공 감정 전달 (NOL 티켓/인터파크 참조)
-- 마이페이지 예매 카드는 Phase 2 공연 카드(D-05) 스타일 참조하되 예매 정보에 맞게 변형
-- Admin 예매 목록은 Phase 2 Admin 공연 목록(D-16) 테이블 패턴 재활용
+- NOL 티켓의 주문서 페이지 참조 (공연정보 요약 + 예매자 정보 + 좌석/금액 + 약관 + 결제수단)
+- Toss Payments 위젯은 인라인으로 주문서 하단에 배치하여 페이지 이탈 없는 결제 경험
+- 결제 완료 화면은 예매번호를 크게 강조하고 취소마감 시간을 명시
+- 마이페이지 예매 카드는 NOL 티켓의 예매 내역 카드 참조 (포스터 + 핵심 정보 + 상태 배지)
+- Admin 예매 관리는 대시보드 통계 + 테이블 결합으로 한눈에 파악 가능하도록
 
 </specifics>
 

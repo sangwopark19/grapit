@@ -1,6 +1,6 @@
 import { io, type Socket } from 'socket.io-client';
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:8080';
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || '';
 
 export function createBookingSocket(): Socket {
   return io(`${WS_URL}/booking`, {
@@ -8,7 +8,7 @@ export function createBookingSocket(): Socket {
     withCredentials: true,
     autoConnect: false,
     reconnection: true,
-    reconnectionAttempts: Infinity,
+    reconnectionAttempts: 10,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
   });

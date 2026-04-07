@@ -1,20 +1,33 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import type {
-  Showtime,
+  ConfirmPaymentRequest,
+  PrepareReservationRequest,
+  PrepareReservationResponse,
+  ReservationDetail,
+  SeatSelection,
   SeatStatusResponse,
-  LockSeatRequest,
   LockSeatResponse,
   UnlockAllResponse,
 } from '@grapit/shared';
 
+interface LockSeatRequest {
+  showtimeId: string;
+  seatId: string;
+}
+
+interface MyLocksResponse {
+  seatIds: string[];
+  expiresAt: number | null;
+}
+
+export type { SeatSelection, SeatStatusResponse, LockSeatRequest, LockSeatResponse, UnlockAllResponse };
+
 export function useShowtimes(performanceId: string) {
-  // Showtimes are included in performance detail response.
-  // This hook is kept for potential future dedicated endpoint.
   return useQuery({
     queryKey: ['showtimes', performanceId],
     queryFn: () =>
-      apiClient.get<Showtime[]>(
+      apiClient.get<import('@grapit/shared').Showtime[]>(
         `/api/v1/performances/${performanceId}/showtimes`,
       ),
     enabled: false,
@@ -30,11 +43,6 @@ export function useSeatStatus(showtimeId: string | null) {
       ),
     enabled: !!showtimeId,
   });
-}
-
-interface MyLocksResponse {
-  seatIds: string[];
-  expiresAt: number | null;
 }
 
 export function useMyLocks(showtimeId: string | null) {
@@ -98,5 +106,39 @@ export function useUnlockAllSeats() {
         queryKey: ['my-locks', variables.showtimeId],
       });
     },
+  });
+}
+
+// Payment-related hooks
+
+export function usePrepareReservation() {
+  return useMutation({
+    mutationFn: (data: PrepareReservationRequest) =>
+      apiClient.post<PrepareReservationResponse>('/api/v1/reservations/prepare', data),
+  });
+}
+
+export function useConfirmPayment() {
+  return useMutation({
+    mutationFn: (data: ConfirmPaymentRequest) =>
+      apiClient.post<ReservationDetail>('/api/v1/payments/confirm', data),
+  });
+}
+
+export function useBookingDetail(reservationId: string) {
+  return useQuery({
+    queryKey: ['reservations', reservationId],
+    queryFn: () =>
+      apiClient.get<ReservationDetail>(`/api/v1/reservations/${reservationId}`),
+    enabled: !!reservationId,
+  });
+}
+
+export function useReservationByOrderId(orderId: string | null) {
+  return useQuery({
+    queryKey: ['reservations', 'orderId', orderId],
+    queryFn: () =>
+      apiClient.get<ReservationDetail>(`/api/v1/reservations?orderId=${orderId}`),
+    enabled: !!orderId,
   });
 }

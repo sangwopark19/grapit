@@ -38,11 +38,32 @@ export function useBookingSocket(showtimeId: string | null): void {
       hadPreviousConnection.current = true;
     });
 
-    socket.on('disconnect', () => {
+    socket.on('connect_error', () => {
+      if (!hadPreviousConnection.current) {
+        toast.error('실시간 좌석 업데이트 연결에 실패했습니다', {
+          id: 'ws-status',
+          duration: 5000,
+        });
+      }
+    });
+
+    socket.on('disconnect', (reason) => {
       useBookingStore.getState().setConnected(false);
-      toast.loading('실시간 연결이 끊어졌습니다. 재연결 중...', {
-        id: 'ws-status',
-      });
+      if (hadPreviousConnection.current && reason !== 'io client disconnect') {
+        toast.loading('실시간 연결이 끊어졌습니다. 재연결 중...', {
+          id: 'ws-status',
+        });
+      }
+    });
+
+    socket.io.on('reconnect_failed', () => {
+      toast.error(
+        '실시간 연결을 복구하지 못했습니다. 페이지를 새로고침해 주세요.',
+        {
+          id: 'ws-status',
+          duration: Infinity,
+        },
+      );
     });
 
     socket.on('seat-update', (data: SeatUpdateEvent) => {
@@ -79,6 +100,7 @@ export function useBookingSocket(showtimeId: string | null): void {
 
     return () => {
       socket.emit('leave-showtime', showtimeId);
+      socket.io.off('reconnect_failed');
       socket.disconnect();
       socketRef.current = null;
       hadPreviousConnection.current = false;

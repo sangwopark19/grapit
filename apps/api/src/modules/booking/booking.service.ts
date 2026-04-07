@@ -64,6 +64,22 @@ export class BookingService {
    * Atomically: cleans stale user-seats, checks count, SET NX, SADD + EXPIRE.
    */
   async lockSeat(userId: string, showtimeId: string, seatId: string): Promise<LockSeatResponse> {
+    // DB-level sold check: defense against Redis TTL expiry race
+    const [soldRecord] = await this.db
+      .select({ id: seatInventories.id })
+      .from(seatInventories)
+      .where(
+        and(
+          eq(seatInventories.showtimeId, showtimeId),
+          eq(seatInventories.seatId, seatId),
+          eq(seatInventories.status, 'sold'),
+        ),
+      );
+
+    if (soldRecord) {
+      throw new ConflictException('이미 판매된 좌석입니다');
+    }
+
     const userSeatsKey = `user-seats:${showtimeId}:${userId}`;
     const lockKey = `seat:${showtimeId}:${seatId}`;
     const lockedSeatsKey = `locked-seats:${showtimeId}`;

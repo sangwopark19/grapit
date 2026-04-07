@@ -55,8 +55,18 @@ describe('BookingService', () => {
     );
   });
 
+  // Helper: mock DB select to return no sold record (used by lockSeat DB defense)
+  function mockNoSoldRecord() {
+    mockDb.select.mockReturnValueOnce({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue([]),
+      }),
+    });
+  }
+
   describe('lockSeat', () => {
     it('cleans stale user-seats entries before count check via Lua eval', async () => {
+      mockNoSoldRecord();
       // Lua returns [1, lockKey, seatId] = success
       const lockKey = `seat:${showtimeId}:${seatId}`;
       mockRedis.eval.mockResolvedValue([1, lockKey, seatId]);
@@ -82,6 +92,7 @@ describe('BookingService', () => {
     });
 
     it('rejects when live seat count >= MAX_SEATS after stale cleanup', async () => {
+      mockNoSoldRecord();
       // Lua returns [0, "MAX_SEATS"] = max seats exceeded
       mockRedis.eval.mockResolvedValue([0, 'MAX_SEATS']);
 
@@ -91,6 +102,7 @@ describe('BookingService', () => {
     });
 
     it('rejects when SET NX fails (seat taken)', async () => {
+      mockNoSoldRecord();
       // Lua returns [0, "CONFLICT"] = seat already locked
       mockRedis.eval.mockResolvedValue([0, 'CONFLICT']);
 
@@ -100,6 +112,7 @@ describe('BookingService', () => {
     });
 
     it('calls gateway.broadcastSeatUpdate after successful lock', async () => {
+      mockNoSoldRecord();
       const lockKey = `seat:${showtimeId}:${seatId}`;
       mockRedis.eval.mockResolvedValue([1, lockKey, seatId]);
 
@@ -115,6 +128,7 @@ describe('BookingService', () => {
     });
 
     it('does NOT broadcast when lock fails', async () => {
+      mockNoSoldRecord();
       mockRedis.eval.mockResolvedValue([0, 'CONFLICT']);
 
       await expect(service.lockSeat(userId, showtimeId, seatId))
