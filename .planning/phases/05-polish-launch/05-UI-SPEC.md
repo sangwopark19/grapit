@@ -59,14 +59,14 @@ Already established in `globals.css` @theme block. No changes for Phase 5:
 | Caption | 14px (--text-caption) | 400 | 1.5 |
 | Body | 16px (Tailwind default) | 400 | 1.5 |
 | Heading | 20px (--text-heading) | 600 | 1.2 |
-| Display | 28px (--text-display) | 700 | 1.2 |
+| Display | 28px (--text-display) | 600 | 1.2 |
 
-Weights used: 400 (regular) and 600 (semibold). Display headings may use 700 (bold).
+Weights used: 400 (regular) and 600 (semibold). All text uses one of these two weights only.
 
 Phase 5 specific guidance:
 - Error messages: 14px weight 400 in `--color-error` (#C62828)
-- Error code badge: 12px weight 400 in `--color-gray-500` (#71717A), monospace font for code
-- Bottom tab bar labels: 10px weight 400 in `--color-gray-500` (inactive), 10px weight 600 in `--color-primary` (active)
+- Error code badge: 14px weight 400 in `--color-gray-500` (#71717A)
+- Bottom tab bar labels: 14px weight 400 in `--color-gray-500` (inactive), 14px weight 600 in `--color-primary` (active)
 - Network banner text: 14px weight 600 in white on `--color-error` background
 - 404 page heading: 20px weight 600 in `--color-gray-900`
 
@@ -167,7 +167,7 @@ Bottom navigation bar replacing GNB on mobile (< md breakpoint, 768px).
 - Background: #FFFFFF with top border 1px `--color-border` (#E4E4E7)
 - Position: fixed bottom, z-50, full width
 - 4 tabs: equal width flex distribution
-- Each tab: icon (20px) above label (10px), centered vertically
+- Each tab: icon (20px) above label (14px), centered vertically
 - Active state: icon and label in `--color-primary` (#6C3CE0), weight 600
 - Inactive state: icon in `--color-gray-400` (#A1A1AA), label in `--color-gray-500` (#71717A), weight 400
 - Touch target: 44px minimum per tab (full tab area is tappable)
@@ -334,7 +334,7 @@ Display in toast as secondary text below main message:
 오류 코드: ERR-500
 ```
 
-Error code is 12px, `--color-gray-500`, displayed below main error message in toast.
+Error code is 14px, `--color-gray-500`, displayed below main error message in toast.
 
 ### Error Boundaries
 
