@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 Phase: 5
 Plan: Not started
 Status: Ready to execute
-Last activity: 2026-04-07
+Last activity: 2026-04-07 - Completed quick task 260407-lid: 모바일 좌석 SVG 뷰포트 잘림 문제 해결
 
 Progress: [███░░░░░░░] 33%
 
@@ -125,6 +125,7 @@ None yet.
 | 260407-gee | 예매하기 페이지 WebSocket 재연결 토스트 반복 노출 버그 수정 | 2026-04-07 | 53fe286 | [260407-gee-websocket](./quick/260407-gee-websocket/) |
 | 260407-gru | confirm 페이지 이동 시 disconnect 토스트 노출 방지 | 2026-04-07 | ed8dc53 | [260407-gru-confirm-disconnect-intentional-disconnec](./quick/260407-gru-confirm-disconnect-intentional-disconnec/) |
 | 260407-jyt | PR #3 코드리뷰 6개 이슈 수정: 결제 복구 패턴, TossPaymentError HTTP화, refundBooking 좌석 복원, confirm 만료 좌석 해제, N+1 쿼리 해소 | 2026-04-07 | b92bc1f | [260407-jyt-pr-3-6-tosspaymenterror-http-refundbooki](./quick/260407-jyt-pr-3-6-tosspaymenterror-http-refundbooki/) |
+| 260407-lid | 모바일 좌석 SVG 뷰포트 잘림 문제 해결 | 2026-04-07 | fd02a0e | [260407-lid-svg](./quick/260407-lid-svg/) |
 
 ## Session Continuity
 
