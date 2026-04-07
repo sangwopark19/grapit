@@ -49,8 +49,8 @@ describe('BookingService - lockSeat sold defense', () => {
   });
 
   it('should throw ConflictException when seat_inventories has status=sold', async () => {
-    // DB returns a sold record
-    mockDb.select.mockReturnValueOnce({
+    // DB returns a sold record (persistent mock for multiple assertions)
+    mockDb.select.mockReturnValue({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockResolvedValue([{ id: randomUUID() }]),
       }),
@@ -58,8 +58,12 @@ describe('BookingService - lockSeat sold defense', () => {
 
     await expect(service.lockSeat(userId, showtimeId, seatId))
       .rejects.toThrow(ConflictException);
+
     await expect(service.lockSeat(userId, showtimeId, seatId))
       .rejects.toThrow('이미 판매된 좌석입니다');
+
+    // Redis should never be called
+    expect(mockRedis.eval).not.toHaveBeenCalled();
   });
 
   it('should proceed to Redis lock when no sold record exists in seat_inventories', async () => {
