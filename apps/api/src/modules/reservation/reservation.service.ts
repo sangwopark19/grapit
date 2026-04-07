@@ -3,6 +3,8 @@ import {
   Inject,
   BadRequestException,
   ForbiddenException,
+  InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { eq, and, sql, desc } from 'drizzle-orm';
@@ -32,6 +34,8 @@ import type {
 
 @Injectable()
 export class ReservationService {
+  private readonly logger = new Logger(ReservationService.name);
+
   constructor(
     @Inject(DRIZZLE) private readonly db: DrizzleDB,
     private readonly tossClient: TossPaymentsClient,
@@ -189,59 +193,79 @@ export class ReservationService {
     });
 
     // 5. Update reservation status + create payment record + mark seats sold
-    await this.db.transaction(async (tx) => {
-      await tx
-        .update(reservations)
-        .set({
-          status: 'CONFIRMED',
-          updatedAt: new Date(),
-        })
-        .where(eq(reservations.id, reservation.id));
+    try {
+      await this.db.transaction(async (tx) => {
+        await tx
+          .update(reservations)
+          .set({
+            status: 'CONFIRMED',
+            updatedAt: new Date(),
+          })
+          .where(eq(reservations.id, reservation.id));
 
-      await tx.insert(payments).values({
-        reservationId: reservation.id,
-        paymentKey: tossResponse.paymentKey,
-        tossOrderId: tossResponse.orderId,
-        method: tossResponse.method,
-        amount: tossResponse.totalAmount,
-        status: 'DONE',
-        paidAt: new Date(tossResponse.approvedAt),
-      });
+        await tx.insert(payments).values({
+          reservationId: reservation.id,
+          paymentKey: tossResponse.paymentKey,
+          tossOrderId: tossResponse.orderId,
+          method: tossResponse.method,
+          amount: tossResponse.totalAmount,
+          status: 'DONE',
+          paidAt: new Date(tossResponse.approvedAt),
+        });
 
-      // Mark seats as sold in seat_inventories
-      const resSeats = await tx
-        .select({ seatId: reservationSeats.seatId })
-        .from(reservationSeats)
-        .where(eq(reservationSeats.reservationId, reservation.id));
+        // Mark seats as sold in seat_inventories
+        const resSeats = await tx
+          .select({ seatId: reservationSeats.seatId })
+          .from(reservationSeats)
+          .where(eq(reservationSeats.reservationId, reservation.id));
 
-      for (const seat of resSeats) {
-        const [existing] = await tx
-          .select({ id: seatInventories.id })
-          .from(seatInventories)
-          .where(
-            and(
-              eq(seatInventories.showtimeId, reservation.showtimeId),
-              eq(seatInventories.seatId, seat.seatId),
-            ),
-          );
+        for (const seat of resSeats) {
+          const [existing] = await tx
+            .select({ id: seatInventories.id })
+            .from(seatInventories)
+            .where(
+              and(
+                eq(seatInventories.showtimeId, reservation.showtimeId),
+                eq(seatInventories.seatId, seat.seatId),
+              ),
+            );
 
-        if (existing) {
-          await tx
-            .update(seatInventories)
-            .set({ status: 'sold', soldAt: new Date(), lockedBy: null, lockedUntil: null })
-            .where(eq(seatInventories.id, existing.id));
-        } else {
-          await tx
-            .insert(seatInventories)
-            .values({
-              showtimeId: reservation.showtimeId,
-              seatId: seat.seatId,
-              status: 'sold',
-              soldAt: new Date(),
-            });
+          if (existing) {
+            await tx
+              .update(seatInventories)
+              .set({ status: 'sold', soldAt: new Date(), lockedBy: null, lockedUntil: null })
+              .where(eq(seatInventories.id, existing.id));
+          } else {
+            await tx
+              .insert(seatInventories)
+              .values({
+                showtimeId: reservation.showtimeId,
+                seatId: seat.seatId,
+                status: 'sold',
+                soldAt: new Date(),
+              });
+          }
         }
+      });
+    } catch (dbError) {
+      // Compensation: attempt to cancel the Toss payment
+      this.logger.error(
+        `DB transaction failed after Toss confirm. paymentKey=${tossResponse.paymentKey}, orderId=${dto.orderId}`,
+        dbError instanceof Error ? dbError.stack : String(dbError),
+      );
+      try {
+        await this.tossClient.cancelPayment(tossResponse.paymentKey, '서버 오류로 인한 자동 취소');
+        this.logger.log(`Compensation cancel succeeded. paymentKey=${tossResponse.paymentKey}`);
+      } catch (cancelError) {
+        this.logger.error(
+          `CRITICAL: Compensation cancel also failed. paymentKey=${tossResponse.paymentKey}. Manual refund required.`,
+          cancelError instanceof Error ? cancelError.stack : String(cancelError),
+        );
       }
-    });
+      throw new InternalServerErrorException(
+        '결제는 승인되었으나 처리 중 오류가 발생했습니다. 자동 취소를 시도했습니다. 고객센터에 문의해주세요.',
+      );
+    }
 
     // Release Redis locks for this user's seats in this showtime
     await this.bookingService.unlockAllSeats(userId, reservation.showtimeId);
