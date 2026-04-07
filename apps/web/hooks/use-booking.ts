@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import type {
   ConfirmPaymentRequest,
+  PrepareReservationRequest,
+  PrepareReservationResponse,
   ReservationDetail,
   SeatSelection,
   SeatStatusResponse,
@@ -108,6 +110,13 @@ export function useUnlockAllSeats() {
 }
 
 // Payment-related hooks
+
+export function usePrepareReservation() {
+  return useMutation({
+    mutationFn: (data: PrepareReservationRequest) =>
+      apiClient.post<PrepareReservationResponse>('/api/v1/reservations/prepare', data),
+  });
+}
 
 export function useConfirmPayment() {
   return useMutation({

@@ -79,12 +79,22 @@ export interface AdminBookingListItem {
   createdAt: string;
 }
 
+export interface PrepareReservationRequest {
+  orderId: string;
+  showtimeId: string;
+  seats: SeatSelection[];
+  amount: number;
+}
+
+export interface PrepareReservationResponse {
+  reservationId: string;
+  orderId: string;
+}
+
 export interface ConfirmPaymentRequest {
   paymentKey: string;
   orderId: string;
   amount: number;
-  showtimeId: string;
-  seats: SeatSelection[];
 }
 
 export interface CancelReservationRequest {

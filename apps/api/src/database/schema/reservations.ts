@@ -11,6 +11,7 @@ export const reservations = pgTable('reservations', {
   userId: uuid('user_id').notNull().references(() => users.id),
   showtimeId: uuid('showtime_id').notNull().references(() => showtimes.id),
   reservationNumber: varchar('reservation_number', { length: 30 }).notNull().unique(),
+  tossOrderId: varchar('toss_order_id', { length: 200 }).unique(),
   status: reservationStatusEnum('status').notNull().default('PENDING_PAYMENT'),
   totalAmount: integer('total_amount').notNull(),
   cancelDeadline: timestamp('cancel_deadline', { withTimezone: true }).notNull(),
@@ -23,4 +24,5 @@ export const reservations = pgTable('reservations', {
   index('idx_reservations_showtime_id').on(table.showtimeId),
   index('idx_reservations_status').on(table.status),
   index('idx_reservations_reservation_number').on(table.reservationNumber),
+  index('idx_reservations_toss_order_id').on(table.tossOrderId),
 ]);

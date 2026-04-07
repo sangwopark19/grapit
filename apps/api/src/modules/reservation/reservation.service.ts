@@ -23,6 +23,8 @@ import type {
   ReservationListItem,
   ReservationDetail,
   ConfirmPaymentRequest,
+  PrepareReservationRequest,
+  PrepareReservationResponse,
 } from '@grapit/shared';
 
 @Injectable()
@@ -67,11 +69,21 @@ export class ReservationService {
     return new Date(showDateTime.getTime() - 24 * 60 * 60 * 1000);
   }
 
-  async confirmAndCreateReservation(
-    dto: ConfirmPaymentRequest,
+  async prepareReservation(
+    dto: PrepareReservationRequest,
     userId: string,
-  ): Promise<ReservationDetail> {
-    // 1. Get showtime to determine performanceId and dateTime
+  ): Promise<PrepareReservationResponse> {
+    // 1. Idempotency: if a reservation already exists for this orderId, return it
+    const [existing] = await this.db
+      .select({ id: reservations.id, tossOrderId: reservations.tossOrderId })
+      .from(reservations)
+      .where(eq(reservations.tossOrderId, dto.orderId));
+
+    if (existing) {
+      return { reservationId: existing.id, orderId: dto.orderId };
+    }
+
+    // 2. Get showtime to determine performanceId and dateTime
     const [showtime] = await this.db
       .select()
       .from(showtimes)
@@ -81,32 +93,14 @@ export class ReservationService {
       throw new NotFoundException('회차를 찾을 수 없습니다');
     }
 
-    // 2. Calculate expected amount from DB
+    // 3. Calculate expected amount from DB (fraud prevention)
     const expectedAmount = await this.calculateTotalAmount(dto.seats, showtime.performanceId);
 
-    // 3. Amount validation (fraud prevention)
     if (expectedAmount !== dto.amount) {
       throw new BadRequestException('금액이 일치하지 않습니다');
     }
 
-    // 4. Idempotency: check if reservation already exists for this orderId
-    const [existingPayment] = await this.db
-      .select()
-      .from(payments)
-      .where(eq(payments.tossOrderId, dto.orderId));
-
-    if (existingPayment) {
-      return this.getReservationDetail(existingPayment.reservationId, userId);
-    }
-
-    // 5. Call Toss Payments confirm API
-    const tossResponse = await this.tossClient.confirmPayment({
-      paymentKey: dto.paymentKey,
-      orderId: dto.orderId,
-      amount: dto.amount,
-    });
-
-    // 6. Atomic DB transaction: reservation + seats + payment
+    // 4. Create pending reservation + seats atomically
     const reservationNumber = this.generateReservationNumber();
     const cancelDeadline = this.calculateCancelDeadline(showtime.dateTime);
 
@@ -116,8 +110,9 @@ export class ReservationService {
         .values({
           userId,
           showtimeId: dto.showtimeId,
+          tossOrderId: dto.orderId,
           reservationNumber,
-          status: 'CONFIRMED',
+          status: 'PENDING_PAYMENT',
           totalAmount: dto.amount,
           cancelDeadline,
         })
@@ -125,23 +120,81 @@ export class ReservationService {
 
       const reservationId = reservation!.id;
 
-      // Insert reservation seats
-      if (dto.seats.length > 0) {
-        await tx.insert(reservationSeats).values(
-          dto.seats.map((seat) => ({
-            reservationId,
-            seatId: seat.seatId,
-            tierName: seat.tierName,
-            price: seat.price,
-            row: seat.row,
-            number: seat.number,
-          })),
-        );
-      }
+      await tx.insert(reservationSeats).values(
+        dto.seats.map((seat) => ({
+          reservationId,
+          seatId: seat.seatId,
+          tierName: seat.tierName,
+          price: seat.price,
+          row: seat.row,
+          number: seat.number,
+        })),
+      );
 
-      // Insert payment record
+      return reservation!;
+    });
+
+    return { reservationId: result.id, orderId: dto.orderId };
+  }
+
+  async confirmAndCreateReservation(
+    dto: ConfirmPaymentRequest,
+    userId: string,
+  ): Promise<ReservationDetail> {
+    // 1. Idempotency: check if payment already exists for this orderId
+    const [existingPayment] = await this.db
+      .select()
+      .from(payments)
+      .where(eq(payments.tossOrderId, dto.orderId));
+
+    if (existingPayment) {
+      return this.getReservationDetail(existingPayment.reservationId, userId);
+    }
+
+    // 2. Look up pending reservation by tossOrderId
+    const [reservation] = await this.db
+      .select()
+      .from(reservations)
+      .where(
+        and(
+          eq(reservations.tossOrderId, dto.orderId),
+          eq(reservations.userId, userId),
+        ),
+      );
+
+    if (!reservation) {
+      throw new NotFoundException('예매 정보를 찾을 수 없습니다. 다시 시도해주세요.');
+    }
+
+    if (reservation.status !== 'PENDING_PAYMENT') {
+      // Already confirmed — return detail
+      return this.getReservationDetail(reservation.id, userId);
+    }
+
+    // 3. Amount validation against the prepared reservation
+    if (reservation.totalAmount !== dto.amount) {
+      throw new BadRequestException('금액이 일치하지 않습니다');
+    }
+
+    // 4. Call Toss Payments confirm API
+    const tossResponse = await this.tossClient.confirmPayment({
+      paymentKey: dto.paymentKey,
+      orderId: dto.orderId,
+      amount: dto.amount,
+    });
+
+    // 5. Update reservation status + create payment record
+    await this.db.transaction(async (tx) => {
+      await tx
+        .update(reservations)
+        .set({
+          status: 'CONFIRMED',
+          updatedAt: new Date(),
+        })
+        .where(eq(reservations.id, reservation.id));
+
       await tx.insert(payments).values({
-        reservationId,
+        reservationId: reservation.id,
         paymentKey: tossResponse.paymentKey,
         tossOrderId: tossResponse.orderId,
         method: tossResponse.method,
@@ -149,11 +202,9 @@ export class ReservationService {
         status: 'DONE',
         paidAt: new Date(tossResponse.approvedAt),
       });
-
-      return reservation!;
     });
 
-    return this.getReservationDetail(result.id, userId);
+    return this.getReservationDetail(reservation.id, userId);
   }
 
   async getMyReservations(userId: string, status?: ReservationStatus): Promise<ReservationListItem[]> {

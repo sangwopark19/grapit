@@ -29,6 +29,13 @@
       "when": 1775022426904,
       "tag": "0003_sloppy_dark_beast",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1775521641450,
+      "tag": "0004_awesome_sunfire",
+      "breakpoints": true
     }
   ]
 }

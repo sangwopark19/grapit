@@ -11,6 +11,7 @@ import { BookerInfoSection } from '@/components/booking/booker-info-section';
 import { TermsAgreement } from '@/components/booking/terms-agreement';
 import { TossPaymentWidget, type TossPaymentWidgetRef } from '@/components/booking/toss-payment-widget';
 import { Button } from '@/components/ui/button';
+import { usePrepareReservation } from '@/hooks/use-booking';
 import { useBookingStore } from '@/stores/use-booking-store';
 import { useAuthStore } from '@/stores/use-auth-store';
 
@@ -38,6 +39,7 @@ function ConfirmPageContent() {
   });
 
   const paymentWidgetRef = useRef<TossPaymentWidgetRef>(null);
+  const prepareMutation = usePrepareReservation();
 
   // Generate orderId once per mount
   const orderId = useMemo(() => generateOrderId(), []);
@@ -106,11 +108,17 @@ function ConfirmPageContent() {
 
     setIsProcessing(true);
     try {
+      // 1. Create pending reservation on server before payment
+      await prepareMutation.mutateAsync({
+        orderId,
+        showtimeId: selectedShowtimeId ?? '',
+        seats: selectedSeats,
+        amount: totalPrice,
+      });
+
+      // 2. Initiate Toss payment — SDK redirects the browser
       await paymentWidgetRef.current.requestPayment();
-      // The SDK redirects the browser. No code runs after this.
     } catch (err) {
-      // If requestPayment throws (e.g., popup blocked, SDK error),
-      // it means the redirect didn't happen. Reset state.
       setIsProcessing(false);
       const errorMessage =
         err instanceof Error ? err.message : '결제 요청에 실패했습니다.';

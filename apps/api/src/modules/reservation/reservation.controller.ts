@@ -10,8 +10,10 @@ import {
 } from '@nestjs/common';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js';
 import {
+  prepareReservationSchema,
   confirmPaymentSchema,
   cancelReservationSchema,
+  type PrepareReservationInput,
   type ConfirmPaymentInput,
   type CancelReservationInput,
   type ReservationStatus,
@@ -23,6 +25,14 @@ export class ReservationController {
   constructor(
     private readonly reservationService: ReservationService,
   ) {}
+
+  @Post('reservations/prepare')
+  async prepareReservation(
+    @Body(new ZodValidationPipe(prepareReservationSchema)) body: PrepareReservationInput,
+    @Request() req: { user: { id: string } },
+  ) {
+    return this.reservationService.prepareReservation(body, req.user.id);
+  }
 
   @Post('payments/confirm')
   async confirmPayment(

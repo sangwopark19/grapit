@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AuthGuard } from '@/components/auth/auth-guard';
@@ -26,31 +26,28 @@ function CompleteSkeleton() {
 }
 
 function CompletePageContent() {
-  const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const performanceId = params.performanceId as string;
 
   const paymentKey = searchParams.get('paymentKey');
   const orderId = searchParams.get('orderId');
   const amount = searchParams.get('amount');
 
-  const { selectedSeats, selectedShowtimeId, clearBooking } = useBookingStore();
+  const clearBooking = useBookingStore((s) => s.clearBooking);
 
   const confirmMutation = useConfirmPayment();
   const [bookingData, setBookingData] = useState<ReservationDetail | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
   const hasConfirmedRef = useRef(false);
 
-  // Recovery: If store is empty but we have URL params, try to fetch by orderId
-  const storeEmpty = selectedSeats.length === 0;
-  const shouldRecover = storeEmpty && !!paymentKey && !!orderId;
+  // Recovery: on refresh after confirm already succeeded, fetch by orderId
+  const [confirmFailed, setConfirmFailed] = useState(false);
+  const shouldRecover = confirmFailed && !!orderId;
 
   const { data: recoveredReservation } = useReservationByOrderId(
     shouldRecover ? orderId : null,
   );
 
-  // Handle recovery from page refresh
   useEffect(() => {
     if (!shouldRecover || !recoveredReservation) return;
 
@@ -62,9 +59,9 @@ function CompletePageContent() {
     }
   }, [shouldRecover, recoveredReservation, router]);
 
-  // Confirm payment on mount
+  // Confirm payment on mount — only needs URL params (server has pending order)
   const confirmPayment = useCallback(async () => {
-    if (hasConfirmedRef.current || !paymentKey || !orderId || !amount || storeEmpty) {
+    if (hasConfirmedRef.current || !paymentKey || !orderId || !amount) {
       return;
     }
 
@@ -76,8 +73,6 @@ function CompletePageContent() {
         paymentKey,
         orderId,
         amount: Number(amount),
-        showtimeId: selectedShowtimeId ?? '',
-        seats: selectedSeats,
       });
 
       setBookingData(result);
@@ -86,7 +81,8 @@ function CompletePageContent() {
       const errorMessage =
         err instanceof Error ? err.message : '결제 확인에 실패했습니다.';
       toast.error(errorMessage);
-      router.replace(`/booking/${performanceId}/confirm`);
+      // Try recovery — maybe already confirmed on a previous attempt
+      setConfirmFailed(true);
     } finally {
       setIsConfirming(false);
     }
@@ -94,20 +90,15 @@ function CompletePageContent() {
     paymentKey,
     orderId,
     amount,
-    storeEmpty,
-    selectedShowtimeId,
-    selectedSeats,
     confirmMutation,
     clearBooking,
-    performanceId,
-    router,
   ]);
 
   useEffect(() => {
-    if (paymentKey && orderId && amount && !storeEmpty) {
+    if (paymentKey && orderId && amount) {
       confirmPayment();
     }
-  }, [paymentKey, orderId, amount, storeEmpty, confirmPayment]);
+  }, [paymentKey, orderId, amount, confirmPayment]);
 
   // Focus heading on success
   useEffect(() => {
