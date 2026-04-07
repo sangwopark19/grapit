@@ -47,9 +47,9 @@ export function useBookingSocket(showtimeId: string | null): void {
       }
     });
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', (reason) => {
       useBookingStore.getState().setConnected(false);
-      if (hadPreviousConnection.current) {
+      if (hadPreviousConnection.current && reason !== 'io client disconnect') {
         toast.loading('실시간 연결이 끊어졌습니다. 재연결 중...', {
           id: 'ws-status',
         });
