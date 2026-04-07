@@ -12,6 +12,12 @@ export interface UnlockAllResponse {
   unlockedSeats: string[];
 }
 
+export interface SeatUpdateEvent {
+  seatId: string;
+  status: SeatState;
+  userId?: string;
+}
+
 export interface SeatStatusResponse {
   showtimeId: string;
   seats: Record<string, SeatState>;
