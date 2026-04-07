@@ -8,7 +8,7 @@ export function createBookingSocket(): Socket {
     withCredentials: true,
     autoConnect: false,
     reconnection: true,
-    reconnectionAttempts: Infinity,
+    reconnectionAttempts: 10,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
   });
