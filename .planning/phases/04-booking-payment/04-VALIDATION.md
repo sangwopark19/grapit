@@ -1,10 +1,11 @@
 ---
 phase: 4
 slug: booking-payment
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: complete
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-04-02
+validated: 2026-04-07
 ---
 
 # Phase 4 — Validation Strategy
@@ -38,14 +39,14 @@ created: 2026-04-02
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 04-01-01 | 01 | 1 | BOOK-05 | unit | `pnpm --filter @grapit/api exec vitest run src/modules/reservation/reservation.service.spec.ts -t "amount"` | ❌ W0 | ⬜ pending |
-| 04-01-02 | 01 | 1 | PAY-05 | unit | `pnpm --filter @grapit/api exec vitest run src/modules/payment/payment.service.spec.ts -t "amount validation"` | ❌ W0 | ⬜ pending |
-| 04-01-03 | 01 | 1 | PAY-06 | unit | `pnpm --filter @grapit/api exec vitest run src/modules/reservation/reservation.service.spec.ts -t "reservation number"` | ❌ W0 | ⬜ pending |
-| 04-01-04 | 01 | 1 | PAY-07 | unit | `pnpm --filter @grapit/api exec vitest run src/modules/payment/payment.service.spec.ts -t "failure"` | ❌ W0 | ⬜ pending |
-| 04-01-05 | 01 | 1 | RESV-01 | unit | `pnpm --filter @grapit/api exec vitest run src/modules/reservation/reservation.service.spec.ts -t "list"` | ❌ W0 | ⬜ pending |
-| 04-01-06 | 01 | 1 | RESV-03 | unit | `pnpm --filter @grapit/api exec vitest run src/modules/reservation/reservation.service.spec.ts -t "cancel"` | ❌ W0 | ⬜ pending |
-| 04-01-07 | 01 | 1 | RESV-03 | unit | `pnpm --filter @grapit/api exec vitest run src/modules/reservation/reservation.service.spec.ts -t "deadline"` | ❌ W0 | ⬜ pending |
-| 04-01-08 | 01 | 1 | ADMN-04 | unit | `pnpm --filter @grapit/api exec vitest run src/modules/admin/admin-booking.service.spec.ts -t "list"` | ❌ W0 | ⬜ pending |
+| 04-01-01 | 01 | 1 | BOOK-05 | unit | `pnpm --filter @grapit/api exec vitest run src/modules/reservation/reservation.service.spec.ts -t "amount"` | ✅ | ✅ green |
+| 04-01-02 | 01 | 1 | PAY-05 | unit | `pnpm --filter @grapit/api exec vitest run src/modules/payment/payment.service.spec.ts -t "amount validation"` | ✅ | ✅ green |
+| 04-01-03 | 01 | 1 | PAY-06 | unit | `pnpm --filter @grapit/api exec vitest run src/modules/reservation/reservation.service.spec.ts -t "reservation number"` | ✅ | ✅ green |
+| 04-01-04 | 01 | 1 | PAY-07 | unit | `pnpm --filter @grapit/api exec vitest run src/modules/payment/payment.service.spec.ts -t "failure"` | ✅ | ✅ green |
+| 04-01-05 | 01 | 1 | RESV-01 | unit | `pnpm --filter @grapit/api exec vitest run src/modules/reservation/reservation.service.spec.ts -t "list"` | ✅ | ✅ green |
+| 04-01-06 | 01 | 1 | RESV-03 | unit | `pnpm --filter @grapit/api exec vitest run src/modules/reservation/reservation.service.spec.ts -t "cancel"` | ✅ | ✅ green |
+| 04-01-07 | 01 | 1 | RESV-03 | unit | `pnpm --filter @grapit/api exec vitest run src/modules/reservation/reservation.service.spec.ts -t "deadline"` | ✅ | ✅ green |
+| 04-01-08 | 01 | 1 | ADMN-04 | unit | `pnpm --filter @grapit/api exec vitest run src/modules/admin/admin-booking.service.spec.ts -t "list"` | ✅ | ✅ green |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -53,9 +54,9 @@ created: 2026-04-02
 
 ## Wave 0 Requirements
 
-- [ ] `apps/api/src/modules/reservation/reservation.service.spec.ts` — stubs for BOOK-05, PAY-06, RESV-01, RESV-03
-- [ ] `apps/api/src/modules/payment/payment.service.spec.ts` — stubs for PAY-05, PAY-07
-- [ ] `apps/api/src/modules/admin/admin-booking.service.spec.ts` — stubs for ADMN-04
+- [x] `apps/api/src/modules/reservation/reservation.service.spec.ts` — 11 tests covering BOOK-05, PAY-06, RESV-01, RESV-03
+- [x] `apps/api/src/modules/payment/payment.service.spec.ts` — 2 tests covering PAY-05, PAY-07
+- [x] `apps/api/src/modules/admin/admin-booking.service.spec.ts` — 1 test covering ADMN-04
 
 *Existing vitest infrastructure covers framework needs.*
 
@@ -73,11 +74,23 @@ created: 2026-04-02
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 15s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 15s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** validated 2026-04-07
+
+---
+
+## Validation Audit 2026-04-07
+
+| Metric | Count |
+|--------|-------|
+| Gaps found | 0 |
+| Resolved | 0 |
+| Escalated | 0 |
+
+All 8 task requirements verified against 14 passing tests across 3 test files. No gaps detected — all requirements have automated coverage.
