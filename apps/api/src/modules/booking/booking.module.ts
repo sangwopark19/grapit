@@ -14,6 +14,6 @@ import { upstashRedisProvider, ioredisClientProvider } from './providers/redis.p
     upstashRedisProvider,
     ioredisClientProvider,
   ],
-  exports: [BookingService],
+  exports: [BookingService, BookingGateway],
 })
 export class BookingModule {}

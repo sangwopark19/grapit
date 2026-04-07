@@ -176,6 +176,7 @@ describe('ReservationService', () => {
     it('should succeed when cancelling before deadline', async () => {
       const reservationId = randomUUID();
       const userId = randomUUID();
+      const showtimeId = randomUUID();
       const futureDeadline = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
       // Mock: get reservation
@@ -184,6 +185,7 @@ describe('ReservationService', () => {
           where: vi.fn().mockResolvedValue([{
             id: reservationId,
             userId,
+            showtimeId,
             status: 'CONFIRMED',
             cancelDeadline: futureDeadline,
           }]),
@@ -200,7 +202,7 @@ describe('ReservationService', () => {
         }),
       });
 
-      // Mock: transaction for status updates
+      // Mock: transaction for status updates + seat restoration
       mockDb.transaction.mockImplementation(async (cb: (tx: any) => Promise<void>) => {
         const mockTx = {
           update: vi.fn().mockReturnValue({
@@ -208,8 +210,20 @@ describe('ReservationService', () => {
               where: vi.fn().mockResolvedValue([]),
             }),
           }),
+          select: vi.fn().mockReturnValue({
+            from: vi.fn().mockReturnValue({
+              where: vi.fn().mockResolvedValue([]),
+            }),
+          }),
         };
         return cb(mockTx);
+      });
+
+      // Mock: post-transaction select for WS broadcast
+      mockDb.select.mockReturnValueOnce({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([]),
+        }),
       });
 
       await expect(service.cancelReservation(reservationId, userId, '단순 변심'))

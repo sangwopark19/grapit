@@ -15,8 +15,11 @@ import {
   performances,
   priceTiers,
   venues,
+  seatInventories,
 } from '../../database/schema/index.js';
 import { TossPaymentsClient } from '../payment/toss-payments.client.js';
+import { BookingService } from '../booking/booking.service.js';
+import { BookingGateway } from '../booking/booking.gateway.js';
 import type {
   SeatSelection,
   ReservationStatus,
@@ -32,6 +35,8 @@ export class ReservationService {
   constructor(
     @Inject(DRIZZLE) private readonly db: DrizzleDB,
     private readonly tossClient: TossPaymentsClient,
+    private readonly bookingService: BookingService,
+    private readonly bookingGateway: BookingGateway,
   ) {}
 
   generateReservationNumber(): string {
@@ -183,7 +188,7 @@ export class ReservationService {
       amount: dto.amount,
     });
 
-    // 5. Update reservation status + create payment record
+    // 5. Update reservation status + create payment record + mark seats sold
     await this.db.transaction(async (tx) => {
       await tx
         .update(reservations)
@@ -202,7 +207,54 @@ export class ReservationService {
         status: 'DONE',
         paidAt: new Date(tossResponse.approvedAt),
       });
+
+      // Mark seats as sold in seat_inventories
+      const resSeats = await tx
+        .select({ seatId: reservationSeats.seatId })
+        .from(reservationSeats)
+        .where(eq(reservationSeats.reservationId, reservation.id));
+
+      for (const seat of resSeats) {
+        const [existing] = await tx
+          .select({ id: seatInventories.id })
+          .from(seatInventories)
+          .where(
+            and(
+              eq(seatInventories.showtimeId, reservation.showtimeId),
+              eq(seatInventories.seatId, seat.seatId),
+            ),
+          );
+
+        if (existing) {
+          await tx
+            .update(seatInventories)
+            .set({ status: 'sold', soldAt: new Date(), lockedBy: null, lockedUntil: null })
+            .where(eq(seatInventories.id, existing.id));
+        } else {
+          await tx
+            .insert(seatInventories)
+            .values({
+              showtimeId: reservation.showtimeId,
+              seatId: seat.seatId,
+              status: 'sold',
+              soldAt: new Date(),
+            });
+        }
+      }
     });
+
+    // Release Redis locks for this user's seats in this showtime
+    await this.bookingService.unlockAllSeats(userId, reservation.showtimeId);
+
+    // Broadcast sold status via WebSocket for each seat
+    const confirmedSeats = await this.db
+      .select({ seatId: reservationSeats.seatId })
+      .from(reservationSeats)
+      .where(eq(reservationSeats.reservationId, reservation.id));
+
+    for (const seat of confirmedSeats) {
+      this.bookingGateway.broadcastSeatUpdate(reservation.showtimeId, seat.seatId, 'sold', userId);
+    }
 
     return this.getReservationDetail(reservation.id, userId);
   }
@@ -398,7 +450,7 @@ export class ReservationService {
       await this.tossClient.cancelPayment(payment.paymentKey, reason);
     }
 
-    // 5. DB transaction: update reservation + payment
+    // 5. DB transaction: update reservation + payment + restore seats
     await this.db.transaction(async (tx) => {
       const now = new Date();
       await tx
@@ -421,6 +473,34 @@ export class ReservationService {
           })
           .where(eq(payments.reservationId, reservationId));
       }
+
+      // Restore seat_inventories to available
+      const cancelledSeats = await tx
+        .select({ seatId: reservationSeats.seatId })
+        .from(reservationSeats)
+        .where(eq(reservationSeats.reservationId, reservationId));
+
+      for (const seat of cancelledSeats) {
+        await tx
+          .update(seatInventories)
+          .set({ status: 'available', soldAt: null, lockedBy: null, lockedUntil: null })
+          .where(
+            and(
+              eq(seatInventories.showtimeId, reservation.showtimeId),
+              eq(seatInventories.seatId, seat.seatId),
+            ),
+          );
+      }
     });
+
+    // Broadcast available status via WebSocket for each cancelled seat
+    const freedSeats = await this.db
+      .select({ seatId: reservationSeats.seatId })
+      .from(reservationSeats)
+      .where(eq(reservationSeats.reservationId, reservationId));
+
+    for (const seat of freedSeats) {
+      this.bookingGateway.broadcastSeatUpdate(reservation.showtimeId, seat.seatId, 'available');
+    }
   }
 }
