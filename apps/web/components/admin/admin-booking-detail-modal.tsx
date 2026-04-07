@@ -97,7 +97,7 @@ export function AdminBookingDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-md">
+      <DialogContent className="max-h-[80vh] w-full max-w-[480px] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>예매 상세</DialogTitle>
         </DialogHeader>
