@@ -1,5 +1,5 @@
 ---
-status: diagnosed
+status: resolved
 trigger: "잠근 좌석이 회색으로 변경되고 아예 선택이 되지 않아 토스트 알림이 뜨지 않음"
 created: 2026-04-02T00:00:00Z
 updated: 2026-04-02T00:00:00Z

@@ -223,6 +223,10 @@
 <!-- GSD:conventions-start source:CONVENTIONS.md -->
 ## Conventions
 
+### 개발환경 서버포트
+- web: 3000
+- api: 8080
+
 ### 환경변수 (.env)
 
 - `.env` 파일은 **모노레포 루트** (`/grapit/.env`)에 위치한다. `apps/api/`나 `apps/web/`에 별도 `.env`를 두지 않는다.

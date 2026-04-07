@@ -24,7 +24,7 @@ try {
 }
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ['192.168.0.78'],
+  allowedDevOrigins: ['192.168.0.78', 'craig-paravail-yee.ngrok-free.dev'],
   output: 'standalone',
   transpilePackages: ['@grapit/shared'],
   turbopack: {
@@ -35,6 +35,10 @@ const nextConfig: NextConfig = {
       {
         source: '/api/:path*',
         destination: 'http://localhost:8080/api/:path*',
+      },
+      {
+        source: '/socket.io/:path*',
+        destination: 'http://localhost:8080/socket.io/:path*',
       },
     ];
   },

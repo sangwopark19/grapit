@@ -1,5 +1,5 @@
 ---
-status: diagnosed
+status: resolved
 trigger: "Phase 4 UAT에서 blocker 버그: 토스 결제 후 complete 페이지에서 스켈레톤만 표시, 마이페이지 예매내역 미반영"
 created: 2026-04-06T00:00:00Z
 updated: 2026-04-06T00:00:00Z
