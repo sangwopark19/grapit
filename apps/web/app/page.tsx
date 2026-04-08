@@ -1,6 +1,6 @@
 'use client';
 
-import { Skeleton } from '@/components/ui/skeleton';
+import { BannerSkeleton } from '@/components/skeletons';
 import { BannerCarousel } from '@/components/home/banner-carousel';
 import { HotSection } from '@/components/home/hot-section';
 import { NewSection } from '@/components/home/new-section';
@@ -16,7 +16,7 @@ export default function HomePage() {
 
       {/* Banner Carousel */}
       {bannersLoading ? (
-        <Skeleton className="h-[200px] w-full md:h-[400px]" />
+        <BannerSkeleton />
       ) : (
         <BannerCarousel banners={banners ?? []} />
       )}

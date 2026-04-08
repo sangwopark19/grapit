@@ -4,7 +4,7 @@ import { use } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { MapPin, Calendar, Clock, User, Ticket } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { DetailHeaderSkeleton, DetailTabsSkeleton } from '@/components/skeletons';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { StatusBadge } from '@/components/performance/status-badge';
@@ -25,24 +25,9 @@ function formatPrice(price: number): string {
 function DetailSkeleton() {
   return (
     <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8">
-      <div className="flex flex-col gap-8 md:flex-row">
-        {/* Left column: poster + tabs skeleton */}
-        <div className="w-full md:max-w-[380px] shrink-0">
-          <Skeleton className="aspect-[2/3] w-full max-h-[400px] mx-auto md:mx-0 md:max-h-none md:max-w-[380px] rounded-lg" />
-          <div className="mt-8 space-y-4">
-            <Skeleton className="h-12 w-full rounded-lg" />
-            <Skeleton className="h-[300px] w-full rounded-lg" />
-          </div>
-        </div>
-        {/* Right column: info panel skeleton */}
-        <div className="flex-1 space-y-4 order-first md:order-none">
-          <Skeleton className="h-7 w-3/4" />
-          <Skeleton className="h-5 w-1/2" />
-          <Skeleton className="h-5 w-2/3" />
-          <Skeleton className="h-5 w-1/3" />
-          <Skeleton className="h-5 w-1/4" />
-          <Skeleton className="mt-4 h-12 w-full" />
-        </div>
+      <DetailHeaderSkeleton />
+      <div className="mt-8">
+        <DetailTabsSkeleton />
       </div>
     </div>
   );

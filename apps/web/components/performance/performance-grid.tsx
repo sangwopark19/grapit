@@ -1,7 +1,7 @@
 'use client';
 
 import { SearchIcon } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { PerformanceCardSkeleton } from '@/components/skeletons';
 import { PerformanceCard } from './performance-card';
 import type { PerformanceCardData } from '@grapit/shared';
 
@@ -10,19 +10,6 @@ interface PerformanceGridProps {
   isLoading?: boolean;
   emptyHeading?: string;
   emptyBody?: string;
-}
-
-function SkeletonCard() {
-  return (
-    <div className="overflow-hidden rounded-lg">
-      <Skeleton className="aspect-[2/3] w-full rounded-t-lg" />
-      <div className="p-3">
-        <Skeleton className="h-4 w-3/4" />
-        <Skeleton className="mt-2 h-3 w-1/2" />
-        <Skeleton className="mt-2 h-3 w-2/3" />
-      </div>
-    </div>
-  );
 }
 
 export function PerformanceGrid({
@@ -35,7 +22,7 @@ export function PerformanceGrid({
     return (
       <div className="grid grid-cols-2 gap-x-6 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
         {Array.from({ length: 8 }).map((_, i) => (
-          <SkeletonCard key={i} />
+          <PerformanceCardSkeleton key={i} />
         ))}
       </div>
     );

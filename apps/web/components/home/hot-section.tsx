@@ -3,36 +3,16 @@
 import Link from 'next/link';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { FreeMode } from 'swiper/modules';
-import { Skeleton } from '@/components/ui/skeleton';
+import { SectionSkeleton } from '@/components/skeletons';
 import { PerformanceCard } from '@/components/performance/performance-card';
 import { useHotPerformances } from '@/hooks/use-performances';
 import 'swiper/css';
 import 'swiper/css/free-mode';
 
-function HotSectionSkeleton() {
-  return (
-    <section className="mt-12">
-      <div className="mb-6 flex items-center justify-between">
-        <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-5 w-12" />
-      </div>
-      <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i}>
-            <Skeleton className="aspect-[2/3] w-full rounded-lg" />
-            <Skeleton className="mt-3 h-4 w-3/4" />
-            <Skeleton className="mt-2 h-3 w-1/2" />
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 export function HotSection() {
   const { data: performances, isLoading } = useHotPerformances();
 
-  if (isLoading) return <HotSectionSkeleton />;
+  if (isLoading) return <SectionSkeleton />;
   if (!performances?.length) return null;
 
   return (
