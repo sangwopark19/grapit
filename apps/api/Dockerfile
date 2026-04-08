@@ -1,22 +1,13 @@
-# Stage 1: Dependencies
-FROM node:22-alpine AS deps
-RUN corepack enable && corepack prepare pnpm@10.28.1 --activate
-WORKDIR /app
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
-COPY apps/api/package.json ./apps/api/
-COPY packages/shared/package.json ./packages/shared/
-RUN pnpm install --frozen-lockfile
-
-# Stage 2: Build
+# Stage 1: Build
 FROM node:22-alpine AS builder
 RUN corepack enable && corepack prepare pnpm@10.28.1 --activate
 WORKDIR /app
-COPY --from=deps /app/ ./
 COPY . .
+RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @grapit/shared build
 RUN pnpm --filter @grapit/api build
 
-# Stage 3: Production
+# Stage 2: Production
 FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production

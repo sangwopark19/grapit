@@ -1,9 +1,9 @@
 import {
   ExceptionFilter,
   Catch,
-  ArgumentsHost,
   HttpException,
 } from '@nestjs/common';
+import type { ArgumentsHost } from '@nestjs/common';
 import { SentryExceptionCaptured } from '@sentry/nestjs';
 import type { Response } from 'express';
 
