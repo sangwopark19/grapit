@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 Phase: 05
 Plan: Not started
 Status: Executing Phase 05
-Last activity: 2026-04-08
+Last activity: 2026-04-08 - Completed quick task 260408-mas: PR 코드리뷰 반영
 
 Progress: [████████░░] 82%
 
@@ -131,6 +131,7 @@ None yet.
 | 260407-jyt | PR #3 코드리뷰 6개 이슈 수정: 결제 복구 패턴, TossPaymentError HTTP화, refundBooking 좌석 복원, confirm 만료 좌석 해제, N+1 쿼리 해소 | 2026-04-07 | b92bc1f | [260407-jyt-pr-3-6-tosspaymenterror-http-refundbooki](./quick/260407-jyt-pr-3-6-tosspaymenterror-http-refundbooki/) |
 | 260407-lid | 모바일 좌석 SVG 뷰포트 잘림 문제 해결 | 2026-04-07 | fd02a0e | [260407-lid-svg](./quick/260407-lid-svg/) |
 | 260408-ldc | Sentry 에러 캡처 안되는 문제 수정 | 2026-04-08 | d464ee5 | [260408-ldc-sentry](./quick/260408-ldc-sentry/) |
+| 260408-mas | PR 코드리뷰 반영 — Sentry DSN 서버 환경변수 분리, 5xx 전용 캡처, CI 게이트 추가 | 2026-04-08 | 4bb34ba | [260408-mas-pr-phase-05-pr](./quick/260408-mas-pr-phase-05-pr/) |
 
 ## Session Continuity
 
