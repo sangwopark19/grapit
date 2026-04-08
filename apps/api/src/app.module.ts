@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { SentryModule } from '@sentry/nestjs/setup';
 import { HealthModule } from './health/health.module.js';
 import { DrizzleModule } from './database/drizzle.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
@@ -19,6 +20,7 @@ import { redisConfig } from './config/redis.config.js';
 
 @Module({
   imports: [
+    SentryModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '../../.env',
