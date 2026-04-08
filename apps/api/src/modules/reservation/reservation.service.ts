@@ -562,4 +562,32 @@ export class ReservationService {
       }
     }
   }
+
+  async cancelPendingReservation(reservationId: string, userId: string): Promise<void> {
+    const [reservation] = await this.db
+      .select()
+      .from(reservations)
+      .where(
+        and(
+          eq(reservations.id, reservationId),
+          eq(reservations.userId, userId),
+          eq(reservations.status, 'PENDING_PAYMENT'),
+        ),
+      );
+
+    if (!reservation) {
+      // Already cancelled or doesn't exist — idempotent
+      return;
+    }
+
+    await this.db
+      .update(reservations)
+      .set({
+        status: 'CANCELLED',
+        cancelledAt: new Date(),
+        cancelReason: '좌석 점유 만료',
+        updatedAt: new Date(),
+      })
+      .where(eq(reservations.id, reservation.id));
+  }
 }

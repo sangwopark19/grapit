@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ConflictException } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { BookingService } from '../booking.service.js';
 import type { BookingGateway } from '../booking.gateway.js';
 
@@ -136,6 +137,46 @@ describe('BookingService', () => {
         .toThrow(ConflictException);
 
       expect(mockGateway.broadcastSeatUpdate).not.toHaveBeenCalled();
+    });
+
+    describe('sold defense', () => {
+      it('should throw ConflictException when seat_inventories has status=sold', async () => {
+        mockDb.select.mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([{ id: randomUUID() }]),
+          }),
+        });
+
+        await expect(service.lockSeat(userId, showtimeId, seatId))
+          .rejects.toThrow(ConflictException);
+
+        await expect(service.lockSeat(userId, showtimeId, seatId))
+          .rejects.toThrow('이미 판매된 좌석입니다');
+
+        expect(mockRedis.eval).not.toHaveBeenCalled();
+      });
+
+      it('should proceed to Redis lock when no sold record exists in seat_inventories', async () => {
+        mockNoSoldRecord();
+        mockRedis.eval.mockResolvedValue([1, `seat:${showtimeId}:${seatId}`, seatId]);
+
+        const result = await service.lockSeat(userId, showtimeId, seatId);
+
+        expect(result.success).toBe(true);
+        expect(result.seatId).toBe(seatId);
+        expect(mockRedis.eval).toHaveBeenCalled();
+      });
+
+      it('should proceed normally when seat_inventories record exists with status=available', async () => {
+        mockNoSoldRecord();
+        mockRedis.eval.mockResolvedValue([1, `seat:${showtimeId}:${seatId}`, seatId]);
+
+        const result = await service.lockSeat(userId, showtimeId, seatId);
+
+        expect(result.success).toBe(true);
+        expect(mockRedis.eval).toHaveBeenCalled();
+        expect(mockGateway.broadcastSeatUpdate).toHaveBeenCalledWith(showtimeId, seatId, 'locked', userId);
+      });
     });
   });
 
