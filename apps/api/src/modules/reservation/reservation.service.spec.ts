@@ -173,45 +173,38 @@ describe('ReservationService', () => {
   });
 
   describe('cancel', () => {
-    it('should succeed when cancelling before deadline', async () => {
+    it('should succeed when cancelling before deadline with SELECT FOR UPDATE', async () => {
       const reservationId = randomUUID();
       const userId = randomUUID();
       const showtimeId = randomUUID();
       const futureDeadline = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-      // Mock: get reservation
-      mockDb.select.mockReturnValueOnce({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([{
-            id: reservationId,
-            userId,
-            showtimeId,
-            status: 'CONFIRMED',
-            cancelDeadline: futureDeadline,
-          }]),
-        }),
-      });
-
-      // Mock: get payment
-      mockDb.select.mockReturnValueOnce({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([{
-            id: randomUUID(),
-            paymentKey: 'pk_test_123',
-          }]),
-        }),
-      });
-
-      // Mock: transaction for status updates + seat restoration
-      mockDb.transaction.mockImplementation(async (cb: (tx: any) => Promise<void>) => {
+      // Mock: transaction with SELECT FOR UPDATE + payment query + updates
+      mockDb.transaction.mockImplementation(async (cb: (tx: Record<string, unknown>) => Promise<void>) => {
         const mockTx = {
-          update: vi.fn().mockReturnValue({
-            set: vi.fn().mockReturnValue({
+          execute: vi.fn().mockResolvedValue({
+            rows: [{
+              id: reservationId,
+              user_id: userId,
+              showtime_id: showtimeId,
+              status: 'CONFIRMED',
+              cancel_deadline: futureDeadline,
+            }],
+          }),
+          select: vi.fn().mockReturnValueOnce({
+            from: vi.fn().mockReturnValue({
+              where: vi.fn().mockResolvedValue([{
+                id: randomUUID(),
+                paymentKey: 'pk_test_123',
+              }]),
+            }),
+          }).mockReturnValue({
+            from: vi.fn().mockReturnValue({
               where: vi.fn().mockResolvedValue([]),
             }),
           }),
-          select: vi.fn().mockReturnValue({
-            from: vi.fn().mockReturnValue({
+          update: vi.fn().mockReturnValue({
+            set: vi.fn().mockReturnValue({
               where: vi.fn().mockResolvedValue([]),
             }),
           }),
@@ -228,6 +221,8 @@ describe('ReservationService', () => {
 
       await expect(service.cancelReservation(reservationId, userId, '단순 변심'))
         .resolves.not.toThrow();
+
+      expect(mockTossClient.cancelPayment).toHaveBeenCalledWith('pk_test_123', '단순 변심');
     });
   });
 
@@ -237,15 +232,19 @@ describe('ReservationService', () => {
       const userId = randomUUID();
       const pastDeadline = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-      mockDb.select.mockReturnValueOnce({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([{
-            id: reservationId,
-            userId,
-            status: 'CONFIRMED',
-            cancelDeadline: pastDeadline,
-          }]),
-        }),
+      mockDb.transaction.mockImplementation(async (cb: (tx: Record<string, unknown>) => Promise<void>) => {
+        const mockTx = {
+          execute: vi.fn().mockResolvedValue({
+            rows: [{
+              id: reservationId,
+              user_id: userId,
+              showtime_id: randomUUID(),
+              status: 'CONFIRMED',
+              cancel_deadline: pastDeadline,
+            }],
+          }),
+        };
+        return cb(mockTx);
       });
 
       await expect(service.cancelReservation(reservationId, userId, '단순 변심'))
@@ -424,37 +423,30 @@ describe('ReservationService', () => {
       const showtimeId = randomUUID();
       const futureDeadline = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-      // 1st select: get reservation
-      mockDb.select.mockReturnValueOnce({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([{
-            id: reservationId,
-            userId,
-            showtimeId,
-            status: 'CONFIRMED',
-            cancelDeadline: futureDeadline,
-          }]),
-        }),
-      });
-
-      // 2nd select: get payment
-      mockDb.select.mockReturnValueOnce({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([{
-            id: randomUUID(),
-            paymentKey: 'pk_test_123',
-          }]),
-        }),
-      });
-
       // Track tx operations
       const mockTx = {
+        execute: vi.fn().mockResolvedValue({
+          rows: [{
+            id: reservationId,
+            user_id: userId,
+            showtime_id: showtimeId,
+            status: 'CONFIRMED',
+            cancel_deadline: futureDeadline,
+          }],
+        }),
         update: vi.fn().mockReturnValue({
           set: vi.fn().mockReturnValue({
             where: vi.fn().mockResolvedValue([]),
           }),
         }),
-        select: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValueOnce({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([{
+              id: randomUUID(),
+              paymentKey: 'pk_test_123',
+            }]),
+          }),
+        }).mockReturnValue({
           from: vi.fn().mockReturnValue({
             where: vi.fn().mockResolvedValue([
               { seatId: 'A-1' },
@@ -480,8 +472,8 @@ describe('ReservationService', () => {
 
       await service.cancelReservation(reservationId, userId, '단순 변심');
 
-      // tx.select should have been called to get cancelled seats
-      expect(mockTx.select).toHaveBeenCalled();
+      // tx.execute should have been called for SELECT FOR UPDATE
+      expect(mockTx.execute).toHaveBeenCalled();
       // tx.update should be called for reservation, payment, AND seat_inventories (at least 4: reservation + payment + 2 seats)
       expect(mockTx.update.mock.calls.length).toBeGreaterThanOrEqual(4);
     });
@@ -492,34 +484,29 @@ describe('ReservationService', () => {
       const showtimeId = randomUUID();
       const futureDeadline = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-      mockDb.select.mockReturnValueOnce({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([{
-            id: reservationId,
-            userId,
-            showtimeId,
-            status: 'CONFIRMED',
-            cancelDeadline: futureDeadline,
-          }]),
-        }),
-      });
-
-      mockDb.select.mockReturnValueOnce({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([{
-            id: randomUUID(),
-            paymentKey: 'pk_test_123',
-          }]),
-        }),
-      });
-
       const mockTx = {
+        execute: vi.fn().mockResolvedValue({
+          rows: [{
+            id: reservationId,
+            user_id: userId,
+            showtime_id: showtimeId,
+            status: 'CONFIRMED',
+            cancel_deadline: futureDeadline,
+          }],
+        }),
         update: vi.fn().mockReturnValue({
           set: vi.fn().mockReturnValue({
             where: vi.fn().mockResolvedValue([]),
           }),
         }),
-        select: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValueOnce({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([{
+              id: randomUUID(),
+              paymentKey: 'pk_test_123',
+            }]),
+          }),
+        }).mockReturnValue({
           from: vi.fn().mockReturnValue({
             where: vi.fn().mockResolvedValue([
               { seatId: 'B-1' },

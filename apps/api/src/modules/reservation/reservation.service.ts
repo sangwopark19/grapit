@@ -453,87 +453,113 @@ export class ReservationService {
   }
 
   async cancelReservation(reservationId: string, userId: string, reason: string): Promise<void> {
-    // 1. Get reservation, verify ownership
-    const [reservation] = await this.db
-      .select()
-      .from(reservations)
-      .where(eq(reservations.id, reservationId));
+    let showtimeId: string | undefined;
 
-    if (!reservation || reservation.userId !== userId) {
-      throw new NotFoundException('예매를 찾을 수 없습니다');
-    }
+    try {
+      await this.db.transaction(async (tx) => {
+        // 1. SELECT FOR UPDATE to lock the reservation row (prevents double-cancel race)
+        const result = await tx.execute(
+          sql`SELECT id, user_id, showtime_id, status, cancel_deadline FROM reservations WHERE id = ${reservationId} FOR UPDATE`,
+        );
+        const row = result.rows[0] as
+          | { id: string; user_id: string; showtime_id: string; status: string; cancel_deadline: Date }
+          | undefined;
 
-    // 2. Check status
-    if (reservation.status !== 'CONFIRMED') {
-      throw new BadRequestException('취소할 수 없는 상태입니다');
-    }
+        if (!row || row.user_id !== userId) {
+          throw new NotFoundException('예매를 찾을 수 없습니다');
+        }
 
-    // 3. Check deadline
-    if (reservation.cancelDeadline <= new Date()) {
-      throw new ForbiddenException('취소 마감시간이 지났습니다');
-    }
+        if (row.status !== 'CONFIRMED') {
+          throw new BadRequestException('취소할 수 없는 상태입니다');
+        }
 
-    // 4. Get payment and call Toss cancel
-    const [payment] = await this.db
-      .select()
-      .from(payments)
-      .where(eq(payments.reservationId, reservationId));
+        if (new Date(row.cancel_deadline) <= new Date()) {
+          throw new ForbiddenException('취소 마감시간이 지났습니다');
+        }
 
-    if (payment) {
-      await this.tossClient.cancelPayment(payment.paymentKey, reason);
-    }
+        showtimeId = row.showtime_id;
 
-    // 5. DB transaction: update reservation + payment + restore seats
-    await this.db.transaction(async (tx) => {
-      const now = new Date();
-      await tx
-        .update(reservations)
-        .set({
-          status: 'CANCELLED',
-          cancelledAt: now,
-          cancelReason: reason,
-          updatedAt: now,
-        })
-        .where(eq(reservations.id, reservationId));
+        // 2. Get payment within transaction
+        const [payment] = await tx
+          .select()
+          .from(payments)
+          .where(eq(payments.reservationId, reservationId));
 
-      if (payment) {
+        // 3. Call Toss cancel before DB updates
+        if (payment) {
+          await this.tossClient.cancelPayment(payment.paymentKey, reason);
+        }
+
+        // 4. Update reservation + payment + restore seats
+        const now = new Date();
         await tx
-          .update(payments)
+          .update(reservations)
           .set({
-            status: 'CANCELED',
+            status: 'CANCELLED',
             cancelledAt: now,
             cancelReason: reason,
+            updatedAt: now,
           })
-          .where(eq(payments.reservationId, reservationId));
-      }
+          .where(eq(reservations.id, reservationId));
 
-      // Restore seat_inventories to available
-      const cancelledSeats = await tx
+        if (payment) {
+          await tx
+            .update(payments)
+            .set({
+              status: 'CANCELED',
+              cancelledAt: now,
+              cancelReason: reason,
+            })
+            .where(eq(payments.reservationId, reservationId));
+        }
+
+        // Restore seat_inventories to available
+        const cancelledSeats = await tx
+          .select({ seatId: reservationSeats.seatId })
+          .from(reservationSeats)
+          .where(eq(reservationSeats.reservationId, reservationId));
+
+        for (const seat of cancelledSeats) {
+          await tx
+            .update(seatInventories)
+            .set({ status: 'available', soldAt: null, lockedBy: null, lockedUntil: null })
+            .where(
+              and(
+                eq(seatInventories.showtimeId, row.showtime_id),
+                eq(seatInventories.seatId, seat.seatId),
+              ),
+            );
+        }
+      });
+    } catch (error) {
+      // Re-throw business exceptions as-is
+      if (
+        error instanceof BadRequestException ||
+        error instanceof ForbiddenException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      // Toss cancel succeeded but DB failed — log CRITICAL for manual reconciliation
+      this.logger.error(
+        `CRITICAL: DB transaction failed after Toss cancel. reservationId=${reservationId}. Manual reconciliation required.`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      throw new InternalServerErrorException(
+        '취소 처리 중 오류가 발생했습니다. 고객센터에 문의해주세요.',
+      );
+    }
+
+    // Broadcast available status via WebSocket for each cancelled seat
+    if (showtimeId) {
+      const freedSeats = await this.db
         .select({ seatId: reservationSeats.seatId })
         .from(reservationSeats)
         .where(eq(reservationSeats.reservationId, reservationId));
 
-      for (const seat of cancelledSeats) {
-        await tx
-          .update(seatInventories)
-          .set({ status: 'available', soldAt: null, lockedBy: null, lockedUntil: null })
-          .where(
-            and(
-              eq(seatInventories.showtimeId, reservation.showtimeId),
-              eq(seatInventories.seatId, seat.seatId),
-            ),
-          );
+      for (const seat of freedSeats) {
+        this.bookingGateway.broadcastSeatUpdate(showtimeId, seat.seatId, 'available');
       }
-    });
-
-    // Broadcast available status via WebSocket for each cancelled seat
-    const freedSeats = await this.db
-      .select({ seatId: reservationSeats.seatId })
-      .from(reservationSeats)
-      .where(eq(reservationSeats.reservationId, reservationId));
-
-    for (const seat of freedSeats) {
-      this.bookingGateway.broadcastSeatUpdate(reservation.showtimeId, seat.seatId, 'available');
     }
   }
 }
