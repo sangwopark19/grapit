@@ -18,7 +18,7 @@ export function HotSection() {
   return (
     <section className="mt-12">
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-[28px] font-semibold leading-[1.2]">HOT 공연</h2>
+        <h2 className="text-display font-semibold leading-[1.2]">HOT 공연</h2>
         <Link
           href="/genre/musical?sort=popular"
           className="text-sm text-gray-600 hover:text-gray-900"

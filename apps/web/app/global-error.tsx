@@ -24,6 +24,11 @@ export default function GlobalError({
         <p className="text-base text-gray-500">
           일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.
         </p>
+        {error.digest && (
+          <p className="text-caption text-gray-500">
+            오류 코드: {error.digest}
+          </p>
+        )}
         <Button onClick={reset}>다시 시도</Button>
       </body>
     </html>

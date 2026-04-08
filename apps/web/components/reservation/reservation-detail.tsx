@@ -64,7 +64,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between py-2">
       <span className="text-sm text-gray-600">{label}</span>
-      <span className="text-right text-sm font-medium text-gray-900">
+      <span className="text-right text-sm font-semibold text-gray-900">
         {value}
       </span>
     </div>
@@ -145,7 +145,7 @@ export function ReservationDetailView({
                 <span className="text-sm text-gray-600">
                   {seat.tierName} {seat.row}열 {seat.number}번
                 </span>
-                <span className="text-sm font-medium text-gray-900">
+                <span className="text-sm font-semibold text-gray-900">
                   {seat.price.toLocaleString('ko-KR')}원
                 </span>
               </div>
@@ -184,8 +184,8 @@ export function ReservationDetailView({
             <span className="text-sm text-gray-600">취소마감시간</span>
             <div className="text-right">
               <span
-                className={`text-sm font-medium ${
-                  isDeadlinePassed ? 'text-[#C62828]' : 'text-gray-900'
+                className={`text-sm font-semibold ${
+                  isDeadlinePassed ? 'text-error' : 'text-gray-900'
                 }`}
               >
                 {formatDeadline(reservation.cancelDeadline)}

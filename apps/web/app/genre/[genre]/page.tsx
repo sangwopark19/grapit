@@ -61,7 +61,7 @@ export default function GenrePage({
   return (
     <main className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8">
       {/* Page title */}
-      <h1 className="text-[28px] font-semibold leading-[1.2]">
+      <h1 className="text-display font-semibold leading-[1.2]">
         {GENRE_LABELS[genre]} 공연
       </h1>
 

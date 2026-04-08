@@ -191,7 +191,7 @@ export function BookingPage({ performanceId }: { performanceId: string }) {
       const seatState = seatStatesMap.get(seatId);
       if (seatState === 'locked' && !selectedSeatIds.has(seatId)) {
         toast.info('이미 다른 사용자가 선택한 좌석입니다', {
-          style: { backgroundColor: '#F3EFFF', color: '#6C3CE0' },
+          style: { backgroundColor: 'var(--color-info-surface)', color: 'var(--color-info)' },
         });
         return;
       }
@@ -249,7 +249,7 @@ export function BookingPage({ performanceId }: { performanceId: string }) {
               error.statusCode === 409
             ) {
               toast.info('이미 다른 사용자가 선택한 좌석입니다', {
-                style: { backgroundColor: '#F3EFFF', color: '#6C3CE0' },
+                style: { backgroundColor: 'var(--color-info-surface)', color: 'var(--color-info)' },
               });
             } else {
               toast.error(

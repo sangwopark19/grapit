@@ -42,7 +42,7 @@ const GENRE_LIST: Genre[] = [
 export function GenreGrid() {
   return (
     <section className="mt-12 pb-12">
-      <h2 className="mb-6 text-[28px] font-semibold leading-[1.2]">
+      <h2 className="mb-6 text-display font-semibold leading-[1.2]">
         장르별 바로가기
       </h2>
       <div className="grid grid-cols-4 gap-4 lg:grid-cols-8">

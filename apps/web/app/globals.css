@@ -113,3 +113,7 @@ body {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

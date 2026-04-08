@@ -6,10 +6,10 @@ import type { PerformanceStatus } from '@grapit/shared';
 import { STATUS_LABELS } from '@grapit/shared';
 
 const STATUS_STYLES: Record<PerformanceStatus, string> = {
-  selling: 'bg-[#22C55E] text-white hover:bg-[#22C55E]',
-  closing_soon: 'bg-[#FFB41B] text-[#1A1A2E] hover:bg-[#FFB41B]',
-  ended: 'bg-[#A1A1AA] text-white hover:bg-[#A1A1AA]',
-  upcoming: 'bg-[#6C3CE0] text-white hover:bg-[#6C3CE0]',
+  selling: 'bg-success text-white hover:bg-success',
+  closing_soon: 'bg-warning text-foreground hover:bg-warning',
+  ended: 'bg-gray-400 text-white hover:bg-gray-400',
+  upcoming: 'bg-primary text-white hover:bg-primary',
 };
 
 interface StatusBadgeProps {
