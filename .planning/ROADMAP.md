@@ -113,7 +113,7 @@ Plans:
 - [x] 05-02-PLAN.md — Skeleton UI: 11개 컴포넌트별 스켈레톤 variant + barrel export
 - [x] 05-03-PLAN.md — Error handling: API 에러 인터셉터 + NetworkBanner + 404 페이지 + error.tsx 개선
 - [x] 05-04-PLAN.md — Production infra: Sentry 설정 + Dockerfiles + GitHub Actions CI/CD + Cloud Run 배포
-- [ ] 05-05-PLAN.md — UAT gap closure: 포스터 이미지 잘림 + 예매 버튼 MobileTabBar 가림 수정
+- [x] 05-05-PLAN.md — UAT gap closure: 포스터 이미지 잘림 + 예매 버튼 MobileTabBar 가림 수정
 
 ## Progress
 
