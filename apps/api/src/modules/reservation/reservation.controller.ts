@@ -78,4 +78,13 @@ export class ReservationController {
     await this.reservationService.cancelReservation(id, req.user.id, body.reason);
     return { message: '예매가 취소되었습니다' };
   }
+
+  @Put('reservations/:id/cancel-pending')
+  async cancelPendingReservation(
+    @Param('id') id: string,
+    @Request() req: { user: { id: string } },
+  ) {
+    await this.reservationService.cancelPendingReservation(id, req.user.id);
+    return { message: '만료된 예매가 취소되었습니다' };
+  }
 }

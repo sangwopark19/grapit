@@ -11,7 +11,7 @@ import { BookerInfoSection } from '@/components/booking/booker-info-section';
 import { TermsAgreement } from '@/components/booking/terms-agreement';
 import { TossPaymentWidget, type TossPaymentWidgetRef } from '@/components/booking/toss-payment-widget';
 import { Button } from '@/components/ui/button';
-import { usePrepareReservation, useUnlockAllSeats } from '@/hooks/use-booking';
+import { usePrepareReservation, useUnlockAllSeats, useCancelPendingReservation } from '@/hooks/use-booking';
 import { useBookingStore } from '@/stores/use-booking-store';
 import { useAuthStore } from '@/stores/use-auth-store';
 
@@ -39,8 +39,10 @@ function ConfirmPageContent() {
   });
 
   const paymentWidgetRef = useRef<TossPaymentWidgetRef>(null);
+  const reservationIdRef = useRef<string | null>(null);
   const prepareMutation = usePrepareReservation();
   const unlockAll = useUnlockAllSeats();
+  const cancelPending = useCancelPendingReservation();
 
   // Generate orderId once per mount
   const orderId = useMemo(() => generateOrderId(), []);
@@ -92,9 +94,12 @@ function ConfirmPageContent() {
     if (selectedShowtimeId) {
       unlockAll.mutate({ showtimeId: selectedShowtimeId });
     }
+    if (reservationIdRef.current) {
+      cancelPending.mutate(reservationIdRef.current);
+    }
     toast.error('좌석 점유 시간이 만료되어 좌석 선택 화면으로 이동합니다.');
     router.replace(`/booking/${performanceId}`);
-  }, [performanceId, router, unlockAll]);
+  }, [performanceId, router, unlockAll, cancelPending]);
 
   const handleWidgetReady = useCallback(() => {
     setWidgetReady(true);
@@ -114,12 +119,13 @@ function ConfirmPageContent() {
     setIsProcessing(true);
     try {
       // 1. Create pending reservation on server before payment
-      await prepareMutation.mutateAsync({
+      const result = await prepareMutation.mutateAsync({
         orderId,
         showtimeId: selectedShowtimeId ?? '',
         seats: selectedSeats,
         amount: totalPrice,
       });
+      reservationIdRef.current = result.reservationId;
 
       // 2. Initiate Toss payment — SDK redirects the browser
       await paymentWidgetRef.current.requestPayment();

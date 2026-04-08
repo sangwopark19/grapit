@@ -2,6 +2,8 @@ import {
   Injectable,
   Inject,
   BadRequestException,
+  InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { eq, and, sql, ilike, or, desc, inArray } from 'drizzle-orm';
@@ -28,6 +30,8 @@ import type {
 
 @Injectable()
 export class AdminBookingService {
+  private readonly logger = new Logger(AdminBookingService.name);
+
   constructor(
     @Inject(DRIZZLE) private readonly db: DrizzleDB,
     private readonly tossClient: TossPaymentsClient,
@@ -259,47 +263,57 @@ export class AdminBookingService {
       await this.tossClient.cancelPayment(payment.paymentKey, reason);
     }
 
-    const now = new Date();
-    await this.db.transaction(async (tx) => {
-      await tx
-        .update(reservations)
-        .set({
-          status: 'CANCELLED',
-          cancelledAt: now,
-          cancelReason: reason,
-          updatedAt: now,
-        })
-        .where(eq(reservations.id, reservationId));
-
-      if (payment) {
+    try {
+      const now = new Date();
+      await this.db.transaction(async (tx) => {
         await tx
-          .update(payments)
+          .update(reservations)
           .set({
-            status: 'CANCELED',
+            status: 'CANCELLED',
             cancelledAt: now,
             cancelReason: reason,
+            updatedAt: now,
           })
-          .where(eq(payments.reservationId, reservationId));
-      }
+          .where(eq(reservations.id, reservationId));
 
-      // Restore seat_inventories to available
-      const cancelledSeats = await tx
-        .select({ seatId: reservationSeats.seatId })
-        .from(reservationSeats)
-        .where(eq(reservationSeats.reservationId, reservationId));
+        if (payment) {
+          await tx
+            .update(payments)
+            .set({
+              status: 'CANCELED',
+              cancelledAt: now,
+              cancelReason: reason,
+            })
+            .where(eq(payments.reservationId, reservationId));
+        }
 
-      for (const seat of cancelledSeats) {
-        await tx
-          .update(seatInventories)
-          .set({ status: 'available', soldAt: null, lockedBy: null, lockedUntil: null })
-          .where(
-            and(
-              eq(seatInventories.showtimeId, reservation.showtimeId),
-              eq(seatInventories.seatId, seat.seatId),
-            ),
-          );
-      }
-    });
+        // Restore seat_inventories to available
+        const cancelledSeats = await tx
+          .select({ seatId: reservationSeats.seatId })
+          .from(reservationSeats)
+          .where(eq(reservationSeats.reservationId, reservationId));
+
+        for (const seat of cancelledSeats) {
+          await tx
+            .update(seatInventories)
+            .set({ status: 'available', soldAt: null, lockedBy: null, lockedUntil: null })
+            .where(
+              and(
+                eq(seatInventories.showtimeId, reservation.showtimeId),
+                eq(seatInventories.seatId, seat.seatId),
+              ),
+            );
+        }
+      });
+    } catch (dbError) {
+      this.logger.error(
+        `CRITICAL: DB transaction failed after Toss refund. reservationId=${reservationId}, paymentKey=${payment?.paymentKey}. Manual reconciliation required.`,
+        dbError instanceof Error ? dbError.stack : String(dbError),
+      );
+      throw new InternalServerErrorException(
+        '환불은 처리되었으나 시스템 오류가 발생했습니다. 관리자에게 문의해주세요.',
+      );
+    }
 
     // Broadcast available status via WebSocket
     const freedSeats = await this.db

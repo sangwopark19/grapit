@@ -142,3 +142,10 @@ export function useReservationByOrderId(orderId: string | null) {
     enabled: !!orderId,
   });
 }
+
+export function useCancelPendingReservation() {
+  return useMutation({
+    mutationFn: (reservationId: string) =>
+      apiClient.put<void>(`/api/v1/reservations/${reservationId}/cancel-pending`),
+  });
+}
