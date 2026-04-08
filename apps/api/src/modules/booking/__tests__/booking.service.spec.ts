@@ -140,58 +140,46 @@ describe('BookingService', () => {
   });
 
   describe('unlockSeat', () => {
-    it('deletes redis key only when current user is the lock owner', async () => {
-      mockRedis.get.mockResolvedValue(userId);
-      mockRedis.del.mockResolvedValue(1);
-      mockRedis.srem.mockResolvedValue(1);
+    it('returns true when Lua script confirms ownership and deletes lock', async () => {
+      mockRedis.eval.mockResolvedValue(1);
 
       const result = await service.unlockSeat(userId, showtimeId, seatId);
 
       expect(result).toBe(true);
-      expect(mockRedis.del).toHaveBeenCalledWith(`seat:${showtimeId}:${seatId}`);
+      expect(mockRedis.eval).toHaveBeenCalledOnce();
+      const [script, keys, args] = mockRedis.eval.mock.calls[0] as [string, string[], string[]];
+      expect(script).toContain('GET');
+      expect(script).toContain('DEL');
+      expect(script).toContain('SREM');
+      expect(keys).toEqual([
+        `seat:${showtimeId}:${seatId}`,
+        `user-seats:${showtimeId}:${userId}`,
+        `locked-seats:${showtimeId}`,
+      ]);
+      expect(args).toEqual([userId, seatId]);
     });
 
-    it('does NOT delete when a different user tries to unlock', async () => {
-      mockRedis.get.mockResolvedValue('other-user-id');
+    it('returns false when Lua script detects different owner', async () => {
+      mockRedis.eval.mockResolvedValue(0);
 
       const result = await service.unlockSeat(userId, showtimeId, seatId);
 
       expect(result).toBe(false);
-      expect(mockRedis.del).not.toHaveBeenCalled();
-
-      // Verify srem NOT called for locked-seats
-      const lockedSeatsCalls = mockRedis.srem.mock.calls.filter(
-        (call: unknown[]) => typeof call[0] === 'string' && (call[0] as string).startsWith('locked-seats:'),
-      );
-      expect(lockedSeatsCalls).toHaveLength(0);
     });
 
-    it('removes seatId from BOTH user-seats AND locked-seats Redis sets', async () => {
-      mockRedis.get.mockResolvedValue(userId);
-      mockRedis.del.mockResolvedValue(1);
-      mockRedis.srem.mockResolvedValue(1);
+    it('atomically removes from lock key, user-seats, and locked-seats via Lua', async () => {
+      mockRedis.eval.mockResolvedValue(1);
 
       await service.unlockSeat(userId, showtimeId, seatId);
 
-      // Verify user-seats removal
-      const userSeatsCalls = mockRedis.srem.mock.calls.filter(
-        (call: unknown[]) => typeof call[0] === 'string' && (call[0] as string).startsWith('user-seats:'),
-      );
-      expect(userSeatsCalls).toHaveLength(1);
-      expect(userSeatsCalls[0]).toEqual([`user-seats:${showtimeId}:${userId}`, seatId]);
-
-      // Verify locked-seats removal (CRITICAL)
-      const lockedSeatsCalls = mockRedis.srem.mock.calls.filter(
-        (call: unknown[]) => typeof call[0] === 'string' && (call[0] as string).startsWith('locked-seats:'),
-      );
-      expect(lockedSeatsCalls).toHaveLength(1);
-      expect(lockedSeatsCalls[0]).toEqual([`locked-seats:${showtimeId}`, seatId]);
+      // Lua script handles all cleanup atomically — no separate redis calls
+      expect(mockRedis.del).not.toHaveBeenCalled();
+      expect(mockRedis.srem).not.toHaveBeenCalled();
+      expect(mockRedis.get).not.toHaveBeenCalled();
     });
 
     it('calls gateway.broadcastSeatUpdate after successful unlock', async () => {
-      mockRedis.get.mockResolvedValue(userId);
-      mockRedis.del.mockResolvedValue(1);
-      mockRedis.srem.mockResolvedValue(1);
+      mockRedis.eval.mockResolvedValue(1);
 
       await service.unlockSeat(userId, showtimeId, seatId);
 
@@ -270,8 +258,8 @@ describe('BookingService', () => {
 
   describe('getSeatStatus', () => {
     it('returns Record of seatId to SeatState combining Redis locks + DB sold records', async () => {
-      // Mock Redis locked seats
-      mockRedis.smembers.mockResolvedValue(['A-1', 'A-2']);
+      // Mock Lua eval returning valid locked seats (stale entries cleaned by script)
+      mockRedis.eval.mockResolvedValue(['A-1', 'A-2']);
 
       // Mock DB sold seats
       const mockFrom = vi.fn().mockReturnValue({
@@ -288,8 +276,13 @@ describe('BookingService', () => {
       expect(result.seats['A-2']).toBe('locked');
       expect(result.seats['B-1']).toBe('sold');
 
-      // Verify smembers called with locked-seats key
-      expect(mockRedis.smembers).toHaveBeenCalledWith(`locked-seats:${showtimeId}`);
+      // Verify eval called with GET_VALID_LOCKED_SEATS_LUA pattern
+      expect(mockRedis.eval).toHaveBeenCalledOnce();
+      const [script, keys, args] = mockRedis.eval.mock.calls[0] as [string, string[], string[]];
+      expect(script).toContain('SMEMBERS');
+      expect(script).toContain('EXISTS');
+      expect(keys).toEqual([`locked-seats:${showtimeId}`]);
+      expect(args).toEqual([`seat:${showtimeId}:`]);
     });
   });
 });
