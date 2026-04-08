@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { NotFoundException } from '@nestjs/common';
 import type {
   Banner,
   SeatMap,
@@ -210,6 +211,23 @@ describe('AdminService', () => {
       // When GREEN, should verify UPDATE banners SET ... WHERE id = 'banner-id-123'
       expect(mockDb.update).toHaveBeenCalled();
     });
+
+    it('should throw NotFoundException when banner does not exist', async () => {
+      // Override returning to return empty array (no matching banner)
+      mockDb.update = vi.fn().mockReturnValue({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+      });
+
+      await expect(
+        service.updateBanner('nonexistent-id', {
+          imageUrl: 'https://r2.example.com/banners/updated.jpg',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
   });
 
   describe('deleteBanner', () => {
@@ -222,14 +240,13 @@ describe('AdminService', () => {
   });
 
   describe('reorderBanners', () => {
-    it('should update sort_order for each banner id in order', async () => {
+    it('should update sort_order for each banner id in order within a transaction', async () => {
       const orderedIds = ['banner-3', 'banner-1', 'banner-2'];
 
       await service.reorderBanners(orderedIds);
 
-      // When GREEN, should verify UPDATE banners SET sort_order=0 WHERE id='banner-3',
-      // UPDATE banners SET sort_order=1 WHERE id='banner-1', etc.
-      expect(mockDb.update).toHaveBeenCalled();
+      // Verify transaction was used
+      expect(mockDb.transaction).toHaveBeenCalled();
     });
   });
 

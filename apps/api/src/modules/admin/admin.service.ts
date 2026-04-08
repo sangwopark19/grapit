@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { eq, sql, ilike } from 'drizzle-orm';
 import { DRIZZLE, type DrizzleDB } from '../../database/drizzle.provider.js';
 import {
@@ -171,6 +171,10 @@ export class AdminService {
         .set(updateData)
         .where(eq(performances.id, id))
         .returning();
+
+      if (!perf) {
+        throw new NotFoundException(`공연을 찾을 수 없습니다 (id: ${id})`);
+      }
 
       // Replace price tiers if provided
       if (input.priceTiers) {
@@ -391,12 +395,16 @@ export class AdminService {
       .where(eq(banners.id, id))
       .returning();
 
+    if (!result) {
+      throw new NotFoundException(`배너를 찾을 수 없습니다 (id: ${id})`);
+    }
+
     return {
-      id: result!.id,
-      imageUrl: result!.imageUrl,
-      linkUrl: result!.linkUrl,
-      sortOrder: result!.sortOrder,
-      isActive: result!.isActive,
+      id: result.id,
+      imageUrl: result.imageUrl,
+      linkUrl: result.linkUrl,
+      sortOrder: result.sortOrder,
+      isActive: result.isActive,
     };
   }
 
@@ -420,11 +428,13 @@ export class AdminService {
   }
 
   async reorderBanners(orderedIds: string[]): Promise<void> {
-    for (let i = 0; i < orderedIds.length; i++) {
-      await this.db
-        .update(banners)
-        .set({ sortOrder: i })
-        .where(eq(banners.id, orderedIds[i]!));
-    }
+    await this.db.transaction(async (tx) => {
+      for (let i = 0; i < orderedIds.length; i++) {
+        await tx
+          .update(banners)
+          .set({ sortOrder: i })
+          .where(eq(banners.id, orderedIds[i]!));
+      }
+    });
   }
 }

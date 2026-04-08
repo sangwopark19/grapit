@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, integer, jsonb, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, integer, jsonb, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 import { performances } from './performances.js';
 
 export const seatMaps = pgTable('seat_maps', {
@@ -9,5 +9,5 @@ export const seatMaps = pgTable('seat_maps', {
   totalSeats: integer('total_seats').notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
-  index('idx_seat_maps_performance_id').on(table.performanceId),
+  uniqueIndex('idx_seat_maps_performance_id').on(table.performanceId),
 ]);

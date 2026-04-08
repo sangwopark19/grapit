@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Param, Req, Res } from '@nestjs/common';
+import { Controller, Get, Put, Param, Req, Res, NotFoundException } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { UploadService } from './upload.service.js';
@@ -19,6 +19,9 @@ export class LocalUploadController {
     @Param('filename') filename: string,
     @Req() req: Request,
   ): Promise<{ success: true }> {
+    if (!this.uploadService.isLocalMode) {
+      throw new NotFoundException();
+    }
     const key = `${folder}/${filename}`;
     const buffers: Uint8Array[] = [];
     for await (const chunk of req) {
@@ -35,6 +38,9 @@ export class LocalUploadController {
     @Param('filename') filename: string,
     @Res() res: Response,
   ): Promise<void> {
+    if (!this.uploadService.isLocalMode) {
+      throw new NotFoundException();
+    }
     const key = `${folder}/${filename}`;
     const file = await this.uploadService.getLocalFile(key);
     if (!file) {

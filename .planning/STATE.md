@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 Phase: 05
 Plan: Not started
 Status: Executing Phase 05
-Last activity: 2026-04-08 - Completed quick task 260408-mo9: GitHub Actions Node.js 20 deprecation 해결
+Last activity: 2026-04-08 - Completed quick task 260408-nij: Phase 2 코드리뷰 이슈 4건 수정
 
 Progress: [████████░░] 82%
 
@@ -133,6 +133,7 @@ None yet.
 | 260408-ldc | Sentry 에러 캡처 안되는 문제 수정 | 2026-04-08 | d464ee5 | [260408-ldc-sentry](./quick/260408-ldc-sentry/) |
 | 260408-mas | PR 코드리뷰 반영 — Sentry DSN 서버 환경변수 분리, 5xx 전용 캡처, CI 게이트 추가 | 2026-04-08 | 4bb34ba | [260408-mas-pr-phase-05-pr](./quick/260408-mas-pr-phase-05-pr/) |
 | 260408-mo9 | GitHub Actions Node.js 20 deprecation 해결 — action 버전 업데이트 | 2026-04-08 | 14a3c9d | [260408-mo9-github-actions-node-js-20-deprecation-ac](./quick/260408-mo9-github-actions-node-js-20-deprecation-ac/) |
+| 260408-nij | Phase 2 코드리뷰 이슈 4건 수정: path traversal, seat_maps UNIQUE, update null crash, reorderBanners tx | 2026-04-08 | e937543 | [260408-nij-phase-2-4-path-traversal-seat-maps-uniqu](./quick/260408-nij-phase-2-4-path-traversal-seat-maps-uniqu/) |
 
 ## Session Continuity
 
