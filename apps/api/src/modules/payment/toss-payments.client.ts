@@ -56,15 +56,17 @@ export class TossPaymentsClient {
       }),
     });
 
-    const data = await response.json();
+    const data: unknown = await response.json();
 
     if (!response.ok) {
+      const errorBody = data as Record<string, unknown>;
       throw new TossPaymentError(
-        data.code ?? 'UNKNOWN_ERROR',
-        data.message ?? '결제 승인에 실패했습니다',
+        typeof errorBody.code === 'string' ? errorBody.code : 'UNKNOWN_ERROR',
+        typeof errorBody.message === 'string' ? errorBody.message : '결제 승인에 실패했습니다',
       );
     }
 
+    // TODO: zod 스키마로 런타임 검증 추가 (현재는 타입 단언만 수행)
     return data as TossPaymentResponse;
   }
 
@@ -78,15 +80,17 @@ export class TossPaymentsClient {
       body: JSON.stringify({ cancelReason: reason }),
     });
 
-    const data = await response.json();
+    const data: unknown = await response.json();
 
     if (!response.ok) {
+      const errorBody = data as Record<string, unknown>;
       throw new TossPaymentError(
-        data.code ?? 'UNKNOWN_ERROR',
-        data.message ?? '결제 취소에 실패했습니다',
+        typeof errorBody.code === 'string' ? errorBody.code : 'UNKNOWN_ERROR',
+        typeof errorBody.message === 'string' ? errorBody.message : '결제 취소에 실패했습니다',
       );
     }
 
+    // TODO: zod 스키마로 런타임 검증 추가 (현재는 타입 단언만 수행)
     return data as TossPaymentResponse;
   }
 }
