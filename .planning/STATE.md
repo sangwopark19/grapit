@@ -130,6 +130,7 @@ None yet.
 | 260407-gru | confirm 페이지 이동 시 disconnect 토스트 노출 방지 | 2026-04-07 | ed8dc53 | [260407-gru-confirm-disconnect-intentional-disconnec](./quick/260407-gru-confirm-disconnect-intentional-disconnec/) |
 | 260407-jyt | PR #3 코드리뷰 6개 이슈 수정: 결제 복구 패턴, TossPaymentError HTTP화, refundBooking 좌석 복원, confirm 만료 좌석 해제, N+1 쿼리 해소 | 2026-04-07 | b92bc1f | [260407-jyt-pr-3-6-tosspaymenterror-http-refundbooki](./quick/260407-jyt-pr-3-6-tosspaymenterror-http-refundbooki/) |
 | 260407-lid | 모바일 좌석 SVG 뷰포트 잘림 문제 해결 | 2026-04-07 | fd02a0e | [260407-lid-svg](./quick/260407-lid-svg/) |
+| 260408-ldc | Sentry 에러 캡처 안되는 문제 수정 | 2026-04-08 | d464ee5 | [260408-ldc-sentry](./quick/260408-ldc-sentry/) |
 
 ## Session Continuity
 
