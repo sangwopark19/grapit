@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
@@ -81,8 +81,7 @@ export class UploadService {
   }
 
   async saveLocalFile(key: string, buffer: Buffer): Promise<string> {
-    const uploadDir = path.join(process.cwd(), 'uploads');
-    const filePath = path.join(uploadDir, key);
+    const filePath = this.validateLocalPath(key);
     await fs.mkdir(path.dirname(filePath), { recursive: true });
     await fs.writeFile(filePath, buffer);
     const apiBase = this.config.get<string>(
@@ -95,13 +94,22 @@ export class UploadService {
   async getLocalFile(
     key: string,
   ): Promise<{ buffer: Buffer; contentType: string } | null> {
-    const filePath = path.join(process.cwd(), 'uploads', key);
+    const filePath = this.validateLocalPath(key);
     try {
       const buffer = await fs.readFile(filePath);
       return { buffer, contentType: this.detectContentType(buffer, key) };
     } catch {
       return null;
     }
+  }
+
+  private validateLocalPath(key: string): string {
+    const uploadDir = path.resolve(path.join(process.cwd(), 'uploads'));
+    const filePath = path.resolve(path.join(uploadDir, key));
+    if (!filePath.startsWith(uploadDir + path.sep) && filePath !== uploadDir) {
+      throw new BadRequestException('Invalid file path');
+    }
+    return filePath;
   }
 
   private detectContentType(buffer: Buffer, key: string): string {
