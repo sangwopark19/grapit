@@ -12,10 +12,10 @@ Grapit delivers a ticket booking platform through 5 phases that follow the core 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation + Auth** - Project scaffolding, database schema, and user authentication
-- [ ] **Phase 2: Catalog + Admin** - Performance catalog, search, and admin content management
-- [ ] **Phase 3: Seat Map + Real-Time** - SVG seat rendering, interaction controls, and real-time seat occupancy
-- [ ] **Phase 4: Booking + Payment** - End-to-end booking flow, Toss Payments integration, and reservation management
+- [x] **Phase 1: Foundation + Auth** - Project scaffolding, database schema, and user authentication
+- [x] **Phase 2: Catalog + Admin** - Performance catalog, search, and admin content management
+- [x] **Phase 3: Seat Map + Real-Time** - SVG seat rendering, interaction controls, and real-time seat occupancy
+- [x] **Phase 4: Booking + Payment** - End-to-end booking flow, Toss Payments integration, and reservation management
 - [ ] **Phase 5: Polish + Launch** - Mobile responsiveness, loading states, error handling, and production readiness
 
 ## Phase Details
@@ -70,13 +70,14 @@ Plans:
   3. User can select seats and see them listed in a side panel with tier, row, number, and price
   4. Selected seat is locked via Redis SET NX for 10 minutes; lock auto-releases on TTL expiry
   5. Other users see seat selections/releases reflected in real time via WebSocket without page refresh
-**Plans**: TBD
+**Plans**: 4 plans
 **UI hint**: yes
 
 Plans:
-- [ ] 03-01: TBD
-- [ ] 03-02: TBD
-- [ ] 03-03: TBD
+- [x] 03-01-PLAN.md — Backend: Redis 좌석 잠금 + Socket.IO WebSocket 게이트웨이 + REST API
+- [x] 03-02-PLAN.md — Frontend: SVG 좌석맵 UI + 날짜/회차 선택 + Zustand 예매 스토어
+- [x] 03-03-PLAN.md — Real-time: Socket.IO 클라이언트 + 카운트다운 타이머 + 만료 모달
+- [x] 03-04-PLAN.md — Gap closure: 만료 모달 레이아웃 + locked 좌석 토스트 + 모바일 반응형
 
 ### Phase 4: Booking + Payment
 **Goal**: Users can complete the full booking-to-payment flow and manage their reservations
@@ -88,13 +89,13 @@ Plans:
   3. User receives a booking number on the confirmation page after successful payment
   4. On payment failure or cancellation, seat locks are released and the user sees a clear error message with guidance
   5. User can view booking history, see booking details (number, seats, payment info, cancellation deadline), and cancel/refund before the deadline from My Page
-**Plans**: TBD
+**Plans**: 3 plans
 **UI hint**: yes
 
 Plans:
-- [x] 04-01-PLAN.md -- Backend: DB schema (reservations, payments), shared types, TossPaymentsClient, reservation/payment services
-- [x] 04-02: TBD
-- [ ] 04-03: TBD
+- [x] 04-01-PLAN.md — Backend: DB schema (reservations, payments), shared types, TossPaymentsClient, reservation/payment services
+- [x] 04-02-PLAN.md — Frontend: 결제 확인 페이지 + Toss Payments 위젯 + 결제 완료 페이지
+- [x] 04-03-PLAN.md — Frontend: 마이페이지 예매 내역 + 취소/환불 + 관리자 예매 대시보드
 
 ### Phase 5: Polish + Launch
 **Goal**: The application handles edge cases gracefully, performs well on mobile, and is ready for real users
@@ -105,11 +106,14 @@ Plans:
   2. Page loads show skeleton UI placeholders instead of blank screens or layout shifts
   3. API errors display user-friendly Korean messages with retry buttons instead of raw error codes
   4. Sentry captures errors in production and CI/CD pipeline deploys to Cloud Run on merge to main
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 05-01: TBD
-- [ ] 05-02: TBD
+- [x] 05-01-PLAN.md — Mobile responsive: MobileTabBar + LayoutShell 통합 + 전체 공개 페이지 반응형 CSS
+- [x] 05-02-PLAN.md — Skeleton UI: 11개 컴포넌트별 스켈레톤 variant + barrel export
+- [x] 05-03-PLAN.md — Error handling: API 에러 인터셉터 + NetworkBanner + 404 페이지 + error.tsx 개선
+- [x] 05-04-PLAN.md — Production infra: Sentry 설정 + Dockerfiles + GitHub Actions CI/CD + Cloud Run 배포
+- [x] 05-05-PLAN.md — UAT gap closure: 포스터 이미지 잘림 + 예매 버튼 MobileTabBar 가림 수정
 
 ## Progress
 
@@ -118,8 +122,8 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation + Auth | 5/5 | Complete | 2026-03-27 |
-| 2. Catalog + Admin | 2/6 | In Progress|  |
-| 3. Seat Map + Real-Time | 0/3 | Not started | - |
-| 4. Booking + Payment | 2/3 | In Progress|  |
-| 5. Polish + Launch | 0/2 | Not started | - |
+| 1. Foundation + Auth | 5/5 | Complete | 2026-03-30 |
+| 2. Catalog + Admin | 6/6 | Complete | 2026-03-31 |
+| 3. Seat Map + Real-Time | 4/4 | Complete | 2026-04-02 |
+| 4. Booking + Payment | 3/3 | Complete | 2026-04-07 |
+| 5. Polish + Launch | 0/5 | Not started | - |

@@ -64,7 +64,7 @@ export function ReservationCard({ reservation }: ReservationCardProps) {
       role="link"
       tabIndex={0}
       aria-label={`${reservation.performanceTitle} ${dateFormatted} ${statusConfig.label} 예매 상세 보기`}
-      className="relative cursor-pointer rounded-lg border bg-white p-4 transition-shadow hover:shadow-md"
+      className="relative min-h-[44px] cursor-pointer rounded-lg border bg-white p-4 transition-shadow hover:shadow-md"
       onClick={() => router.push(`/mypage/reservations/${reservation.id}`)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {

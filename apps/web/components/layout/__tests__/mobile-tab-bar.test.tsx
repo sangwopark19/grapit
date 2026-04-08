@@ -1,0 +1,79 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen } from '@testing-library/react';
+
+const mockPathname = vi.fn<() => string>().mockReturnValue('/');
+
+vi.mock('next/navigation', () => ({
+  usePathname: () => mockPathname(),
+}));
+
+// Import after mock setup
+import { MobileTabBar } from '../mobile-tab-bar';
+
+describe('MobileTabBar', () => {
+  beforeEach(() => {
+    mockPathname.mockReturnValue('/');
+  });
+
+  it('renders 4 tabs with correct labels', () => {
+    render(<MobileTabBar />);
+    expect(screen.getByText('홈')).toBeDefined();
+    expect(screen.getByText('카테고리')).toBeDefined();
+    expect(screen.getByText('검색')).toBeDefined();
+    expect(screen.getByText('마이페이지')).toBeDefined();
+  });
+
+  it('active tab uses primary color class when pathname matches href', () => {
+    mockPathname.mockReturnValue('/');
+    render(<MobileTabBar />);
+    const homeLink = screen.getByText('홈').closest('a');
+    expect(homeLink?.className).toContain('text-primary');
+  });
+
+  it('inactive tabs use gray color classes', () => {
+    mockPathname.mockReturnValue('/');
+    render(<MobileTabBar />);
+    const searchLink = screen.getByText('검색').closest('a');
+    expect(searchLink?.className).toContain('text-gray-400');
+  });
+
+  it('category tab has href="/genre/musical"', () => {
+    render(<MobileTabBar />);
+    const categoryLink = screen.getByText('카테고리').closest('a');
+    expect(categoryLink?.getAttribute('href')).toBe('/genre/musical');
+  });
+
+  it('has role="navigation" and active tab has aria-current="page"', () => {
+    mockPathname.mockReturnValue('/');
+    render(<MobileTabBar />);
+    const nav = screen.getByRole('navigation');
+    expect(nav).toBeDefined();
+
+    const homeLink = screen.getByText('홈').closest('a');
+    expect(homeLink?.getAttribute('aria-current')).toBe('page');
+
+    const searchLink = screen.getByText('검색').closest('a');
+    expect(searchLink?.getAttribute('aria-current')).toBeNull();
+  });
+
+  it('component has md:hidden class (hidden on desktop)', () => {
+    render(<MobileTabBar />);
+    const nav = screen.getByRole('navigation');
+    expect(nav.className).toContain('md:hidden');
+  });
+
+  it('marks genre sub-paths as active for category tab', () => {
+    mockPathname.mockReturnValue('/genre/concert');
+    render(<MobileTabBar />);
+    const categoryLink = screen.getByText('카테고리').closest('a');
+    expect(categoryLink?.getAttribute('aria-current')).toBe('page');
+    expect(categoryLink?.className).toContain('text-primary');
+  });
+
+  it('marks mypage sub-paths as active for mypage tab', () => {
+    mockPathname.mockReturnValue('/mypage/reservations/123');
+    render(<MobileTabBar />);
+    const mypageLink = screen.getByText('마이페이지').closest('a');
+    expect(mypageLink?.getAttribute('aria-current')).toBe('page');
+  });
+});

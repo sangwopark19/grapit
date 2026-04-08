@@ -68,25 +68,25 @@ export function AdminBookingTable({
       <Table>
         <TableHeader>
           <TableRow className="bg-[#F5F5F7]">
-            <TableHead scope="col" className="text-sm font-medium text-gray-600">
+            <TableHead scope="col" className="text-sm font-semibold text-gray-600">
               예매번호
             </TableHead>
-            <TableHead scope="col" className="text-sm font-medium text-gray-600">
+            <TableHead scope="col" className="text-sm font-semibold text-gray-600">
               예매자
             </TableHead>
-            <TableHead scope="col" className="hidden text-sm font-medium text-gray-600 md:table-cell">
+            <TableHead scope="col" className="hidden text-sm font-semibold text-gray-600 md:table-cell">
               공연명
             </TableHead>
-            <TableHead scope="col" className="hidden text-sm font-medium text-gray-600 lg:table-cell">
+            <TableHead scope="col" className="hidden text-sm font-semibold text-gray-600 lg:table-cell">
               공연일시
             </TableHead>
-            <TableHead scope="col" className="hidden text-sm font-medium text-gray-600 lg:table-cell">
+            <TableHead scope="col" className="hidden text-sm font-semibold text-gray-600 lg:table-cell">
               좌석
             </TableHead>
-            <TableHead scope="col" className="text-sm font-medium text-gray-600">
+            <TableHead scope="col" className="text-sm font-semibold text-gray-600">
               결제금액
             </TableHead>
-            <TableHead scope="col" className="text-sm font-medium text-gray-600">
+            <TableHead scope="col" className="text-sm font-semibold text-gray-600">
               상태
             </TableHead>
           </TableRow>
@@ -136,7 +136,7 @@ export function AdminBookingTable({
                   }}
                   aria-label={`${booking.userName} ${booking.performanceTitle} 예매 상세 보기`}
                 >
-                  <TableCell className="text-sm font-medium">
+                  <TableCell className="text-sm font-semibold">
                     {booking.reservationNumber}
                   </TableCell>
                   <TableCell className="text-sm">{booking.userName}</TableCell>
@@ -149,7 +149,7 @@ export function AdminBookingTable({
                   <TableCell className="hidden text-sm text-gray-600 lg:table-cell">
                     {formatSeatSummary(booking.seats)}
                   </TableCell>
-                  <TableCell className="text-sm font-medium">
+                  <TableCell className="text-sm font-semibold">
                     {booking.totalAmount.toLocaleString('ko-KR')}원
                   </TableCell>
                   <TableCell>

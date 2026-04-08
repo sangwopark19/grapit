@@ -61,7 +61,7 @@ export function SocialLoginButton({
       onClick={onClick}
       disabled={isLoading}
       className={cn(
-        'relative flex h-12 w-full items-center justify-center gap-3 rounded-lg text-base font-medium transition-opacity disabled:opacity-60',
+        'relative flex h-12 w-full items-center justify-center gap-3 rounded-lg text-base font-semibold transition-opacity disabled:opacity-60',
         config.borderClass,
         className
       )}

@@ -30,9 +30,9 @@ export default function MyPage() {
 
   return (
     <AuthGuard>
-      <main className="flex flex-1 justify-center px-4 pt-12 pb-16">
+      <main className="flex flex-1 justify-center px-4 pt-8 pb-16 md:pt-12">
         <div className="w-full max-w-[600px]">
-          <h1 className="mb-8 text-heading font-semibold text-gray-900">마이페이지</h1>
+          <h1 className="mb-6 text-heading font-semibold text-gray-900 md:mb-8">마이페이지</h1>
 
           <Tabs value={activeTab} onValueChange={handleTabChange}>
             <TabsList>

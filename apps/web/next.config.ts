@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { withSentryConfig } from '@sentry/nextjs';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
@@ -26,6 +27,7 @@ try {
 const nextConfig: NextConfig = {
   allowedDevOrigins: ['192.168.0.78', 'craig-paravail-yee.ngrok-free.dev'],
   output: 'standalone',
+  outputFileTracingRoot: resolve(__dirname, '../../'),
   transpilePackages: ['@grapit/shared'],
   turbopack: {
     root: resolve(__dirname, '../../'),
@@ -51,4 +53,9 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+});

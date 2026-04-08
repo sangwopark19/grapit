@@ -40,7 +40,7 @@ export default function AdminPerformanceEditPage({
 
   return (
     <div>
-      <h1 className="mb-6 text-[28px] font-semibold leading-[1.2]">
+      <h1 className="mb-6 text-display font-semibold leading-[1.2]">
         공연 수정
       </h1>
       <PerformanceForm mode="edit" initialData={data} performanceId={id} />

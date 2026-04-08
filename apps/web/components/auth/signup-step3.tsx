@@ -113,7 +113,7 @@ export function SignupStep3({ onComplete, onBack, isSubmitting }: SignupStep3Pro
                     className={cn(
                       'flex h-10 flex-1 items-center justify-center rounded-lg border text-base transition-colors',
                       selectedGender === option.value
-                        ? 'border-primary bg-primary/5 font-medium text-primary'
+                        ? 'border-primary bg-primary/5 font-semibold text-primary'
                         : 'border-gray-200 text-gray-700 hover:border-gray-300',
                     )}
                   >
@@ -152,7 +152,7 @@ export function SignupStep3({ onComplete, onBack, isSubmitting }: SignupStep3Pro
 
         {/* Birth date */}
         <div>
-          <label className="text-base font-medium leading-none text-gray-900">
+          <label className="text-base font-semibold leading-none text-gray-900">
             생년월일 <span className="text-error">*</span>
           </label>
           <div className="mt-2 flex gap-2">
@@ -227,7 +227,7 @@ export function SignupStep3({ onComplete, onBack, isSubmitting }: SignupStep3Pro
 
         {/* Phone verification */}
         <div>
-          <label className="text-base font-medium leading-none text-gray-900">
+          <label className="text-base font-semibold leading-none text-gray-900">
             전화번호 <span className="text-error">*</span>
           </label>
           <div className="mt-2">

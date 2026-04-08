@@ -4,9 +4,8 @@ import { use } from 'react';
 import { AuthGuard } from '@/components/auth/auth-guard';
 import { ReservationDetailView } from '@/components/reservation/reservation-detail';
 import { useReservationDetail, useCancelReservation } from '@/hooks/use-reservations';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ReservationDetailSkeleton } from '@/components/skeletons';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 
 interface ReservationDetailPageProps {
@@ -30,21 +29,8 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
 
   return (
     <AuthGuard>
-      <main className="mx-auto max-w-[720px] px-6 py-8">
-        {isLoading && (
-          <div className="space-y-4">
-            <Skeleton className="h-8 w-48" />
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Card key={`skeleton-${i}`} className="py-4">
-                <CardContent className="space-y-3">
-                  <Skeleton className="h-5 w-24" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-3/4" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+      <main className="mx-auto max-w-[720px] px-4 py-6 md:px-6 md:py-8">
+        {isLoading && <ReservationDetailSkeleton />}
 
         {isError && (
           <div className="flex flex-col items-center py-16 text-center">

@@ -34,7 +34,7 @@ export function BookingComplete({ booking }: BookingCompleteProps) {
     <div className="flex flex-col items-center gap-6">
       {/* Success icon and heading */}
       <div className="flex flex-col items-center gap-3 pt-4">
-        <CheckCircle2 className="h-16 w-16 text-[#15803D]" />
+        <CheckCircle2 className="h-16 w-16 text-success" />
         <h1 className="text-xl font-semibold" tabIndex={-1} id="booking-complete-heading">
           예매가 완료되었습니다
         </h1>
@@ -45,7 +45,7 @@ export function BookingComplete({ booking }: BookingCompleteProps) {
         <CardContent className="flex flex-col items-center gap-2 py-6">
           <span className="text-sm text-gray-500">예매번호</span>
           <span
-            className="text-2xl font-semibold text-[#6C3CE0]"
+            className="text-2xl font-semibold text-primary"
             style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}
             aria-label={`예매번호 ${booking.reservationNumber}`}
           >
@@ -61,7 +61,7 @@ export function BookingComplete({ booking }: BookingCompleteProps) {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-500">공연명</span>
-              <span className="text-right font-medium text-gray-900">{booking.performanceTitle}</span>
+              <span className="text-right font-semibold text-gray-900">{booking.performanceTitle}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">공연일시</span>
@@ -99,7 +99,7 @@ export function BookingComplete({ booking }: BookingCompleteProps) {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-500">결제금액</span>
-              <span className="font-semibold text-[#6C3CE0]">{formatPrice(booking.totalAmount)}</span>
+              <span className="font-semibold text-primary">{formatPrice(booking.totalAmount)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">결제수단</span>

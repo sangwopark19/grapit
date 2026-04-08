@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect } from 'react';
+import * as Sentry from '@sentry/nextjs';
 import { Button } from '@/components/ui/button';
+import { ApiClientError } from '@/lib/api-client';
 
 export default function GlobalError({
   error,
@@ -11,7 +13,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error(error);
+    Sentry.captureException(error);
   }, [error]);
 
   return (
@@ -22,6 +24,11 @@ export default function GlobalError({
       <p className="text-base text-gray-500">
         일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.
       </p>
+      {error instanceof ApiClientError && (
+        <p className="text-caption text-gray-500">
+          오류 코드: ERR-{error.statusCode}
+        </p>
+      )}
       <Button onClick={reset}>다시 시도</Button>
     </main>
   );

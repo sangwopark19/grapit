@@ -259,8 +259,8 @@ export default function PerformanceDetailPage({
         </div>
       </main>
 
-      {/* Mobile CTA fixed bottom bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center border-t bg-white px-6 shadow-[0_-4px_6px_rgba(0,0,0,0.05)] lg:hidden">
+      {/* Mobile CTA fixed bottom bar — offset by MobileTabBar height (h-14=56px) */}
+      <div className="fixed bottom-[56px] left-0 right-0 z-40 flex h-16 items-center border-t bg-white px-6 shadow-[0_-4px_6px_rgba(0,0,0,0.05)] lg:hidden">
         <Link
           href={`/booking/${performance.id}`}
           className="w-full rounded-lg bg-primary py-3 text-center text-base font-semibold text-white hover:bg-primary/90 transition-colors"

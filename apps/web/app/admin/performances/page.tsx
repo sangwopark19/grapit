@@ -84,7 +84,7 @@ export default function AdminPerformancesPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-[28px] font-semibold leading-[1.2]">공연 관리</h1>
+        <h1 className="text-display font-semibold leading-[1.2]">공연 관리</h1>
         <Link href="/admin/performances/new">
           <Button>
             <Plus className="mr-2 h-4 w-4" />

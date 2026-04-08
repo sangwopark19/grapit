@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { GNB } from '@/components/layout/gnb';
 import { Footer } from '@/components/layout/footer';
+import { MobileTabBar } from '@/components/layout/mobile-tab-bar';
 
 export function LayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -14,9 +15,22 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      {!hideShell && <GNB />}
-      <div className="flex flex-1 flex-col">{children}</div>
-      {!hideShell && <Footer />}
+      {!hideShell && (
+        <div className="hidden md:block">
+          <GNB />
+        </div>
+      )}
+      <div
+        className={`flex flex-1 flex-col${!hideShell ? ' pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pb-0' : ''}`}
+      >
+        {children}
+      </div>
+      {!hideShell && (
+        <div className="hidden md:block">
+          <Footer />
+        </div>
+      )}
+      {!hideShell && <MobileTabBar />}
     </>
   );
 }

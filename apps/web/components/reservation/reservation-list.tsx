@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ReservationListSkeleton } from '@/components/skeletons';
 import { ReservationCard } from '@/components/reservation/reservation-card';
 import type { ReservationListItem } from '@grapit/shared';
 
@@ -51,20 +51,8 @@ export function ReservationList({
 
       {/* Loading state */}
       {isLoading && (
-        <div className="mt-4 flex flex-col gap-4">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div
-              key={`skeleton-${i}`}
-              className="flex gap-4 rounded-lg border bg-white p-4"
-            >
-              <Skeleton className="h-[84px] w-[60px] shrink-0 rounded-md" />
-              <div className="flex flex-1 flex-col gap-2">
-                <Skeleton className="h-5 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-                <Skeleton className="h-4 w-1/3" />
-              </div>
-            </div>
-          ))}
+        <div className="mt-4">
+          <ReservationListSkeleton />
         </div>
       )}
 

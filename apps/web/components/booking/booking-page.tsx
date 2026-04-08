@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import type { SeatSelection, SeatState, SeatMapConfig } from '@grapit/shared';
 import { usePerformanceDetail } from '@/hooks/use-performances';
@@ -190,7 +191,7 @@ export function BookingPage({ performanceId }: { performanceId: string }) {
       const seatState = seatStatesMap.get(seatId);
       if (seatState === 'locked' && !selectedSeatIds.has(seatId)) {
         toast.info('이미 다른 사용자가 선택한 좌석입니다', {
-          style: { backgroundColor: '#F3EFFF', color: '#6C3CE0' },
+          style: { backgroundColor: 'var(--color-info-surface)', color: 'var(--color-info)' },
         });
         return;
       }
@@ -248,7 +249,7 @@ export function BookingPage({ performanceId }: { performanceId: string }) {
               error.statusCode === 409
             ) {
               toast.info('이미 다른 사용자가 선택한 좌석입니다', {
-                style: { backgroundColor: '#F3EFFF', color: '#6C3CE0' },
+                style: { backgroundColor: 'var(--color-info-surface)', color: 'var(--color-info)' },
               });
             } else {
               toast.error(
@@ -323,6 +324,9 @@ export function BookingPage({ performanceId }: { performanceId: string }) {
     useBookingStore.getState().resetBooking();
   }, [unlockAll]);
 
+  // Collapsible state for mobile date/showtime picker
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(true);
+
   // Date selection handler
   const handleDateSelect = useCallback(
     (date: Date) => {
@@ -383,31 +387,58 @@ export function BookingPage({ performanceId }: { performanceId: string }) {
         <div className="flex flex-col lg:flex-row lg:gap-8">
           {/* Left column */}
           <div className="min-w-0 flex-1 space-y-6">
-            {/* Date picker */}
-            <div>
-              <h2 className="mb-2 text-sm font-normal text-gray-700">
-                날짜 선택
-              </h2>
-              <DatePicker
-                availableDates={availableDates}
-                selected={selectedDate}
-                onSelect={handleDateSelect}
-              />
-            </div>
-
-            {/* Showtime chips */}
-            {selectedDate && (
-              <div>
-                <h2 className="mb-2 text-sm font-normal text-gray-700">
-                  회차 선택
-                </h2>
-                <ShowtimeChips
-                  showtimes={filteredShowtimes}
-                  selected={selectedShowtimeId}
-                  onSelect={setShowtime}
+            {/* Date/Showtime picker - collapsible on mobile */}
+            <div className="rounded-lg border border-border p-3 lg:border-0 lg:p-0">
+              <button
+                type="button"
+                className="flex min-h-[44px] w-full items-center justify-between lg:hidden"
+                onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+                aria-expanded={isDatePickerOpen}
+              >
+                <span className="text-sm font-semibold text-gray-900">
+                  {selectedDate
+                    ? `${selectedDate.getMonth() + 1}/${selectedDate.getDate()}${selectedShowtimeId ? ' - 회차 선택완료' : ''}`
+                    : '날짜 / 회차 선택'}
+                </span>
+                <ChevronDown
+                  className={`h-5 w-5 text-gray-500 transition-transform ${isDatePickerOpen ? 'rotate-180' : ''}`}
                 />
+              </button>
+
+              <div className={`${isDatePickerOpen ? 'block' : 'hidden'} lg:block`}>
+                {/* Date picker */}
+                <div className="mt-3 lg:mt-0">
+                  <h2 className="mb-2 text-sm font-normal text-gray-700">
+                    날짜 선택
+                  </h2>
+                  <DatePicker
+                    availableDates={availableDates}
+                    selected={selectedDate}
+                    onSelect={handleDateSelect}
+                  />
+                </div>
+
+                {/* Showtime chips */}
+                {selectedDate && (
+                  <div className="mt-4 lg:mt-6">
+                    <h2 className="mb-2 text-sm font-normal text-gray-700">
+                      회차 선택
+                    </h2>
+                    <ShowtimeChips
+                      showtimes={filteredShowtimes}
+                      selected={selectedShowtimeId}
+                      onSelect={(id) => {
+                        setShowtime(id);
+                        // Auto-collapse on mobile after showtime selection
+                        if (id && window.innerWidth < 1024) {
+                          setIsDatePickerOpen(false);
+                        }
+                      }}
+                    />
+                  </div>
+                )}
               </div>
-            )}
+            </div>
 
             {/* Seat legend + map */}
             {selectedShowtimeId && seatConfig && performance.seatMap && (

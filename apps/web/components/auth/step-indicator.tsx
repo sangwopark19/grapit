@@ -29,7 +29,7 @@ export function StepIndicator({
             <div className="flex flex-col items-center">
               <div
                 className={cn(
-                  'flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors',
+                  'flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-colors',
                   isCompleted && 'bg-primary text-white',
                   isActive && 'bg-primary text-white',
                   isFuture && 'border-2 border-gray-200 bg-white text-gray-400'
@@ -47,7 +47,7 @@ export function StepIndicator({
                 className={cn(
                   'mt-2 text-xs whitespace-nowrap',
                   isCompleted && 'text-primary',
-                  isActive && 'font-medium text-primary',
+                  isActive && 'font-semibold text-primary',
                   isFuture && 'text-gray-400'
                 )}
               >

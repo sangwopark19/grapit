@@ -52,7 +52,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between py-2">
       <span className="text-sm text-gray-600">{label}</span>
-      <span className="text-right text-sm font-medium text-gray-900">
+      <span className="text-right text-sm font-semibold text-gray-900">
         {value}
       </span>
     </div>
@@ -186,7 +186,7 @@ export function AdminBookingDetailModal({
             <div>
               <label
                 htmlFor="refund-reason"
-                className="mb-2 block text-sm font-medium text-gray-700"
+                className="mb-2 block text-sm font-semibold text-gray-700"
               >
                 환불 사유
               </label>

@@ -73,7 +73,7 @@ export function OrderSummary({
           <span className="text-sm text-gray-600">총 {seats.length}매</span>
           <div className="text-right">
             <p className="text-xs text-gray-500">총 결제금액</p>
-            <p className="text-xl font-semibold text-[#6C3CE0]">
+            <p className="text-xl font-semibold text-primary">
               {totalPrice.toLocaleString('ko-KR')}원
             </p>
           </div>

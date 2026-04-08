@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 5 context gathered
-last_updated: "2026-04-07T07:34:59.713Z"
-last_activity: 2026-04-07
+stopped_at: Phase 5 planning complete
+last_updated: "2026-04-08T06:08:58.379Z"
+last_activity: 2026-04-08
 progress:
   total_phases: 5
-  completed_phases: 4
-  total_plans: 18
-  completed_plans: 18
+  completed_phases: 5
+  total_plans: 23
+  completed_plans: 23
   percent: 100
 ---
 
@@ -21,35 +21,39 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** 사용자가 원하는 공연을 발견하고, 좌석을 직접 선택하여, 안정적으로 예매를 완료할 수 있는 것
-**Current focus:** Phase 04 — booking-payment
+**Current focus:** Phase 05 — polish-launch
 
 ## Current Position
 
-Phase: 5
+Phase: 05
 Plan: Not started
-Status: Ready to execute
-Last activity: 2026-04-07
+Status: Executing Phase 05
+Last activity: 2026-04-08 - Completed quick task 260408-mo9: GitHub Actions Node.js 20 deprecation 해결
 
-Progress: [███░░░░░░░] 33%
+Progress: [████████░░] 82%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 0
-- Average duration: -
-- Total execution time: 0 hours
+- Total plans completed: 27
+- Average duration: ~10min
+- Total execution time: ~3 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 1. Foundation + Auth | 5 | ~57min | ~11min |
+| 2. Catalog + Admin | 6 | ~14min | ~2min |
+| 3. Seat Map + Real-Time | 4 | N/A | N/A |
+| 4. Booking + Payment | 3 | ~16min | ~5min |
+| 05 | 5 | - | - |
 
 **Recent Trend:**
 
-- Last 5 plans: -
-- Trend: -
+- Phase 1~4: 18 plans 완료
+- Trend: Stable
 
 *Updated after each plan completion*
 | Phase 01 P02 | 17min | 2 tasks | 18 files |
@@ -126,9 +130,12 @@ None yet.
 | 260407-gru | confirm 페이지 이동 시 disconnect 토스트 노출 방지 | 2026-04-07 | ed8dc53 | [260407-gru-confirm-disconnect-intentional-disconnec](./quick/260407-gru-confirm-disconnect-intentional-disconnec/) |
 | 260407-jyt | PR #3 코드리뷰 6개 이슈 수정: 결제 복구 패턴, TossPaymentError HTTP화, refundBooking 좌석 복원, confirm 만료 좌석 해제, N+1 쿼리 해소 | 2026-04-07 | b92bc1f | [260407-jyt-pr-3-6-tosspaymenterror-http-refundbooki](./quick/260407-jyt-pr-3-6-tosspaymenterror-http-refundbooki/) |
 | 260407-lid | 모바일 좌석 SVG 뷰포트 잘림 문제 해결 | 2026-04-07 | fd02a0e | [260407-lid-svg](./quick/260407-lid-svg/) |
+| 260408-ldc | Sentry 에러 캡처 안되는 문제 수정 | 2026-04-08 | d464ee5 | [260408-ldc-sentry](./quick/260408-ldc-sentry/) |
+| 260408-mas | PR 코드리뷰 반영 — Sentry DSN 서버 환경변수 분리, 5xx 전용 캡처, CI 게이트 추가 | 2026-04-08 | 4bb34ba | [260408-mas-pr-phase-05-pr](./quick/260408-mas-pr-phase-05-pr/) |
+| 260408-mo9 | GitHub Actions Node.js 20 deprecation 해결 — action 버전 업데이트 | 2026-04-08 | 14a3c9d | [260408-mo9-github-actions-node-js-20-deprecation-ac](./quick/260408-mo9-github-actions-node-js-20-deprecation-ac/) |
 
 ## Session Continuity
 
-Last session: 2026-04-07T07:34:59.711Z
-Stopped at: Phase 5 context gathered
+Last session: 2026-04-07T08:43:15.000Z
+Stopped at: Phase 5 planning complete
 Resume file: .planning/phases/05-polish-launch/05-CONTEXT.md

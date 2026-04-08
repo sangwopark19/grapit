@@ -54,7 +54,7 @@ export function ConfirmHeader({ onExpire }: ConfirmHeaderProps) {
 
       <div
         className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-sm text-white ${
-          isWarning ? 'bg-[#C62828]' : 'bg-[#6C3CE0]'
+          isWarning ? 'bg-destructive' : 'bg-primary'
         }`}
         aria-live={isWarning ? 'assertive' : 'polite'}
         aria-label={`남은시간 ${minutes}분 ${seconds}초`}

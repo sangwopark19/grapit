@@ -1,9 +1,10 @@
 import {
   ExceptionFilter,
   Catch,
-  ArgumentsHost,
   HttpException,
 } from '@nestjs/common';
+import type { ArgumentsHost } from '@nestjs/common';
+import * as Sentry from '@sentry/nestjs';
 import type { Response } from 'express';
 
 @Catch(HttpException)
@@ -13,6 +14,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const status = exception.getStatus();
     const exceptionResponse = exception.getResponse();
+
+    if (status >= 500) {
+      Sentry.captureException(exception);
+    }
 
     const errorBody = {
       statusCode: status,

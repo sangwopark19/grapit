@@ -63,7 +63,7 @@ export default function AdminBannersPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-[28px] font-semibold leading-[1.2]">배너 관리</h1>
+        <h1 className="text-display font-semibold leading-[1.2]">배너 관리</h1>
         {!showCreateForm && (
           <Button onClick={() => setShowCreateForm(true)}>
             <Plus className="mr-2 h-4 w-4" />
