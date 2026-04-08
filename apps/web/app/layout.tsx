@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { pretendard } from './fonts';
 import { Toaster } from '@/components/ui/sonner';
 import { AuthInitializer } from '@/components/auth/auth-initializer';
+import { NetworkBanner } from '@/components/layout/network-banner';
 import { Providers } from './providers';
 import { LayoutShell } from './layout-shell';
 import './globals.css';
@@ -21,6 +22,7 @@ export default function RootLayout({
       <body className="flex min-h-screen flex-col">
         <Providers>
           <AuthInitializer />
+          <NetworkBanner />
           <LayoutShell>{children}</LayoutShell>
           <Toaster />
         </Providers>

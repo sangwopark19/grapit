@@ -1,4 +1,9 @@
+import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/use-auth-store';
+import {
+  STATUS_MESSAGES,
+  DEFAULT_ERROR_MESSAGE,
+} from './error-messages';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -100,14 +105,24 @@ async function request<T>(
   }
 
   if (!res.ok) {
-    let errorMessage = '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+    const status = res.status;
+    let errorMessage = STATUS_MESSAGES[status] ?? DEFAULT_ERROR_MESSAGE;
     try {
       const errorData = (await res.json()) as ApiError;
-      errorMessage = errorData.message || errorMessage;
+      if (errorData.message) errorMessage = errorData.message;
     } catch {
       // Use default message
     }
-    throw new ApiClientError(errorMessage, res.status);
+
+    // 401 is handled above (redirect). No toast needed here.
+    if (status !== 401) {
+      toast.error(errorMessage, {
+        description: `오류 코드: ERR-${status}`,
+        duration: 5000,
+      });
+    }
+
+    throw new ApiClientError(errorMessage, status);
   }
 
   // Handle 204 No Content
