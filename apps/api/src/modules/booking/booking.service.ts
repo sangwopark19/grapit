@@ -51,6 +51,48 @@ redis.call('SADD', KEYS[3], ARGV[4])
 return {1, KEYS[2], ARGV[4]}
 `;
 
+/**
+ * Lua script for atomic seat unlocking.
+ * Checks ownership before deleting to prevent TOCTOU race.
+ *
+ * KEYS[1] = seat:{showtimeId}:{seatId}
+ * KEYS[2] = user-seats:{showtimeId}:{userId}
+ * KEYS[3] = locked-seats:{showtimeId}
+ * ARGV[1] = userId
+ * ARGV[2] = seatId
+ * Returns: 1 if unlocked, 0 if not owner
+ */
+const UNLOCK_SEAT_LUA = `
+if redis.call('GET', KEYS[1]) == ARGV[1] then
+  redis.call('DEL', KEYS[1])
+  redis.call('SREM', KEYS[2], ARGV[2])
+  redis.call('SREM', KEYS[3], ARGV[2])
+  return 1
+end
+return 0
+`;
+
+/**
+ * Lua script to get valid locked seats, cleaning stale entries.
+ * Checks each seat in locked-seats set against its actual Redis key.
+ *
+ * KEYS[1] = locked-seats:{showtimeId}
+ * ARGV[1] = key prefix "seat:{showtimeId}:"
+ * Returns: array of valid (still-locked) seat IDs
+ */
+const GET_VALID_LOCKED_SEATS_LUA = `
+local members = redis.call('SMEMBERS', KEYS[1])
+local alive = {}
+for i, sid in ipairs(members) do
+  if redis.call('EXISTS', ARGV[1] .. sid) == 1 then
+    alive[#alive + 1] = sid
+  else
+    redis.call('SREM', KEYS[1], sid)
+  end
+end
+return alive
+`;
+
 @Injectable()
 export class BookingService {
   constructor(
@@ -117,25 +159,20 @@ export class BookingService {
    */
   async unlockSeat(userId: string, showtimeId: string, seatId: string): Promise<boolean> {
     const lockKey = `seat:${showtimeId}:${seatId}`;
+    const userSeatsKey = `user-seats:${showtimeId}:${userId}`;
+    const lockedSeatsKey = `locked-seats:${showtimeId}`;
 
-    // 1. Check ownership
-    const lockOwner = await this.redis.get(lockKey);
-    if (lockOwner !== userId) {
+    const result = await this.redis.eval<[string, string], number>(
+      UNLOCK_SEAT_LUA,
+      [lockKey, userSeatsKey, lockedSeatsKey],
+      [userId, seatId],
+    );
+
+    if (result === 0) {
       return false;
     }
 
-    // 2. Delete lock
-    await this.redis.del(lockKey);
-
-    // 3. Remove from user set
-    await this.redis.srem(`user-seats:${showtimeId}:${userId}`, seatId);
-
-    // 4. Remove from global locked set (CRITICAL: keeps locked-seats in sync)
-    await this.redis.srem(`locked-seats:${showtimeId}`, seatId);
-
-    // 5. Broadcast real-time update
     this.gateway.broadcastSeatUpdate(showtimeId, seatId, 'available', userId);
-
     return true;
   }
 
@@ -187,7 +224,7 @@ export class BookingService {
 
     // Get actual remaining TTL from Redis
     const firstSeatKey = `seat:${showtimeId}:${userSeats[0]}`;
-    const remainingTtl = await (this.redis as any).ttl(firstSeatKey) as number;
+    const remainingTtl = await this.redis.ttl(firstSeatKey);
     const expiresAt = remainingTtl > 0 ? Date.now() + remainingTtl * 1000 : null;
 
     // Filter to only seats still actually locked by this user
@@ -205,8 +242,14 @@ export class BookingService {
    * Combines Redis locks + DB sold records.
    */
   async getSeatStatus(showtimeId: string): Promise<SeatStatusResponse> {
-    // 1. Get locked seats from Redis
-    const lockedSeats = await this.redis.smembers(`locked-seats:${showtimeId}`) as string[];
+    // 1. Get locked seats from Redis (with stale entry cleanup)
+    const lockedSeatsKey = `locked-seats:${showtimeId}`;
+    const keyPrefix = `seat:${showtimeId}:`;
+    const lockedSeats = await this.redis.eval<[string], string[]>(
+      GET_VALID_LOCKED_SEATS_LUA,
+      [lockedSeatsKey],
+      [keyPrefix],
+    );
 
     // 2. Get sold seats from DB
     const soldSeats = await this.db

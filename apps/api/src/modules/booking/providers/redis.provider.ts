@@ -99,18 +99,31 @@ class InMemoryRedis {
   }
 
   /**
-   * Implements the LOCK_SEAT_LUA script logic in JavaScript.
-   * Only supports the seat locking Lua script used by BookingService.
+   * Dispatches Lua script emulation by key/arg count.
+   * Supports: LOCK_SEAT (3 keys, 5 args), UNLOCK_SEAT (3 keys, 2 args),
+   * GET_VALID_LOCKED_SEATS (1 key, 1 arg).
    */
   async eval(
     _script: string,
     keys: string[],
     args: string[],
-  ): Promise<[number, string, string?]> {
+  ): Promise<unknown> {
+    if (keys.length === 3 && args.length === 5) {
+      return this.evalLockSeat(keys, args);
+    }
+    if (keys.length === 3 && args.length === 2) {
+      return this.evalUnlockSeat(keys, args);
+    }
+    if (keys.length === 1 && args.length === 1) {
+      return this.evalGetValidLockedSeats(keys, args);
+    }
+    throw new Error('InMemoryRedis: unknown Lua script pattern');
+  }
+
+  private async evalLockSeat(keys: string[], args: string[]): Promise<[number, string, string?]> {
     const [userSeatsKey, lockKey, lockedSeatsKey] = keys;
     const [userId, lockTtl, maxSeats, seatId, keyPrefix] = args;
 
-    // Step 1: Clean stale members and count alive
     const members = Array.from(this.sets.get(userSeatsKey) ?? []);
     let alive = 0;
     for (const sid of members) {
@@ -124,25 +137,62 @@ class InMemoryRedis {
       }
     }
 
-    // Step 2: Check max seats
     if (alive >= Number(maxSeats)) {
       return [0, 'MAX_SEATS'];
     }
 
-    // Step 3: SET NX with EX
     const existing = this.store.get(lockKey);
     if (existing !== undefined) {
       return [0, 'CONFLICT'];
     }
 
     await this.set(lockKey, userId as string, { nx: true, ex: Number(lockTtl) });
-
-    // Step 4: SADD to user-seats and locked-seats, EXPIRE user-seats
     await this.sadd(userSeatsKey, seatId as string);
     await this.expire(userSeatsKey, Number(lockTtl));
     await this.sadd(lockedSeatsKey, seatId as string);
 
     return [1, lockKey, seatId as string];
+  }
+
+  private evalUnlockSeat(keys: string[], args: string[]): number {
+    const [lockKey, userSeatsKey, lockedSeatsKey] = keys;
+    const [userId, seatId] = args;
+
+    const owner = this.store.get(lockKey);
+    if (owner !== userId) return 0;
+
+    this.store.delete(lockKey);
+    const timer = this.ttls.get(lockKey);
+    if (timer) clearTimeout(timer);
+    this.ttls.delete(lockKey);
+    this.expiries.delete(lockKey);
+
+    const userSet = this.sets.get(userSeatsKey);
+    if (userSet) userSet.delete(seatId);
+
+    const lockedSet = this.sets.get(lockedSeatsKey);
+    if (lockedSet) lockedSet.delete(seatId);
+
+    return 1;
+  }
+
+  private evalGetValidLockedSeats(keys: string[], args: string[]): string[] {
+    const [lockedSeatsKey] = keys;
+    const [keyPrefix] = args;
+
+    const members = Array.from(this.sets.get(lockedSeatsKey) ?? []);
+    const alive: string[] = [];
+
+    for (const sid of members) {
+      if (this.store.has(`${keyPrefix}${sid}`)) {
+        alive.push(sid);
+      } else {
+        const s = this.sets.get(lockedSeatsKey);
+        if (s) s.delete(sid);
+      }
+    }
+
+    return alive;
   }
 }
 
