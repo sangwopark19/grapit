@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { Menu, Search, ChevronDown, LogOut, User, X } from 'lucide-react';
+import { Search, ChevronDown, LogOut, User, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/cn';
 import { apiClient } from '@/lib/api-client';
@@ -15,7 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MobileMenu } from './mobile-menu';
+
 import { GENRE_LABELS, type Genre } from '@grapit/shared';
 
 const MAIN_GENRE_TABS: { label: string; slug: Genre }[] = [
@@ -36,7 +36,6 @@ export function GNB() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, isInitialized, accessToken, clearAuth } = useAuthStore();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isProfileOpen, setIsProfileOpen] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState('');
   const [isShaking, setIsShaking] = React.useState(false);
@@ -247,31 +246,8 @@ export function GNB() {
             </Button>
           )}
 
-          {/* Mobile: auth button + hamburger */}
-          <div className="flex items-center gap-2 md:hidden">
-            {!isAuthenticated && (
-              <Button variant="ghost" size="sm" asChild className="text-sm">
-                <Link href="/auth">로그인</Link>
-              </Button>
-            )}
-            <button
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-gray-900 hover:bg-gray-100"
-              aria-label="메뉴 열기"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-          </div>
         </nav>
       </header>
-
-      <MobileMenu
-        isOpen={isMobileMenuOpen}
-        onClose={() => setIsMobileMenuOpen(false)}
-        onLogout={handleLogout}
-        isAuthenticated={isAuthenticated}
-        userName={user?.name}
-      />
     </>
   );
 }
