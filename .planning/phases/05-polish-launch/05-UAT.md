@@ -1,9 +1,9 @@
 ---
 status: complete
 phase: 05-polish-launch
-source: [05-01-SUMMARY.md, 05-02-SUMMARY.md, 05-03-SUMMARY.md, 05-04-SUMMARY.md]
+source: [05-01-SUMMARY.md, 05-02-SUMMARY.md, 05-03-SUMMARY.md, 05-04-SUMMARY.md, 05-05-SUMMARY.md]
 started: 2026-04-08T02:35:42Z
-updated: 2026-04-08T02:45:00Z
+updated: 2026-04-08T14:00:00Z
 ---
 
 ## Current Test
@@ -26,15 +26,11 @@ result: pass
 
 ### 4. 모바일 반응형 레이아웃
 expected: 모바일에서 각 공개 페이지(홈, 장르, 검색, 마이페이지)에 적절한 좌우 패딩이 적용됩니다. 공연 상세 페이지에서 포스터가 적절한 크기로 표시되고, 768px 이상에서 2단 레이아웃으로 전환됩니다.
-result: issue
-reported: "공연 상세 페이지에서 포스터가 조절되는데, 이미지가 잘림"
-severity: cosmetic
+result: pass
 
 ### 5. 예매 날짜/회차 접힘 UI
 expected: 모바일에서 예매 페이지의 날짜 선택과 회차 선택이 접힘/펼침 버튼으로 토글됩니다. 버튼 클릭 시 해당 섹션이 열리고/닫힙니다.
-result: issue
-reported: "모바일에서 하단 탭바에 예매 버튼이 가려져서 예매 페이지에 진입 하지 못함"
-severity: major
+result: pass
 
 ### 6. 스켈레톤 로딩 UI
 expected: 페이지 데이터 로딩 중 회색 깜빡이는 스켈레톤 플레이스홀더가 표시됩니다. 데이터 로딩 완료 후 실제 콘텐츠로 교체됩니다.
@@ -55,30 +51,12 @@ result: pass
 ## Summary
 
 total: 9
-passed: 7
-issues: 2
+passed: 9
+issues: 0
 pending: 0
 skipped: 0
 blocked: 0
 
 ## Gaps
 
-- truth: "공연 상세 페이지에서 포스터가 적절한 크기로 표시되고, 768px 이상에서 2단 레이아웃으로 전환됩니다"
-  status: failed
-  reason: "User reported: 공연 상세 페이지에서 포스터가 조절되는데, 이미지가 잘림"
-  severity: cosmetic
-  test: 4
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
-
-- truth: "모바일에서 예매 페이지의 날짜 선택과 회차 선택이 접힘/펼침 버튼으로 토글됩니다"
-  status: failed
-  reason: "User reported: 모바일에서 하단 탭바에 예매 버튼이 가려져서 예매 페이지에 진입 하지 못함"
-  severity: major
-  test: 5
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+[none — all gaps resolved by plan 05]
