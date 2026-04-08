@@ -24,14 +24,30 @@ function CallbackContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const accessToken = searchParams.get('accessToken');
     const regToken = searchParams.get('registrationToken');
     const status = searchParams.get('status');
 
-    if (accessToken) {
-      // Existing user -- complete authentication
+    if (status === 'authenticated') {
+      // Existing user -- exchange refresh token cookie for access token
       void (async () => {
         try {
+          const refreshRes = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/auth/refresh`,
+            {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+            },
+          );
+
+          if (!refreshRes.ok) {
+            toast.error('로그인에 실패했습니다.');
+            router.push('/auth');
+            return;
+          }
+
+          const { accessToken } = (await refreshRes.json()) as { accessToken: string };
+
           const userRes = await fetch(
             `${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/users/me`,
             {
