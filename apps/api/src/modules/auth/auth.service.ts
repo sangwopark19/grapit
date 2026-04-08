@@ -353,6 +353,12 @@ export class AuthService {
     registrationToken: string,
     dto: SocialRegisterBody,
   ): Promise<AuthResult> {
+    // 0. Verify phone number
+    const verifyResult = await this.smsService.verifyCode(dto.phone, dto.phoneVerificationCode);
+    if (!verifyResult.verified) {
+      throw new BadRequestException('전화번호 인증이 완료되지 않았습니다');
+    }
+
     // 1. Verify registrationToken JWT
     let payload: {
       provider: string;
@@ -415,6 +421,7 @@ export class AuthService {
       country: dto.country,
       birthDate: dto.birthDate,
       marketingConsent: dto.marketingConsent,
+      isPhoneVerified: true,
     });
 
     // 4. Create social account link

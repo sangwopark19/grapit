@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, index } from 'drizzle-orm/pg-core';
 import { users } from './users.js';
 
 export const refreshTokens = pgTable('refresh_tokens', {
@@ -11,4 +11,8 @@ export const refreshTokens = pgTable('refresh_tokens', {
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   revokedAt: timestamp('revoked_at', { withTimezone: true }),
-});
+}, (table) => [
+  index('idx_refresh_tokens_token_hash').on(table.tokenHash),
+  index('idx_refresh_tokens_family').on(table.family),
+  index('idx_refresh_tokens_user_id').on(table.userId),
+]);

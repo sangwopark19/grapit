@@ -16,7 +16,7 @@ import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js';
-import { AuthService } from './auth.service.js';
+import { AuthService, type ValidatedUser } from './auth.service.js';
 import { registerBodySchema, type RegisterBody } from './dto/register.dto.js';
 import {
   completeSocialRegistrationSchema,
@@ -66,7 +66,7 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.authService.login(req.user as any);
+    const result = await this.authService.login(req.user as ValidatedUser);
     this.setRefreshTokenCookie(res, result.refreshToken);
 
     return {
@@ -218,9 +218,7 @@ export class AuthController {
       if (result.refreshToken) {
         this.setRefreshTokenCookie(res, result.refreshToken);
       }
-      res.redirect(
-        `${frontendUrl}/auth/callback?accessToken=${result.accessToken}&status=authenticated`,
-      );
+      res.redirect(`${frontendUrl}/auth/callback?status=authenticated`);
     } else {
       res.redirect(
         `${frontendUrl}/auth/callback?registrationToken=${result.registrationToken}&status=needs_registration`,
