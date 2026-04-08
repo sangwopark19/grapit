@@ -10,6 +10,7 @@ const mockSocket = {
   on: vi.fn(),
   off: vi.fn(),
   connected: false,
+  io: { on: vi.fn(), off: vi.fn() },
 };
 
 vi.mock('@/lib/socket-client', () => ({

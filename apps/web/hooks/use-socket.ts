@@ -56,7 +56,7 @@ export function useBookingSocket(showtimeId: string | null): void {
       }
     });
 
-    socket.io.on('reconnect_failed', () => {
+    socket.io?.on('reconnect_failed', () => {
       toast.error(
         '실시간 연결을 복구하지 못했습니다. 페이지를 새로고침해 주세요.',
         {
@@ -100,7 +100,7 @@ export function useBookingSocket(showtimeId: string | null): void {
 
     return () => {
       socket.emit('leave-showtime', showtimeId);
-      socket.io.off('reconnect_failed');
+      socket.io?.off('reconnect_failed');
       socket.disconnect();
       socketRef.current = null;
       hadPreviousConnection.current = false;
