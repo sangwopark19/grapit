@@ -59,7 +59,7 @@ export default function GenrePage({
   }
 
   return (
-    <main className="mx-auto w-full max-w-[1200px] px-6 py-8">
+    <main className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8">
       {/* Page title */}
       <h1 className="text-[28px] font-semibold leading-[1.2]">
         {GENRE_LABELS[genre]} 공연
@@ -79,7 +79,7 @@ export default function GenrePage({
       </div>
 
       {/* Filter row: sort + ended toggle */}
-      <div className="mt-6 flex items-center justify-between">
+      <div className="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <SortToggle
           value={sort}
           onChange={(v) => updateParam('sort', v)}
@@ -105,7 +105,7 @@ export default function GenrePage({
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="mt-4 rounded-lg bg-primary px-6 py-2 text-sm font-semibold text-white"
+              className="mt-4 min-h-[44px] rounded-lg bg-primary px-6 py-2 text-sm font-semibold text-white"
             >
               다시 시도
             </button>

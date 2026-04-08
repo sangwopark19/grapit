@@ -41,7 +41,7 @@ export default function SearchPage() {
   // No query -- prompt to search
   if (!q) {
     return (
-      <main className="mx-auto w-full max-w-[1200px] px-6 py-16">
+      <main className="mx-auto w-full max-w-[1200px] px-4 py-12 md:px-6 md:py-16">
         <div className="flex flex-col items-center">
           <SearchIcon className="h-12 w-12 text-gray-400" />
           <h1 className="mt-4 text-xl font-semibold text-gray-900">
@@ -56,7 +56,7 @@ export default function SearchPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-[1200px] px-6 py-8">
+    <main className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8">
       {/* Heading */}
       <h1 className="text-xl font-semibold text-gray-900">
         &apos;{q}&apos; 검색 결과
@@ -101,7 +101,7 @@ export default function SearchPage() {
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="mt-4 rounded-lg bg-primary px-6 py-2 text-sm font-semibold text-white"
+              className="mt-4 min-h-[44px] rounded-lg bg-primary px-6 py-2 text-sm font-semibold text-white"
             >
               다시 시도
             </button>

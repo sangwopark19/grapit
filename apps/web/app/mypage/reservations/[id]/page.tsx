@@ -30,7 +30,7 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
 
   return (
     <AuthGuard>
-      <main className="mx-auto max-w-[720px] px-6 py-8">
+      <main className="mx-auto max-w-[720px] px-4 py-6 md:px-6 md:py-8">
         {isLoading && (
           <div className="space-y-4">
             <Skeleton className="h-8 w-48" />

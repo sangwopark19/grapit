@@ -24,18 +24,18 @@ function formatPrice(price: number): string {
 
 function DetailSkeleton() {
   return (
-    <div className="mx-auto w-full max-w-[1200px] px-6 py-8">
-      <div className="flex flex-col gap-8 lg:flex-row">
+    <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8">
+      <div className="flex flex-col gap-8 md:flex-row">
         {/* Left column: poster + tabs skeleton */}
-        <div className="w-full lg:max-w-[380px] shrink-0">
-          <Skeleton className="aspect-[2/3] w-full max-w-[280px] mx-auto lg:mx-0 lg:max-w-[380px] rounded-lg" />
+        <div className="w-full md:max-w-[380px] shrink-0">
+          <Skeleton className="aspect-[2/3] w-full max-h-[400px] mx-auto md:mx-0 md:max-h-none md:max-w-[380px] rounded-lg" />
           <div className="mt-8 space-y-4">
             <Skeleton className="h-12 w-full rounded-lg" />
             <Skeleton className="h-[300px] w-full rounded-lg" />
           </div>
         </div>
         {/* Right column: info panel skeleton */}
-        <div className="flex-1 space-y-4 order-first lg:order-none">
+        <div className="flex-1 space-y-4 order-first md:order-none">
           <Skeleton className="h-7 w-3/4" />
           <Skeleton className="h-5 w-1/2" />
           <Skeleton className="h-5 w-2/3" />
@@ -60,7 +60,7 @@ export default function PerformanceDetailPage({
 
   if (isError || !performance) {
     return (
-      <main className="mx-auto max-w-[1200px] px-6 py-8">
+      <main className="mx-auto max-w-[1200px] px-4 py-6 md:px-6 md:py-8">
         <div className="flex flex-col items-center py-16">
           <p className="text-base text-gray-900">
             공연 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.
@@ -79,20 +79,20 @@ export default function PerformanceDetailPage({
 
   return (
     <>
-      <main className="mx-auto w-full max-w-[1200px] px-6 pt-8 pb-20 lg:pb-8">
+      <main className="mx-auto w-full max-w-[1200px] px-4 pt-6 pb-20 md:px-6 md:pt-8 lg:pb-8">
         {/* 2-column layout: left (poster + tabs) / right (info panel) */}
-        <div className="flex flex-col gap-8 lg:flex-row">
+        <div className="flex flex-col gap-8 md:flex-row">
           {/* Left column: poster + tabs */}
-          <div className="w-full lg:max-w-[380px] shrink-0">
+          <div className="w-full md:max-w-[380px] shrink-0">
             {/* Poster */}
-            <div className="relative aspect-[2/3] w-full max-w-[280px] mx-auto lg:mx-0 shrink-0 overflow-hidden rounded-lg bg-gray-200 lg:max-w-[380px]">
+            <div className="relative aspect-[2/3] w-full max-h-[400px] mx-auto shrink-0 overflow-hidden rounded-lg bg-gray-200 md:max-h-none md:max-w-[380px] md:mx-0">
               {performance.posterUrl ? (
                 <Image
                   src={performance.posterUrl}
                   alt={`${performance.title} 포스터`}
                   fill
                   className="object-cover"
-                  sizes="(max-width: 1024px) 100vw, 380px"
+                  sizes="(max-width: 768px) 100vw, 380px"
                   priority
                 />
               ) : (
@@ -195,7 +195,7 @@ export default function PerformanceDetailPage({
           </div>
 
           {/* Right column: info panel (sticky on desktop, first on mobile) */}
-          <div className="flex-1 lg:sticky lg:top-20 lg:self-start order-first lg:order-none">
+          <div className="flex-1 md:sticky md:top-20 md:self-start order-first md:order-none">
             <h1 className="text-xl font-semibold text-gray-900">
               {performance.title}
             </h1>
@@ -251,7 +251,7 @@ export default function PerformanceDetailPage({
             {/* CTA button */}
             <Link
               href={`/booking/${performance.id}`}
-              className="mt-6 hidden w-full rounded-lg bg-primary py-3 text-center text-base font-semibold text-white hover:bg-primary/90 transition-colors lg:block"
+              className="mt-6 hidden w-full min-h-[44px] rounded-lg bg-primary py-3 text-center text-base font-semibold text-white hover:bg-primary/90 transition-colors md:block"
             >
               예매하기
             </Link>
@@ -260,7 +260,7 @@ export default function PerformanceDetailPage({
       </main>
 
       {/* Mobile CTA fixed bottom bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center border-t bg-white px-6 shadow-[0_-4px_6px_rgba(0,0,0,0.05)] lg:hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center border-t bg-white px-4 shadow-[0_-4px_6px_rgba(0,0,0,0.05)] md:hidden">
         <Link
           href={`/booking/${performance.id}`}
           className="w-full rounded-lg bg-primary py-3 text-center text-base font-semibold text-white hover:bg-primary/90 transition-colors"
