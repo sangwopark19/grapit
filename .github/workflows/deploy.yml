@@ -28,13 +28,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
-      # DB migration (per D-17)
-      - name: Run migrations
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: pnpm --filter @grapit/api exec drizzle-kit migrate
-
-      # GCP Auth (OIDC, per D-20)
+      # GCP Auth (OIDC, per D-20) — must run before migration for Cloud SQL Proxy
       - id: auth
         uses: google-github-actions/auth@v3
         with:
@@ -42,6 +36,21 @@ jobs:
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
       - uses: google-github-actions/setup-gcloud@v3
       - run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
+
+      # Cloud SQL Auth Proxy for CI migration
+      - name: Start Cloud SQL Auth Proxy
+        run: |
+          gcloud components install cloud-sql-proxy --quiet 2>/dev/null || true
+          curl -o cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.15.2/cloud-sql-proxy.linux.amd64
+          chmod +x cloud-sql-proxy
+          ./cloud-sql-proxy ${{ secrets.CLOUD_SQL_CONNECTION_NAME }} --port=5432 &
+          sleep 3
+
+      # DB migration (per D-17)
+      - name: Run migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm --filter @grapit/api exec drizzle-kit migrate
 
       # Build & Push API image
       - name: Build API image
