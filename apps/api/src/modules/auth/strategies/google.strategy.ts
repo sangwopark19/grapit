@@ -37,9 +37,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     _accessToken: string,
     _refreshToken: string,
     profile: GoogleProfile,
-    done: (error: Error | null, user?: SocialProfile) => void,
-  ): Promise<void> {
-    const socialProfile = this.extractProfile(profile);
-    done(null, socialProfile);
+  ): Promise<SocialProfile> {
+    return this.extractProfile(profile);
   }
 }

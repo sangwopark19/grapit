@@ -44,9 +44,7 @@ export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
     _accessToken: string,
     _refreshToken: string,
     profile: KakaoProfile,
-    done: (error: Error | null, user?: SocialProfile) => void,
-  ): Promise<void> {
-    const socialProfile = this.extractProfile(profile);
-    done(null, socialProfile);
+  ): Promise<SocialProfile> {
+    return this.extractProfile(profile);
   }
 }

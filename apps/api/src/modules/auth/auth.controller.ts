@@ -215,8 +215,10 @@ export class AuthController {
   private async handleSocialCallback(req: Request, res: Response): Promise<void> {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
 
-    if (!req.user) {
-      this.logger.warn('Social callback received without user profile');
+    if (res.headersSent || !req.user) {
+      if (!res.headersSent) {
+        this.logger.warn('Social callback received without user profile');
+      }
       return;
     }
 

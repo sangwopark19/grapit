@@ -42,9 +42,7 @@ export class NaverStrategy extends NaverPassportStrategy {
     _accessToken: string,
     _refreshToken: string,
     profile: NaverProfile,
-    done: (error: Error | null, user?: SocialProfile) => void,
-  ): Promise<void> {
-    const socialProfile = this.extractProfile(profile);
-    done(null, socialProfile);
+  ): Promise<SocialProfile> {
+    return this.extractProfile(profile);
   }
 }
