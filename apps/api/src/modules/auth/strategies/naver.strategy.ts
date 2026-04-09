@@ -20,9 +20,9 @@ const NaverPassportStrategy = PassportStrategy(Strategy, 'naver') as new (
 export class NaverStrategy extends NaverPassportStrategy {
   constructor(private readonly configService: ConfigService) {
     super({
-      clientID: configService.get<string>('NAVER_CLIENT_ID', ''),
-      clientSecret: configService.get<string>('NAVER_CLIENT_SECRET', ''),
-      callbackURL: configService.get<string>('NAVER_CALLBACK_URL', ''),
+      clientID: configService.get<string>('NAVER_CLIENT_ID', 'not-configured'),
+      clientSecret: configService.get<string>('NAVER_CLIENT_SECRET', 'not-configured'),
+      callbackURL: configService.get<string>('NAVER_CALLBACK_URL', 'http://localhost:8080/api/v1/auth/naver/callback'),
     });
   }
 
