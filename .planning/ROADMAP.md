@@ -42,7 +42,10 @@ Full details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
   1. 소셜 로그인으로 가입한 사용자가 로그아웃 후 동일 소셜 계정으로 재로그인 성공
   2. 카카오, 네이버, 구글 세 프로바이더 모두에서 재로그인 동작 확인
   3. 재로그인 후 기존 사용자 데이터(예매 내역 등)가 정상 연결
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 06-01-PLAN.md -- 백엔드 버그 수정 + 에러 핸들링 + 프론트엔드 에러 UI
+- [ ] 06-02-PLAN.md -- E2E 테스트 + 수동 검증
 
 ### Phase 7: Valkey 마이그레이션
 **Goal**: Upstash Redis + ioredis 이원화 구조를 Google Memorystore for Valkey 단일 클라이언트로 전환하여 인프라를 단순화한다
@@ -128,7 +131,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
 | 3. Seat Map + Real-Time | v1.0 | 4/4 | Complete | 2026-04-02 |
 | 4. Booking + Payment | v1.0 | 3/3 | Complete | 2026-04-07 |
 | 5. Polish + Launch | v1.0 | 5/5 | Complete | 2026-04-08 |
-| 6. 소셜 로그인 버그 수정 | v1.1 | 0/0 | Not started | - |
+| 6. 소셜 로그인 버그 수정 | v1.1 | 0/2 | Planning | - |
 | 7. Valkey 마이그레이션 | v1.1 | 0/0 | Not started | - |
 | 8. R2 프로덕션 연동 | v1.1 | 0/0 | Not started | - |
 | 9. 기술부채 청산 | v1.1 | 0/0 | Not started | - |
