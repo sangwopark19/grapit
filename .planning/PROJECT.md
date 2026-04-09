@@ -26,7 +26,17 @@
 
 ### Active
 
-(다음 마일스톤에서 정의)
+#### Current Milestone: v1.1 안정화 + 고도화
+
+**Goal:** 인프라 안정화(기술부채 청산, Redis→Valkey 전환, R2 연동, SMS 인증 실연동)를 완료하고, 어드민 고도화 및 UX 현대화로 서비스 품질을 끌어올린다.
+
+**Target features:**
+- [ ] 기술부채 12건 청산 (password reset, 테스트 회귀, Toss E2E 등)
+- [ ] Upstash Redis → Google Valkey 전환 (좌석 잠금, pub/sub, 캐시 전부)
+- [ ] Cloudflare R2 완전 연동 (키 발급 → 프로덕션 업로드/서빙)
+- [ ] SMS 인증 실연동 (dev mock → 실제 SMS 발송/검증)
+- [ ] 어드민 고도화 + 통계 대시보드
+- [ ] UX 현대화 — 디자인 트렌드 반영 + SVG 좌석맵 UX 개선
 
 ### Out of Scope
 
@@ -106,4 +116,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-09 after v1.0 milestone*
+*Last updated: 2026-04-09 after v1.1 milestone start*
