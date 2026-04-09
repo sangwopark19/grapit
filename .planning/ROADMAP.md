@@ -45,7 +45,7 @@ Full details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 **Plans:** 2 plans
 Plans:
 - [x] 06-01-PLAN.md -- 백엔드 버그 수정 + 에러 핸들링 + 프론트엔드 에러 UI
-- [ ] 06-02-PLAN.md -- E2E 테스트 + 수동 검증
+- [x] 06-02-PLAN.md -- E2E 테스트 + 수동 검증
 
 ### Phase 7: Valkey 마이그레이션
 **Goal**: Upstash Redis + ioredis 이원화 구조를 Google Memorystore for Valkey 단일 클라이언트로 전환하여 인프라를 단순화한다
