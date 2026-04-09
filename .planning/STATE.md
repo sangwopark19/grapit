@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 Phase: 06 (social-login-bugfix) — EXECUTING
 Plan: 2 of 2
 Status: Phase complete — ready for verification
-Last activity: 2026-04-09
+Last activity: 2026-04-09 - Completed quick task 260409-obb: CI 파이프라인 실패 수정
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -77,6 +77,12 @@ None.
 - VALK-03: Valkey eval() 시그니처 차이 -- Lua 스크립트 3개 호환성 검증 필수
 - R2-02: R2 CORS AllowedHeaders 와일드카드 불가 -- 명시적 헤더 지정 필요
 - ADM-06: 통계 쿼리 캐싱은 Phase 7 Valkey 전환 완료 후 구현
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260409-obb | CI 파이프라인 실패 수정 | 2026-04-09 | c937274 | [260409-obb-ci](./quick/260409-obb-ci/) |
 
 ## Session Continuity
 
