@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
-status: active
-stopped_at: null
-last_updated: "2026-04-09"
-last_activity: 2026-04-09
+status: planning
+stopped_at: Phase 6 context gathered
+last_updated: "2026-04-09T06:07:11.038Z"
+last_activity: 2026-04-09 -- Roadmap created for v1.1
 progress:
   total_phases: 7
   completed_phases: 0
@@ -74,6 +74,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-09
-Stopped at: v1.1 roadmap created
-Resume file: None
+Last session: 2026-04-09T06:07:11.036Z
+Stopped at: Phase 6 context gathered
+Resume file: .planning/phases/06-social-login-bugfix/06-CONTEXT.md
