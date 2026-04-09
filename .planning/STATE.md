@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 Phase: 05
 Plan: Not started
 Status: Executing Phase 05
-Last activity: 2026-04-08 - Completed quick task 260408-oow: Phase 04 코드리뷰 이슈 6건 수정
+Last activity: 2026-04-09 - Completed quick task 260409-gwc: v1.0 기술부채 정리
 
 Progress: [████████░░] 82%
 
@@ -135,6 +135,7 @@ None yet.
 | 260408-mo9 | GitHub Actions Node.js 20 deprecation 해결 — action 버전 업데이트 | 2026-04-08 | 14a3c9d | [260408-mo9-github-actions-node-js-20-deprecation-ac](./quick/260408-mo9-github-actions-node-js-20-deprecation-ac/) |
 | 260408-nij | Phase 2 코드리뷰 이슈 4건 수정: path traversal, seat_maps UNIQUE, update null crash, reorderBanners tx | 2026-04-08 | e937543 | [260408-nij-phase-2-4-path-traversal-seat-maps-uniqu](./quick/260408-nij-phase-2-4-path-traversal-seat-maps-uniqu/) |
 | 260408-oow | Phase 04 코드리뷰 이슈 6건 수정 | 2026-04-08 | e56b95f | [260408-oow-phase-04-6](./quick/260408-oow-phase-04-6/) |
+| 260409-gwc | v1.0 기술부채 정리: REQUIREMENTS.md 체크박스 갱신 + orphaned skeleton 삭제 | 2026-04-09 | c00e33a | [260409-gwc-v1-0-tech-debt-cleanup-test-fix-ts-fix-c](./quick/260409-gwc-v1-0-tech-debt-cleanup-test-fix-ts-fix-c/) |
 
 ## Session Continuity
 
