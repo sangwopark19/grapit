@@ -1,10 +1,11 @@
 ---
 phase: 6
 slug: social-login-bugfix
-status: draft
+status: approved
 shadcn_initialized: true
 preset: new-york
 created: 2026-04-09
+reviewed_at: 2026-04-09
 ---
 
 # Phase 6 — UI Design Contract
