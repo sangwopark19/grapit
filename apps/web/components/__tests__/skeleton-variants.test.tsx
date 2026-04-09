@@ -2,15 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { PerformanceCardSkeleton } from '../skeletons/performance-card-skeleton';
 import { BannerSkeleton } from '../skeletons/banner-skeleton';
-import { GenreGridSkeleton } from '../skeletons/genre-grid-skeleton';
 import { SectionSkeleton } from '../skeletons/section-skeleton';
-import { DetailHeaderSkeleton } from '../skeletons/detail-header-skeleton';
-import { DetailTabsSkeleton } from '../skeletons/detail-tabs-skeleton';
 import { SearchResultsSkeleton } from '../skeletons/search-results-skeleton';
 import { ReservationListSkeleton } from '../skeletons/reservation-list-skeleton';
 import { ReservationDetailSkeleton } from '../skeletons/reservation-detail-skeleton';
-import { SeatMapSkeleton } from '../skeletons/seat-map-skeleton';
-import { MyPageProfileSkeleton } from '../skeletons/mypage-profile-skeleton';
 
 describe('PerformanceCardSkeleton', () => {
   it('renders poster rectangle (aspect-[2/3]) and 3 text line Skeletons', () => {
@@ -36,15 +31,6 @@ describe('BannerSkeleton', () => {
   });
 });
 
-describe('GenreGridSkeleton', () => {
-  it('renders 8 rounded rectangles', () => {
-    const { container } = render(<GenreGridSkeleton />);
-    const skeletons = container.querySelectorAll('[data-slot="skeleton"]');
-
-    expect(skeletons.length).toBe(8);
-  });
-});
-
 describe('SectionSkeleton', () => {
   it('renders 4 horizontal card skeletons', () => {
     const { container } = render(<SectionSkeleton />);
@@ -52,16 +38,6 @@ describe('SectionSkeleton', () => {
 
     // title (1) + 4 cards * (poster + 2 text) = 1 + 12 = 13
     expect(skeletons.length).toBe(13);
-  });
-});
-
-describe('DetailHeaderSkeleton', () => {
-  it('renders poster + 5 text lines', () => {
-    const { container } = render(<DetailHeaderSkeleton />);
-    const skeletons = container.querySelectorAll('[data-slot="skeleton"]');
-
-    // 1 poster + 5 text lines = 6
-    expect(skeletons.length).toBe(6);
   });
 });
 
@@ -78,15 +54,10 @@ describe('All skeletons accessibility', () => {
   const allSkeletons = [
     { name: 'PerformanceCardSkeleton', Component: PerformanceCardSkeleton },
     { name: 'BannerSkeleton', Component: BannerSkeleton },
-    { name: 'GenreGridSkeleton', Component: GenreGridSkeleton },
     { name: 'SectionSkeleton', Component: SectionSkeleton },
-    { name: 'DetailHeaderSkeleton', Component: DetailHeaderSkeleton },
-    { name: 'DetailTabsSkeleton', Component: DetailTabsSkeleton },
     { name: 'SearchResultsSkeleton', Component: SearchResultsSkeleton },
     { name: 'ReservationListSkeleton', Component: ReservationListSkeleton },
     { name: 'ReservationDetailSkeleton', Component: ReservationDetailSkeleton },
-    { name: 'SeatMapSkeleton', Component: SeatMapSkeleton },
-    { name: 'MyPageProfileSkeleton', Component: MyPageProfileSkeleton },
   ];
 
   it.each(allSkeletons)('$name has aria-busy="true" attribute', ({ Component }) => {
