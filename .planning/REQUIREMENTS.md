@@ -19,30 +19,30 @@ Requirements for initial release (MVP). Each maps to roadmap phases.
 
 ### Performance Catalog
 
-- [ ] **PERF-01**: 사용자가 장르별(뮤지컬, 콘서트, 연극 등 8개) 카테고리로 공연을 탐색할 수 있다
+- [x] **PERF-01**: 사용자가 장르별(뮤지컬, 콘서트, 연극 등 8개) 카테고리로 공연을 탐색할 수 있다
 - [x] **PERF-02**: 사용자가 서브카테고리 필터(전체, 요즘HOT, 오리지널/내한 등)로 공연을 필터링할 수 있다
-- [ ] **PERF-03**: 공연 상세 페이지에서 포스터, 공연명, 장소, 기간, 공연시간, 관람연령, 등급별 가격을 확인할 수 있다
-- [ ] **PERF-04**: 공연 상세 페이지에서 캐스팅 정보를 확인할 수 있다
-- [ ] **PERF-05**: 공연 목록이 카드형(포스터+정보)으로 페이지네이션되어 표시된다
+- [x] **PERF-03**: 공연 상세 페이지에서 포스터, 공연명, 장소, 기간, 공연시간, 관람연령, 등급별 가격을 확인할 수 있다
+- [x] **PERF-04**: 공연 상세 페이지에서 캐스팅 정보를 확인할 수 있다
+- [x] **PERF-05**: 공연 목록이 카드형(포스터+정보)으로 페이지네이션되어 표시된다
 
 ### Search
 
 - [x] **SRCH-01**: 사용자가 공연명 키워드로 검색할 수 있다
 - [x] **SRCH-02**: 검색 결과를 장르별로 필터링할 수 있다
-- [ ] **SRCH-03**: 판매종료 공연 포함/제외 토글이 제공된다
+- [x] **SRCH-03**: 판매종료 공연 포함/제외 토글이 제공된다
 
 ### Seat Map & Booking
 
-- [ ] **SEAT-01**: SVG 기반 좌석 배치도가 등급별 색상으로 구분되어 표시된다
-- [ ] **SEAT-02**: 좌석 배치도에서 확대/축소/전체보기 컨트롤이 제공된다
-- [ ] **SEAT-03**: 모바일에서 핀치 줌/드래그 이동이 지원된다
-- [ ] **SEAT-04**: 이미 판매/점유된 좌석이 비활성 표시되며 선택할 수 없다
-- [ ] **SEAT-05**: 선택한 좌석이 사이드 패널에 좌석 정보(등급, 가격)와 함께 표시된다
-- [ ] **SEAT-06**: 타 사용자의 좌석 선택/해제가 실시간으로 반영된다 (WebSocket/SSE)
-- [ ] **BOOK-01**: 캘린더에서 예매 가능한 날짜를 선택할 수 있다
-- [ ] **BOOK-02**: 선택한 날짜의 회차(시간)를 선택할 수 있다
-- [ ] **BOOK-03**: 좌석 선택 시 Redis SET NX로 10분간 임시 점유된다
-- [ ] **BOOK-04**: 임시 점유 TTL 만료 시 좌석이 자동으로 해제된다
+- [x] **SEAT-01**: SVG 기반 좌석 배치도가 등급별 색상으로 구분되어 표시된다
+- [x] **SEAT-02**: 좌석 배치도에서 확대/축소/전체보기 컨트롤이 제공된다
+- [x] **SEAT-03**: 모바일에서 핀치 줌/드래그 이동이 지원된다
+- [x] **SEAT-04**: 이미 판매/점유된 좌석이 비활성 표시되며 선택할 수 없다
+- [x] **SEAT-05**: 선택한 좌석이 사이드 패널에 좌석 정보(등급, 가격)와 함께 표시된다
+- [x] **SEAT-06**: 타 사용자의 좌석 선택/해제가 실시간으로 반영된다 (WebSocket/SSE)
+- [x] **BOOK-01**: 캘린더에서 예매 가능한 날짜를 선택할 수 있다
+- [x] **BOOK-02**: 선택한 날짜의 회차(시간)를 선택할 수 있다
+- [x] **BOOK-03**: 좌석 선택 시 Redis SET NX로 10분간 임시 점유된다
+- [x] **BOOK-04**: 임시 점유 TTL 만료 시 좌석이 자동으로 해제된다
 
 ### Payment
 
@@ -69,9 +69,9 @@ Requirements for initial release (MVP). Each maps to roadmap phases.
 
 ### Infrastructure
 
-- [ ] **INFR-01**: 모바일 반응형 디자인이 적용된다 (터치 타겟 44px, 바텀시트 등)
-- [ ] **INFR-02**: 페이지 로딩 시 스켈레톤 UI가 표시된다
-- [ ] **INFR-03**: API 에러 시 사용자 친화적 에러 메시지와 재시도 버튼이 표시된다
+- [x] **INFR-01**: 모바일 반응형 디자인이 적용된다 (터치 타겟 44px, 바텀시트 등)
+- [x] **INFR-02**: 페이지 로딩 시 스켈레톤 UI가 표시된다
+- [x] **INFR-03**: API 에러 시 사용자 친화적 에러 메시지와 재시도 버튼이 표시된다
 
 ## v2 Requirements
 
@@ -128,27 +128,27 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-05 | Phase 1 | Complete |
 | AUTH-06 | Phase 1 | Complete |
 | AUTH-07 | Phase 1 | Complete |
-| PERF-01 | Phase 2 | Pending |
+| PERF-01 | Phase 2 | Complete |
 | PERF-02 | Phase 2 | Complete |
-| PERF-03 | Phase 2 | Pending |
-| PERF-04 | Phase 2 | Pending |
-| PERF-05 | Phase 2 | Pending |
+| PERF-03 | Phase 2 | Complete |
+| PERF-04 | Phase 2 | Complete |
+| PERF-05 | Phase 2 | Complete |
 | SRCH-01 | Phase 2 | Complete |
 | SRCH-02 | Phase 2 | Complete |
-| SRCH-03 | Phase 2 | Pending |
+| SRCH-03 | Phase 2 | Complete |
 | ADMN-01 | Phase 2 | Complete |
 | ADMN-02 | Phase 2 | Complete |
 | ADMN-03 | Phase 2 | Complete |
-| SEAT-01 | Phase 3 | Pending |
-| SEAT-02 | Phase 3 | Pending |
-| SEAT-03 | Phase 3 | Pending |
-| SEAT-04 | Phase 3 | Pending |
-| SEAT-05 | Phase 3 | Pending |
-| SEAT-06 | Phase 3 | Pending |
-| BOOK-01 | Phase 3 | Pending |
-| BOOK-02 | Phase 3 | Pending |
-| BOOK-03 | Phase 3 | Pending |
-| BOOK-04 | Phase 3 | Pending |
+| SEAT-01 | Phase 3 | Complete |
+| SEAT-02 | Phase 3 | Complete |
+| SEAT-03 | Phase 3 | Complete |
+| SEAT-04 | Phase 3 | Complete |
+| SEAT-05 | Phase 3 | Complete |
+| SEAT-06 | Phase 3 | Complete |
+| BOOK-01 | Phase 3 | Complete |
+| BOOK-02 | Phase 3 | Complete |
+| BOOK-03 | Phase 3 | Complete |
+| BOOK-04 | Phase 3 | Complete |
 | BOOK-05 | Phase 4 | Complete |
 | PAY-01 | Phase 4 | Complete |
 | PAY-02 | Phase 4 | Complete |
@@ -161,9 +161,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RESV-02 | Phase 4 | Complete |
 | RESV-03 | Phase 4 | Complete |
 | ADMN-04 | Phase 4 | Complete |
-| INFR-01 | Phase 5 | Pending |
-| INFR-02 | Phase 5 | Pending |
-| INFR-03 | Phase 5 | Pending |
+| INFR-01 | Phase 5 | Complete |
+| INFR-02 | Phase 5 | Complete |
+| INFR-03 | Phase 5 | Complete |
 
 **Coverage:**
 - v1 requirements: 42 total
