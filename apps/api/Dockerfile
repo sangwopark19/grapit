@@ -6,7 +6,7 @@ COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @grapit/shared build
 RUN pnpm --filter @grapit/api build
-RUN pnpm --filter @grapit/api deploy --prod /deploy
+RUN pnpm --filter @grapit/api deploy --prod --legacy /deploy
 
 # Stage 2: Production
 FROM node:22-alpine AS runner
