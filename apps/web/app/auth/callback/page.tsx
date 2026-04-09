@@ -2,14 +2,38 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import type { AuthResponse, RegisterStep2Input, RegisterStep3Input } from '@grapit/shared';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/use-auth-store';
 import { StepIndicator } from '@/components/auth/step-indicator';
 import { SignupStep2 } from '@/components/auth/signup-step2';
 import { SignupStep3 } from '@/components/auth/signup-step3';
+
+const SOCIAL_ERROR_MESSAGES: Record<string, { title: string; detail: string }> = {
+  oauth_denied: {
+    title: '로그인이 취소되었습니다.',
+    detail: '다시 로그인해주세요.',
+  },
+  oauth_failed: {
+    title: '소셜 로그인에 실패했습니다.',
+    detail: '잠시 후 다시 시도해주세요.',
+  },
+  token_expired: {
+    title: '로그인 세션이 만료되었습니다.',
+    detail: '다시 로그인해주세요.',
+  },
+  server_error: {
+    title: '일시적인 오류가 발생했습니다.',
+    detail: '잠시 후 다시 시도해주세요.',
+  },
+  account_conflict: {
+    title: '이미 다른 계정에 연결된 소셜 계정입니다.',
+    detail: '기존 계정으로 로그인해주세요.',
+  },
+};
 
 function CallbackContent() {
   const router = useRouter();
@@ -22,8 +46,18 @@ function CallbackContent() {
   const [currentStep, setCurrentStep] = useState<2 | 3>(2);
   const [step2Data, setStep2Data] = useState<RegisterStep2Input | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorInfo, setErrorInfo] = useState<{ code: string; provider?: string } | null>(null);
 
   useEffect(() => {
+    const errorCode = searchParams.get('error');
+    const provider = searchParams.get('provider');
+
+    if (errorCode) {
+      setErrorInfo({ code: errorCode, provider: provider ?? undefined });
+      setIsProcessing(false);
+      return;
+    }
+
     const regToken = searchParams.get('registrationToken');
     const status = searchParams.get('status');
 
@@ -123,6 +157,32 @@ function CallbackContent() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  if (errorInfo) {
+    const messages = SOCIAL_ERROR_MESSAGES[errorInfo.code] ?? SOCIAL_ERROR_MESSAGES['server_error']!;
+    return (
+      <main className="flex flex-1 items-center justify-center">
+        <div className="flex max-w-[400px] flex-col items-center gap-4 px-4">
+          <AlertCircle className="h-8 w-8 text-error" />
+          <div className="text-center">
+            <p className="text-base font-semibold text-gray-900">
+              {messages.title}
+            </p>
+            <p className="mt-2 text-caption text-gray-600">
+              {messages.detail}
+            </p>
+          </div>
+          <Button
+            size="lg"
+            className="mt-2 w-full max-w-[280px]"
+            onClick={() => router.push('/auth')}
+          >
+            다시 로그인하기
+          </Button>
+        </div>
+      </main>
+    );
   }
 
   if (isProcessing) {
