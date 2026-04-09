@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
-status: planning
-stopped_at: Phase 6 context gathered
-last_updated: "2026-04-09T06:07:11.038Z"
-last_activity: 2026-04-09 -- Roadmap created for v1.1
+status: executing
+stopped_at: Completed 06-01-PLAN.md
+last_updated: "2026-04-09T07:03:52.266Z"
+last_activity: 2026-04-09
 progress:
   total_phases: 7
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_plans: 2
+  completed_plans: 1
+  percent: 50
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** 사용자가 원하는 공연을 발견하고, 좌석을 직접 선택하여, 안정적으로 예매를 완료할 수 있는 것
-**Current focus:** Phase 6 -- 소셜 로그인 버그 수정
+**Current focus:** Phase 06 — social-login-bugfix
 
 ## Current Position
 
-Phase: 6 of 12 (소셜 로그인 버그 수정) -- v1.1 첫 번째 phase
-Plan: --
-Status: Ready to plan
-Last activity: 2026-04-09 -- Roadmap created for v1.1
+Phase: 06 (social-login-bugfix) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
+Last activity: 2026-04-09
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -55,11 +55,15 @@ Progress: [░░░░░░░░░░] 0%
 - v1.0 completed: 27 plans across 5 phases in 13 days
 - Trend: Stable
 
+| Phase 06 P01 | 5m | 2 tasks | 12 files |
+
 ## Accumulated Context
 
 ### Decisions
 
 Full decision log in PROJECT.md Key Decisions table (10 decisions, all Good).
+
+- [Phase 06]: Guard에서 factory 패턴 대신 개별 클래스 + 공통 헬퍼 함수 패턴으로 NestJS DI 안정성 확보
 
 ### Pending Todos
 
@@ -74,6 +78,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-09T06:07:11.036Z
-Stopped at: Phase 6 context gathered
-Resume file: .planning/phases/06-social-login-bugfix/06-CONTEXT.md
+Last session: 2026-04-09T07:03:52.264Z
+Stopped at: Completed 06-01-PLAN.md
+Resume file: None

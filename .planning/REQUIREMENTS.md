@@ -9,7 +9,7 @@ Requirements for v1.1 안정화 + 고도화. Each maps to roadmap phases.
 
 ### 소셜 로그인 버그
 
-- [ ] **AUTH-01**: 소셜 로그인 재로그인 실패 버그 수정 (회원가입 후 로그아웃 → 재로그인 불가, 카카오/네이버/구글 전부)
+- [x] **AUTH-01**: 소셜 로그인 재로그인 실패 버그 수정 (회원가입 후 로그아웃 → 재로그인 불가, 카카오/네이버/구글 전부)
 
 ### Valkey 마이그레이션
 
@@ -96,7 +96,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 6 | Pending |
+| AUTH-01 | Phase 6 | Complete |
 | VALK-01 | Phase 7 | Pending |
 | VALK-02 | Phase 7 | Pending |
 | VALK-03 | Phase 7 | Pending |

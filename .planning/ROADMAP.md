@@ -44,7 +44,7 @@ Full details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
   3. 재로그인 후 기존 사용자 데이터(예매 내역 등)가 정상 연결
 **Plans:** 2 plans
 Plans:
-- [ ] 06-01-PLAN.md -- 백엔드 버그 수정 + 에러 핸들링 + 프론트엔드 에러 UI
+- [x] 06-01-PLAN.md -- 백엔드 버그 수정 + 에러 핸들링 + 프론트엔드 에러 UI
 - [ ] 06-02-PLAN.md -- E2E 테스트 + 수동 검증
 
 ### Phase 7: Valkey 마이그레이션
