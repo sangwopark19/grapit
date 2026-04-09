@@ -2,6 +2,10 @@
 FROM node:22-alpine AS builder
 RUN corepack enable && corepack prepare pnpm@10.28.1 --activate
 WORKDIR /app
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_WS_URL
+ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
 COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @grapit/shared build

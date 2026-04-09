@@ -80,10 +80,20 @@ jobs:
             --allow-unauthenticated
           env_vars: |
             NODE_ENV=production
+            FRONTEND_URL=https://grapit-web-d3c6wrfdbq-du.a.run.app
+            KAKAO_CALLBACK_URL=https://grapit-api-d3c6wrfdbq-du.a.run.app/api/v1/auth/social/kakao/callback
+            NAVER_CALLBACK_URL=https://grapit-api-d3c6wrfdbq-du.a.run.app/api/v1/auth/social/naver/callback
+            GOOGLE_CALLBACK_URL=https://grapit-api-d3c6wrfdbq-du.a.run.app/api/v1/auth/social/google/callback
           secrets: |
             DATABASE_URL=database-url:latest
             JWT_SECRET=jwt-secret:latest
             JWT_REFRESH_SECRET=jwt-refresh-secret:latest
+            KAKAO_CLIENT_ID=kakao-client-id:latest
+            KAKAO_CLIENT_SECRET=kakao-client-secret:latest
+            NAVER_CLIENT_ID=naver-client-id:latest
+            NAVER_CLIENT_SECRET=naver-client-secret:latest
+            GOOGLE_CLIENT_ID=google-client-id:latest
+            GOOGLE_CLIENT_SECRET=google-client-secret:latest
 
   deploy-web:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
@@ -108,6 +118,8 @@ jobs:
       - name: Build Web image
         run: |
           docker build -f apps/web/Dockerfile \
+            --build-arg NEXT_PUBLIC_API_URL=https://grapit-api-d3c6wrfdbq-du.a.run.app \
+            --build-arg NEXT_PUBLIC_WS_URL=https://grapit-api-d3c6wrfdbq-du.a.run.app \
             -t ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.WEB_SERVICE }}:${{ github.sha }} \
             .
       - name: Push Web image
