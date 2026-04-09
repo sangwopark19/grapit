@@ -58,7 +58,26 @@ jobs:
           service: ${{ env.API_SERVICE }}
           region: ${{ env.GCP_REGION }}
           image: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.API_SERVICE }}:${{ github.sha }}
-          flags: --min-instances=1 --port=8080
+          flags: >-
+            --service-account=grapit-cloudrun@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com
+            --add-cloudsql-instances=${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
+            --min-instances=0
+            --max-instances=5
+            --memory=512Mi
+            --cpu=1
+            --port=8080
+            --no-cpu-throttling
+            --session-affinity
+            --allow-unauthenticated
+          env_vars: |
+            NODE_ENV=production
+            DB_HOST=/cloudsql/${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
+            DB_NAME=grapit
+            DB_USER=grapit_app
+          secrets: |
+            DB_PASSWORD=db-password:latest
+            JWT_SECRET=jwt-secret:latest
+            JWT_REFRESH_SECRET=jwt-refresh-secret:latest
 
   deploy-web:
     runs-on: ubuntu-latest
@@ -93,4 +112,13 @@ jobs:
           service: ${{ env.WEB_SERVICE }}
           region: ${{ env.GCP_REGION }}
           image: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.WEB_SERVICE }}:${{ github.sha }}
-          flags: --min-instances=1 --port=3000
+          flags: >-
+            --service-account=grapit-cloudrun@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com
+            --min-instances=0
+            --max-instances=10
+            --memory=512Mi
+            --cpu=1
+            --port=3000
+            --allow-unauthenticated
+          env_vars: |
+            NODE_ENV=production

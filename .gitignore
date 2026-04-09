@@ -35,3 +35,5 @@ image/
 *.swp
 *.swo
 .claude/
+
+.gcp.md
