@@ -4,6 +4,7 @@ import {
   ConflictException,
   UnauthorizedException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -47,6 +48,8 @@ interface AuthResult extends TokenPair {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
@@ -295,6 +298,8 @@ export class AuthService {
   // -- Social auth methods --
 
   async findOrCreateSocialUser(profile: SocialProfile): Promise<SocialAuthResult> {
+    this.logger.log(`findOrCreateSocialUser: provider=${profile.provider}, providerId=${profile.providerId}`);
+
     // 1. Look up social_accounts by (provider, providerId)
     const existingSocial = await this.db
       .select()
@@ -310,6 +315,7 @@ export class AuthService {
 
     // 2. If found: user already registered, generate JWT tokens
     if (socialAccount) {
+      this.logger.log(`Social user found: userId=${socialAccount.userId}`);
       const user = await this.userRepository.findById(socialAccount.userId);
       if (!user) {
         throw new UnauthorizedException('연결된 사용자 계정을 찾을 수 없습니다');
@@ -326,6 +332,7 @@ export class AuthService {
     }
 
     // 3. Not found -- generate registrationToken for frontend to collect additional info
+    this.logger.log(`New social user, registration required: provider=${profile.provider}`);
     const registrationToken = await this.jwtService.signAsync(
       {
         provider: profile.provider,
@@ -353,6 +360,8 @@ export class AuthService {
     registrationToken: string,
     dto: SocialRegisterBody,
   ): Promise<AuthResult> {
+    this.logger.log('completeSocialRegistration: started');
+
     // 0. Verify phone number
     const verifyResult = await this.smsService.verifyCode(dto.phone, dto.phoneVerificationCode);
     if (!verifyResult.verified) {
@@ -442,6 +451,8 @@ export class AuthService {
 
     // 6. Generate JWT tokens
     const tokens = await this.generateTokenPair(user.id, user.email, user.role);
+
+    this.logger.log(`completeSocialRegistration: completed for userId=${user.id}`);
 
     return {
       ...tokens,
