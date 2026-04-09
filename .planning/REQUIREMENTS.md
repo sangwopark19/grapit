@@ -96,45 +96,45 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | — | Pending |
-| VALK-01 | — | Pending |
-| VALK-02 | — | Pending |
-| VALK-03 | — | Pending |
-| VALK-04 | — | Pending |
-| VALK-05 | — | Pending |
-| VALK-06 | — | Pending |
-| R2-01 | — | Pending |
-| R2-02 | — | Pending |
-| R2-03 | — | Pending |
-| R2-04 | — | Pending |
-| DEBT-01 | — | Pending |
-| DEBT-02 | — | Pending |
-| DEBT-03 | — | Pending |
-| DEBT-04 | — | Pending |
-| DEBT-05 | — | Pending |
-| DEBT-06 | — | Pending |
-| SMS-01 | — | Pending |
-| SMS-02 | — | Pending |
-| SMS-03 | — | Pending |
-| SMS-04 | — | Pending |
-| ADM-01 | — | Pending |
-| ADM-02 | — | Pending |
-| ADM-03 | — | Pending |
-| ADM-04 | — | Pending |
-| ADM-05 | — | Pending |
-| ADM-06 | — | Pending |
-| UX-01 | — | Pending |
-| UX-02 | — | Pending |
-| UX-03 | — | Pending |
-| UX-04 | — | Pending |
-| UX-05 | — | Pending |
-| UX-06 | — | Pending |
+| AUTH-01 | Phase 6 | Pending |
+| VALK-01 | Phase 7 | Pending |
+| VALK-02 | Phase 7 | Pending |
+| VALK-03 | Phase 7 | Pending |
+| VALK-04 | Phase 7 | Pending |
+| VALK-05 | Phase 7 | Pending |
+| VALK-06 | Phase 7 | Pending |
+| R2-01 | Phase 8 | Pending |
+| R2-02 | Phase 8 | Pending |
+| R2-03 | Phase 8 | Pending |
+| R2-04 | Phase 8 | Pending |
+| DEBT-01 | Phase 9 | Pending |
+| DEBT-02 | Phase 9 | Pending |
+| DEBT-03 | Phase 9 | Pending |
+| DEBT-04 | Phase 9 | Pending |
+| DEBT-05 | Phase 9 | Pending |
+| DEBT-06 | Phase 9 | Pending |
+| SMS-01 | Phase 10 | Pending |
+| SMS-02 | Phase 10 | Pending |
+| SMS-03 | Phase 10 | Pending |
+| SMS-04 | Phase 10 | Pending |
+| ADM-01 | Phase 11 | Pending |
+| ADM-02 | Phase 11 | Pending |
+| ADM-03 | Phase 11 | Pending |
+| ADM-04 | Phase 11 | Pending |
+| ADM-05 | Phase 11 | Pending |
+| ADM-06 | Phase 11 | Pending |
+| UX-01 | Phase 12 | Pending |
+| UX-02 | Phase 12 | Pending |
+| UX-03 | Phase 12 | Pending |
+| UX-04 | Phase 12 | Pending |
+| UX-05 | Phase 12 | Pending |
+| UX-06 | Phase 12 | Pending |
 
 **Coverage:**
-- v1.1 requirements: 29 total
-- Mapped to phases: 0
-- Unmapped: 29 ⚠️
+- v1.1 requirements: 33 total
+- Mapped to phases: 33/33
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-09*
-*Last updated: 2026-04-09 after initial definition*
+*Last updated: 2026-04-09 after roadmap creation*
