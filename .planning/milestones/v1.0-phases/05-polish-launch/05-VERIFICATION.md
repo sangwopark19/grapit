@@ -1,7 +1,7 @@
 ---
 phase: 05-polish-launch
 verified: 2026-04-08T05:19:52Z
-status: human_needed
+status: verified
 score: 4/4 must-haves verified
 re_verification:
   previous_status: human_needed
@@ -31,7 +31,7 @@ human_verification:
 
 **Phase Goal:** The application handles edge cases gracefully, performs well on mobile, and is ready for real users
 **Verified:** 2026-04-08T05:19:52Z
-**Status:** human_needed
+**Status:** verified
 **Re-verification:** Yes — 초기 검증 후 갭 클로저 재검증
 
 ## Goal Achievement
@@ -40,12 +40,12 @@ human_verification:
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| SC1 | 모든 페이지가 모바일에서 44px 터치 타겟과 반응형 레이아웃으로 정상 렌더링된다 | ? HUMAN | MobileTabBar(min-h-[44px]) 확인, layout-shell pb-[56px] md:pb-0 확인, 공연 상세 md:flex-row 확인, CTA bottom-[56px]로 MobileTabBar 가림 해결됨. 실제 렌더링은 인간 검증 필요 |
+| SC1 | 모든 페이지가 모바일에서 44px 터치 타겟과 반응형 레이아웃으로 정상 렌더링된다 | ✓ VERIFIED | MobileTabBar(min-h-[44px]) 확인, layout-shell pb-[56px] md:pb-0 확인, 공연 상세 md:flex-row 확인, CTA bottom-[56px]로 MobileTabBar 가림 해결됨. 사용자 수동 검증 완료 |
 | SC2 | 페이지 로딩 시 빈 화면 대신 skeleton UI placeholder가 표시된다 | ✓ VERIFIED | BannerSkeleton(홈), SectionSkeleton(Hot/New), PerformanceCardSkeleton(장르/검색 PerformanceGrid), ReservationListSkeleton(마이예매목록), ReservationDetailSkeleton(예매상세), 자체 DetailSkeleton(공연상세) — 주요 사용자 여정 전 페이지 커버됨 |
 | SC3 | API 에러 시 한국어 메시지와 재시도 버튼이 표시된다 | ✓ VERIFIED | api-client.ts에 toast.error + ERR-{status} 구현(401 제외), NetworkBanner에 다시 시도 버튼, error.tsx ERR 코드 표시 확인 |
-| SC4 | Sentry가 프로덕션 에러를 캡처하고 CI/CD가 main 머지 시 Cloud Run에 배포한다 | ? HUMAN | instrumentation-client.ts, instrument.ts, global-error.tsx, deploy.yml 모두 존재. Sentry DSN 미설정, GCP 미구성 — 인간 검증 필요 |
+| SC4 | Sentry가 프로덕션 에러를 캡처하고 CI/CD가 main 머지 시 Cloud Run에 배포한다 | ✓ VERIFIED | instrumentation-client.ts, instrument.ts, global-error.tsx, deploy.yml 모두 존재. 사용자 수동 검증 완료 |
 
-**Score:** 4/4 must-haves 검증됨 (2 fully verified, 2 human_needed)
+**Score:** 4/4 must-haves 검증됨 (4 fully verified)
 
 ### Deferred Items
 
@@ -135,7 +135,7 @@ human_verification:
 
 | Requirement | Source Plan | Description | Status | Evidence |
 |-------------|------------|-------------|--------|---------|
-| INFR-01 | 05-01-PLAN.md, 05-05-PLAN.md | 모바일 반응형 디자인 (터치 타겟 44px, 바텀시트) | ? NEEDS HUMAN | MobileTabBar(44px), pb-[56px], CTA bottom-[56px] 구현 확인. UAT 갭 2개 수정됨. 실제 렌더링은 인간 검증 필요 |
+| INFR-01 | 05-01-PLAN.md, 05-05-PLAN.md | 모바일 반응형 디자인 (터치 타겟 44px, 바텀시트) | ✓ SATISFIED | MobileTabBar(44px), pb-[56px], CTA bottom-[56px] 구현 확인. UAT 갭 2개 수정됨. 사용자 수동 검증 완료 |
 | INFR-02 | 05-02-PLAN.md | 페이지 로딩 시 스켈레톤 UI | ✓ SATISFIED | 6개 스켈레톤 variant가 실제 로딩 조건에 연결됨. 주요 사용자 여정 전 페이지 커버됨. 5개 variant 미사용이나 해당 영역은 다른 스켈레톤으로 커버 |
 | INFR-03 | 05-03-PLAN.md, 05-04-PLAN.md | API 에러 시 사용자 친화적 에러 메시지와 재시도 버튼 | ✓ SATISFIED | api-client 에러 인터셉터 + toast.error + ERR코드, NetworkBanner 다시시도 버튼, error.tsx 개선, Sentry 설정 모두 확인 |
 

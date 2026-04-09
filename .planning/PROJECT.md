@@ -2,7 +2,7 @@
 
 ## What This Is
 
-공연·전시·스포츠 등 라이브 엔터테인먼트 티켓 예매 플랫폼. NOL 티켓(인터파크)을 참조하여 장르별 큐레이션, SVG 기반 좌석 선택, 원스톱 예매 플로우를 제공한다. 실제 서비스 런칭을 목표로 1인 개발로 진행한다.
+공연·전시·스포츠 라이브 엔터테인먼트 티켓 예매 플랫폼. 장르별 큐레이션, SVG 기반 좌석 선택, Toss Payments 결제, 실시간 좌석 동기화를 갖춘 MVP가 배포되어 있다. 1인 개발, Next.js 16 + NestJS 11 모듈러 모놀리스.
 
 ## Core Value
 
@@ -12,35 +12,45 @@
 
 ### Validated
 
-- [x] 회원 인증 (이메일/소셜 로그인, 세션 유지, 토큰 관리) — Validated in Phase 1: Foundation + Auth
-- [x] 공연 카탈로그 (장르별 카테고리, 상세 정보, 포스터, 가격) — Validated in Phase 2: Catalog + Admin
-- [x] 통합 검색 (공연명, 아티스트, 장르 필터) — Validated in Phase 2: Catalog + Admin
-- [x] Admin MVP (공연 CRUD, 회차 관리, 예매 조회/환불 처리) — Validated in Phase 2: Catalog + Admin
+- ✓ 회원 인증 (이메일/소셜 로그인, 세션 유지, 토큰 관리) — v1.0
+- ✓ 공연 카탈로그 (장르별 카테고리, 상세 정보, 포스터, 가격) — v1.0
+- ✓ 통합 검색 (공연명, 장르 필터, 판매종료 토글) — v1.0
+- ✓ Admin MVP (공연 CRUD, 회차 관리, SVG 좌석맵 업로드, 예매 조회/환불) — v1.0
+- ✓ SVG 기반 좌석 배치도 (등급별 구분, 실시간 점유 상태, 확대/축소) — v1.0
+- ✓ 예매 플로우 (날짜/회차 선택 → 좌석 선택 → 결제 → 완료) — v1.0
+- ✓ 좌석 임시 점유 (Redis SET NX, 10분 TTL, 자동 해제) — v1.0
+- ✓ Toss Payments 결제 연동 (카드/카카오페이/네이버페이/계좌이체) — v1.0
+- ✓ 예매 확인/취소/환불 (마이페이지) — v1.0
+- ✓ 모바일 반응형 + 스켈레톤 UI + 한국어 에러 핸들링 — v1.0
+- ✓ CI/CD + Docker + Sentry + Cloud Run 배포 — v1.0
 
 ### Active
 
-- [x] SVG 기반 좌석 배치도 (등급별 구분, 실시간 점유 상태, 확대/축소) — Validated in Phase 3: Seat Map + Real-Time
-- [ ] 예매 플로우 (날짜/회차 선택 → 좌석 선택 → 결제 → 완료) — 좌석 선택까지 Phase 3 완료, 결제는 Phase 4
-- [x] 좌석 임시 점유 (Redis SET NX, 10분 TTL) — Validated in Phase 3: Seat Map + Real-Time
-- [ ] Toss Payments 결제 연동 (카드, 간편결제)
-- [ ] 예매 확인/취소/환불 (마이페이지)
+(다음 마일스톤에서 정의)
 
 ### Out of Scope
 
-- 대기열 시스템 — Phase 2에서 구현 (트래픽 낮은 초기에는 불필요)
-- 랭킹 시스템 — Phase 2에서 구현 (예매 데이터 축적 필요)
-- 오픈예정/티켓캐스트 — Phase 2에서 구현
-- 프로모션/타임딜/쿠폰 — Phase 2에서 구현
-- 로터리 티켓(추첨제) — Phase 3에서 구현
-- 캐스팅 일정 조회 — Phase 3에서 구현
-- 관람후기/기대평 — Phase 3에서 구현
-- 다국어 지원 — Phase 3 이후
-- 모바일 앱 (Expo) — Phase 4
-- MD Shop / 토핑 — Phase 4
+- 대기열 시스템 — 트래픽 낮은 초기에는 불필요
+- 랭킹 시스템 — 예매 데이터 축적 필요
+- 오픈예정/티켓캐스트 — 사용자 기반 확보 후
+- 프로모션/타임딜/쿠폰 — 마케팅 단계에서 추가
+- 로터리 티켓(추첨제) — 높은 구현 복잡도
+- 관람후기/기대평 — 소셜 기능은 코어 플로우 안정 후
+- 다국어 지원 — 한국 시장 집중
+- 모바일 앱 (Expo) — 웹 우선 검증, PMF 확인 후
 - 실시간 채팅/커뮤니티 — 서비스 성격에 맞지 않음
-- OAuth 외 인증 (본인인증/PASS) — 초기에는 불필요
+- 본인인증(PASS) — 초기에는 불필요
+- 인라인 SVG 좌석맵 편집기 — 외부 도구에서 제작 후 업로드로 충분
 
 ## Context
+
+### Current State (v1.0 shipped)
+
+- **코드베이스:** 23,547 LOC TypeScript, 331 commits
+- **Tech stack:** Next.js 16 + NestJS 11 + Drizzle ORM + PostgreSQL 16 + Upstash Redis + Socket.IO + Toss Payments
+- **배포:** Cloud Run (서울 asia-northeast3), GitHub Actions CI/CD, Sentry 에러 추적
+- **테스트:** 63 백엔드 유닛 테스트, 45 프론트엔드 테스트
+- **알려진 기술 부채:** 12건 (password reset stub, 테스트 회귀 1건, Toss E2E 미검증 등)
 
 ### 참조 사이트
 NOL 티켓(nol.interpark.com/ticket)을 상세 분석한 5개 문서가 docs/에 있음:
@@ -49,26 +59,6 @@ NOL 티켓(nol.interpark.com/ticket)을 상세 분석한 5개 문서가 docs/에
 - `03-ARCHITECTURE.md` — 시스템 아키텍처, ERD, API 설계, 동시성 처리
 - `04-UIUX-GUIDE.md` — 디자인 토큰, 컴포넌트, 레이아웃, 접근성
 - `05-ADMIN-PREDICTION.md` — 관리자 기능 역추론
-
-### 기술 스택
-| 계층 | 기술 |
-|------|------|
-| 프론트엔드 | Next.js 16 (App Router, React 19, TypeScript 5.9) |
-| 백엔드 | NestJS 11 (모듈러 모놀리스) |
-| 메인 DB | Cloud SQL for PostgreSQL 16 (서울 리전) |
-| 캐시/실시간 | Upstash Redis (좌석 점유, 실시간 pub/sub) |
-| 오브젝트 스토리지 | Cloudflare R2 |
-| CDN/WAF | Cloudflare |
-| 배포 | Google Cloud Run (서울, asia-northeast3) |
-| 결제 | Toss Payments |
-| 에러 추적 | Sentry |
-| CI/CD | GitHub Actions |
-
-### 아키텍처 핵심 결정
-- **모듈러 모놀리스:** 마이크로서비스 대신 NestJS Module 기반 단일 배포. 인메모리 호출로 오버헤드 제거
-- **Just Use Postgres:** 검색(tsvector + pg_trgm), Job Queue(pgboss/SKIP LOCKED)를 PostgreSQL로 통합
-- **Redis는 실시간 전용:** 좌석 임시 점유(SET NX), 실시간 좌석 상태 브로드캐스트(Pub/Sub)에만 사용
-- **SVG 좌석맵:** 외부 도구(Figma 등)에서 SVG 제작 → Admin에서 업로드. 인라인 편집기는 Phase 3 이후
 
 ### 타겟 페르소나
 1. 공연 매니아 "지현" (28세) — 월 2~3회 관람, 좌석 위치 민감, 캐스팅 체크
@@ -87,12 +77,16 @@ NOL 티켓(nol.interpark.com/ticket)을 상세 분석한 5개 문서가 docs/에
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| NestJS 모듈러 모놀리스 | 1인 개발에서 마이크로서비스는 오버헤드. 모듈 분리로 관심사 격리하되 단일 배포 유지 | — Pending |
-| PostgreSQL 기반 검색 (ES 제거) | tsvector + pg_trgm으로 공연 검색 충분. 별도 검색 엔진 운영 비용 제거 | — Pending |
-| Toss Payments | 문서 품질 우수, SDK 기반 연동 용이, 국내 PG 중 개발자 경험 최상 | — Pending |
-| SVG 좌석맵 MVP 포함 | 티켓 플랫폼의 핵심 차별점. 등급 자동배정은 사용자 경험 열화 | — Pending |
-| Cloud Run (GCP) | 서울 리전 저지연, 자동 확장, 컨테이너 기반 배포 | — Pending |
-| Admin을 Next.js /admin 라우트로 | 별도 앱 분리 불필요. MVP에서는 같은 앱 내 라우트 그룹으로 구현 | — Pending |
+| NestJS 모듈러 모놀리스 | 1인 개발에서 마이크로서비스는 오버헤드 | ✓ Good — 5개 모듈 깔끔하게 분리, 배포 단순 |
+| PostgreSQL 기반 검색 (ES 제거) | tsvector + pg_trgm으로 충분 | ✓ Good — <100k 규모에서 성능 문제 없음 |
+| Toss Payments | SDK 기반 연동 용이, 개발자 경험 최상 | ✓ Good — SDK v2 위젯 연동 완료, 4개 결제 수단 |
+| SVG 좌석맵 MVP 포함 | 핵심 차별점, 등급 자동배정은 UX 열화 | ✓ Good — react-zoom-pan-pinch로 모바일 포함 구현 |
+| Cloud Run (GCP) | 서울 리전 저지연, 자동 확장 | ✓ Good — Docker 빌드 + CI/CD 파이프라인 완성 |
+| Admin을 /admin 라우트로 | 별도 앱 분리 불필요 | ✓ Good — LayoutShell 조건부 렌더링으로 깔끔 분리 |
+| Drizzle ORM (TypeORM/Prisma 제외) | 14x 낮은 지연, ~7kb 번들, SQL-first | ✓ Good — 스키마 기반 zod 통합, 빠른 cold start |
+| Access token Zustand 메모리 저장 | OWASP XSS 방어 best practice | ✓ Good — localStorage 노출 없음, 401 자동 refresh |
+| Redis 이원화 (Upstash HTTP + ioredis TCP) | Pub/Sub는 TCP 필수, 나머지는 서버리스 HTTP | ✓ Good — 각 용도에 최적화 |
+| Family-based refresh token rotation | 토큰 탈취 감지 | ✓ Good — SHA-256 해시 저장, 가족 단위 무효화 |
 
 ## Evolution
 
@@ -112,4 +106,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-02 after Phase 3 completion*
+*Last updated: 2026-04-09 after v1.0 milestone*

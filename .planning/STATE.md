@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-milestone_name: milestone
-status: executing
-stopped_at: Phase 5 planning complete
-last_updated: "2026-04-08T06:08:58.379Z"
-last_activity: 2026-04-08
+milestone_name: MVP
+status: completed
+stopped_at: v1.0 milestone complete
+last_updated: "2026-04-09"
+last_activity: 2026-04-09
 progress:
   total_phases: 5
   completed_phases: 5
@@ -18,19 +18,19 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-27)
+See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** 사용자가 원하는 공연을 발견하고, 좌석을 직접 선택하여, 안정적으로 예매를 완료할 수 있는 것
-**Current focus:** Phase 05 — polish-launch
+**Current focus:** v1.0 complete — planning next milestone
 
 ## Current Position
 
-Phase: 05
-Plan: Not started
-Status: Executing Phase 05
-Last activity: 2026-04-09 - Completed quick task 260409-gwc: v1.0 기술부채 정리
+Phase: All complete
+Plan: N/A
+Status: v1.0 MVP shipped
+Last activity: 2026-04-09 — Milestone v1.0 archived
 
-Progress: [████████░░] 82%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -69,42 +69,15 @@ Progress: [████████░░] 82%
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- [Roadmap]: Drizzle ORM chosen over TypeORM/Prisma (research recommendation -- better perf, smaller bundle)
-- [Roadmap]: SVG seat map isolated in Phase 3 (highest-risk feature gets dedicated focus)
-- [Roadmap]: Payment isolated in Phase 4 (separate from seat map to avoid mixing two high-risk areas)
-- [Phase 01]: Direct class instantiation for unit tests instead of NestJS TestingModule (avoids DI overhead with Symbol injection tokens)
-- [Phase 01]: Password reset uses compound JWT secret (JWT_SECRET + passwordHash) for auto-invalidation on password change
-- [Phase 01]: Refresh token stored as SHA-256 hash in DB, raw token in httpOnly cookie with family-based rotation
-- [Phase 01]: shadcn/ui New York style with Grapit brand colors as Tailwind v4 @theme design tokens
-- [Phase 01]: Social OAuth uses registrationToken flow for new users (D-04 compliance)
-- [Phase 01]: Twilio Verify for SMS with dev mock mode (000000 code) for development without credentials
-- [Phase 01]: Access token stored in Zustand memory only (not localStorage) -- follows OWASP best practice for JWT XSS mitigation
-- [Phase 01]: API client uses module-level promise deduplication for concurrent 401 refresh (prevents token race conditions)
-- [Phase 01]: Shared package imports changed from .js to extensionless for Turbopack compatibility (NestJS deep imports unaffected)
-- [Phase 02]: Used LayoutShell client component to conditionally hide GNB/Footer on /admin routes
-- [Phase 02]: Used z.input<> for react-hook-form compatibility with zod .default() fields (CreatePerformanceFormInput)
-- [Phase 02]: Middleware checks refreshToken cookie only; admin role check is client-side in layout
-- [Phase 02]: TabsContent mt-6 as single spacing source; keepPreviousData for layout stability
-- [Phase 04]: TossPaymentsClient uses native fetch with Basic auth (Buffer.from(secretKey + ':').toString('base64'))
-- [Phase 04]: Server-side amount recalculation from price_tiers before Toss confirm (fraud prevention)
-- [Phase 04]: Cancel deadline = showtime - 24h, enforced server-side with ForbiddenException
-- [Phase 04]: Proxy-based chainable mocks for Drizzle multi-join query tests
-- [Phase 04]: Toss SDK widget via forwardRef + useImperativeHandle for parent-controlled requestPayment
-- [Phase 04]: Layout-shell: hide GNB/Footer on /booking paths except /complete for standalone checkout
-- [Phase 04]: Complete page refresh recovery: query reservation by orderId if Zustand store is empty
+Full decision log in PROJECT.md Key Decisions table (10 decisions, all ✓ Good).
 
 ### Pending Todos
 
-None yet.
+None.
 
 ### Blockers/Concerns
 
-- [Phase 3]: SVG performance with 1000+ seats on mobile needs early profiling
-- [Phase 4]: Toss Payments sandbox requires business registration + PG contract
-- [Phase 3]: Socket.IO multi-instance with Redis adapter needs Cloud Run min-instances=2 testing
+(Cleared for v1.0 — open items tracked in MILESTONES.md Known Tech Debt)
 
 ### Quick Tasks Completed
 
