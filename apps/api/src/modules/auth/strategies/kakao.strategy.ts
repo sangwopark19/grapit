@@ -23,7 +23,7 @@ export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
     super({
       clientID: configService.get<string>('KAKAO_CLIENT_ID', 'not-configured'),
       clientSecret: configService.get<string>('KAKAO_CLIENT_SECRET', 'not-configured'),
-      callbackURL: configService.get<string>('KAKAO_CALLBACK_URL', 'http://localhost:8080/api/v1/auth/kakao/callback'),
+      callbackURL: configService.get<string>('KAKAO_CALLBACK_URL', 'http://localhost:8080/api/v1/auth/social/kakao/callback'),
     });
   }
 
@@ -44,9 +44,7 @@ export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
     _accessToken: string,
     _refreshToken: string,
     profile: KakaoProfile,
-    done: (error: Error | null, user?: SocialProfile) => void,
-  ): Promise<void> {
-    const socialProfile = this.extractProfile(profile);
-    done(null, socialProfile);
+  ): Promise<SocialProfile> {
+    return this.extractProfile(profile);
   }
 }

@@ -45,6 +45,32 @@ describe('KakaoStrategy', () => {
     });
   });
 
+  it('should use default callbackURL containing /social/ segment when env var is not set', async () => {
+    const { KakaoStrategy } = await import('./kakao.strategy.js');
+
+    const mockConfigService = {
+      get: vi.fn().mockImplementation((key: string, defaultValue?: string) => {
+        const config: Record<string, string> = {
+          KAKAO_CLIENT_ID: 'test-kakao-client-id',
+          KAKAO_CLIENT_SECRET: 'test-kakao-client-secret',
+        };
+        return config[key] ?? defaultValue;
+      }),
+    } as unknown as ConfigService;
+
+    const strategy = new KakaoStrategy(mockConfigService);
+
+    // Verify configService.get was called with KAKAO_CALLBACK_URL and the default contains /social/
+    const callbackCall = mockConfigService.get.mock.calls.find(
+      (call: unknown[]) => call[0] === 'KAKAO_CALLBACK_URL',
+    );
+    expect(callbackCall).toBeDefined();
+    expect(callbackCall![1]).toContain('/auth/social/kakao/callback');
+
+    // Also verify the strategy was constructed (no error)
+    expect(strategy).toBeDefined();
+  });
+
   it('should fallback to nickname from properties if displayName is empty', async () => {
     const { KakaoStrategy } = await import('./kakao.strategy.js');
 

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
@@ -24,6 +24,29 @@ import { SocialLoginButton } from '@/components/auth/social-login-button';
 import Link from 'next/link';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+
+const SOCIAL_LOGIN_ERRORS: Record<string, string> = {
+  oauth_denied: '소셜 로그인이 취소되었습니다.',
+  oauth_failed: '소셜 로그인에 실패했습니다. 다시 시도해주세요.',
+  token_expired: '로그인 세션이 만료되었습니다. 다시 시도해주세요.',
+  server_error: '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+  account_conflict: '이미 다른 계정에 연결된 소셜 계정입니다.',
+};
+
+function SocialErrorMessage() {
+  const searchParams = useSearchParams();
+  const socialError = searchParams.get('error');
+
+  if (!socialError || !SOCIAL_LOGIN_ERRORS[socialError]) {
+    return null;
+  }
+
+  return (
+    <p className="text-caption text-error animate-in fade-in duration-150">
+      {SOCIAL_LOGIN_ERRORS[socialError]}
+    </p>
+  );
+}
 
 export function LoginForm() {
   const router = useRouter();
@@ -148,6 +171,10 @@ export function LoginForm() {
           또는
         </span>
       </div>
+
+      <Suspense fallback={null}>
+        <SocialErrorMessage />
+      </Suspense>
 
       <div className="space-y-3">
         <SocialLoginButton

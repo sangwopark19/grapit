@@ -1,0 +1,252 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Request, Response } from 'express';
+import { AuthController } from './auth.controller.js';
+
+describe('AuthController', () => {
+  let controller: AuthController;
+  let mockAuthService: {
+    findOrCreateSocialUser: ReturnType<typeof vi.fn>;
+  };
+  let mockConfigService: {
+    get: ReturnType<typeof vi.fn>;
+  };
+  let mockRequest: Partial<Request>;
+  let mockResponse: {
+    cookie: ReturnType<typeof vi.fn>;
+    redirect: ReturnType<typeof vi.fn>;
+    headersSent: boolean;
+  };
+
+  beforeEach(() => {
+    mockAuthService = {
+      findOrCreateSocialUser: vi.fn(),
+    };
+
+    mockConfigService = {
+      get: vi.fn().mockImplementation((key: string, defaultValue?: string) => {
+        if (key === 'FRONTEND_URL') return 'http://localhost:3000';
+        return defaultValue;
+      }),
+    };
+
+    mockResponse = {
+      cookie: vi.fn(),
+      redirect: vi.fn(),
+      headersSent: false,
+    };
+
+    mockRequest = {
+      user: {
+        provider: 'kakao',
+        providerId: 'test-provider-id-123',
+        email: 'test@test.com',
+        name: 'Test User',
+      },
+    };
+
+    controller = new AuthController(
+      mockAuthService as never,
+      mockConfigService as never,
+    );
+  });
+
+  describe('setRefreshTokenCookie via socialKakaoCallback — Gap 1', () => {
+    it('refresh token 쿠키에 sameSite가 항상 lax로 설정된다 (프로덕션 환경 포함)', async () => {
+      mockAuthService.findOrCreateSocialUser.mockResolvedValue({
+        status: 'authenticated',
+        accessToken: 'mock-access-token',
+        refreshToken: 'mock-refresh-token',
+        user: { id: 'user-1', email: 'test@test.com' },
+      });
+
+      const originalNodeEnv = process.env['NODE_ENV'];
+      process.env['NODE_ENV'] = 'production';
+
+      try {
+        await controller.socialKakaoCallback(
+          mockRequest as Request,
+          mockResponse as unknown as Response,
+        );
+      } finally {
+        process.env['NODE_ENV'] = originalNodeEnv;
+      }
+
+      expect(mockResponse.cookie).toHaveBeenCalledOnce();
+      const cookieOptions = mockResponse.cookie.mock.calls[0]![2] as Record<string, unknown>;
+      expect(cookieOptions['sameSite']).toBe('lax');
+    });
+
+    it('refresh token 쿠키에 sameSite가 개발 환경에서도 lax로 설정된다', async () => {
+      mockAuthService.findOrCreateSocialUser.mockResolvedValue({
+        status: 'authenticated',
+        accessToken: 'mock-access-token',
+        refreshToken: 'mock-refresh-token',
+        user: { id: 'user-1', email: 'test@test.com' },
+      });
+
+      process.env['NODE_ENV'] = 'development';
+
+      await controller.socialKakaoCallback(
+        mockRequest as Request,
+        mockResponse as unknown as Response,
+      );
+
+      expect(mockResponse.cookie).toHaveBeenCalledOnce();
+      const cookieOptions = mockResponse.cookie.mock.calls[0]![2] as Record<string, unknown>;
+      expect(cookieOptions['sameSite']).toBe('lax');
+    });
+
+    it('refresh token 쿠키에 httpOnly가 true로 설정된다', async () => {
+      mockAuthService.findOrCreateSocialUser.mockResolvedValue({
+        status: 'authenticated',
+        accessToken: 'mock-access-token',
+        refreshToken: 'mock-refresh-token',
+        user: { id: 'user-1', email: 'test@test.com' },
+      });
+
+      await controller.socialKakaoCallback(
+        mockRequest as Request,
+        mockResponse as unknown as Response,
+      );
+
+      const cookieOptions = mockResponse.cookie.mock.calls[0]![2] as Record<string, unknown>;
+      expect(cookieOptions['httpOnly']).toBe(true);
+    });
+  });
+
+  describe('handleSocialCallback null user check — Gap 2', () => {
+    it('req.user가 null이면 findOrCreateSocialUser가 호출되지 않는다', async () => {
+      mockRequest.user = null as unknown as undefined;
+
+      await controller.socialKakaoCallback(
+        mockRequest as Request,
+        mockResponse as unknown as Response,
+      );
+
+      expect(mockAuthService.findOrCreateSocialUser).not.toHaveBeenCalled();
+    });
+
+    it('req.user가 undefined이면 findOrCreateSocialUser가 호출되지 않는다', async () => {
+      mockRequest.user = undefined;
+
+      await controller.socialKakaoCallback(
+        mockRequest as Request,
+        mockResponse as unknown as Response,
+      );
+
+      expect(mockAuthService.findOrCreateSocialUser).not.toHaveBeenCalled();
+    });
+
+    it('req.user가 null이면 redirect도 발생하지 않는다 (Guard가 이미 처리)', async () => {
+      mockRequest.user = null as unknown as undefined;
+
+      await controller.socialKakaoCallback(
+        mockRequest as Request,
+        mockResponse as unknown as Response,
+      );
+
+      expect(mockResponse.redirect).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('handleSocialCallback server_error redirect — Gap 3', () => {
+    it('findOrCreateSocialUser가 에러를 throw하면 ?error=server_error로 redirect된다', async () => {
+      mockAuthService.findOrCreateSocialUser.mockRejectedValue(
+        new Error('Database connection failed'),
+      );
+
+      await controller.socialKakaoCallback(
+        mockRequest as Request,
+        mockResponse as unknown as Response,
+      );
+
+      expect(mockResponse.redirect).toHaveBeenCalledOnce();
+      const redirectUrl = mockResponse.redirect.mock.calls[0]![0] as string;
+      expect(redirectUrl).toContain('error=server_error');
+    });
+
+    it('findOrCreateSocialUser 에러 시 provider 정보가 redirect URL에 포함된다', async () => {
+      mockAuthService.findOrCreateSocialUser.mockRejectedValue(
+        new Error('Unexpected error'),
+      );
+
+      await controller.socialKakaoCallback(
+        mockRequest as Request,
+        mockResponse as unknown as Response,
+      );
+
+      const redirectUrl = mockResponse.redirect.mock.calls[0]![0] as string;
+      expect(redirectUrl).toContain('provider=kakao');
+    });
+
+    it('findOrCreateSocialUser 에러 시 프론트엔드 URL로 redirect된다', async () => {
+      mockAuthService.findOrCreateSocialUser.mockRejectedValue(
+        new Error('Service unavailable'),
+      );
+
+      await controller.socialKakaoCallback(
+        mockRequest as Request,
+        mockResponse as unknown as Response,
+      );
+
+      const redirectUrl = mockResponse.redirect.mock.calls[0]![0] as string;
+      expect(redirectUrl).toContain('http://localhost:3000/auth/callback');
+    });
+
+    it('naver callback에서도 findOrCreateSocialUser 에러 시 server_error redirect된다', async () => {
+      mockAuthService.findOrCreateSocialUser.mockRejectedValue(
+        new Error('Service error'),
+      );
+      mockRequest.user = {
+        provider: 'naver',
+        providerId: 'naver-123',
+        email: 'naver@test.com',
+        name: 'Naver User',
+      };
+
+      await controller.socialNaverCallback(
+        mockRequest as Request,
+        mockResponse as unknown as Response,
+      );
+
+      const redirectUrl = mockResponse.redirect.mock.calls[0]![0] as string;
+      expect(redirectUrl).toContain('error=server_error');
+      expect(redirectUrl).toContain('provider=naver');
+    });
+  });
+
+  describe('handleSocialCallback 정상 플로우 — 기반 검증', () => {
+    it('status=authenticated 시 프론트엔드 callback으로 redirect된다', async () => {
+      mockAuthService.findOrCreateSocialUser.mockResolvedValue({
+        status: 'authenticated',
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+        user: { id: 'user-1', email: 'test@test.com' },
+      });
+
+      await controller.socialKakaoCallback(
+        mockRequest as Request,
+        mockResponse as unknown as Response,
+      );
+
+      const redirectUrl = mockResponse.redirect.mock.calls[0]![0] as string;
+      expect(redirectUrl).toContain('/auth/callback?status=authenticated');
+    });
+
+    it('status=needs_registration 시 registrationToken이 포함된 URL로 redirect된다', async () => {
+      mockAuthService.findOrCreateSocialUser.mockResolvedValue({
+        status: 'needs_registration',
+        registrationToken: 'reg-token-xyz',
+      });
+
+      await controller.socialKakaoCallback(
+        mockRequest as Request,
+        mockResponse as unknown as Response,
+      );
+
+      const redirectUrl = mockResponse.redirect.mock.calls[0]![0] as string;
+      expect(redirectUrl).toContain('registrationToken=reg-token-xyz');
+      expect(redirectUrl).toContain('status=needs_registration');
+    });
+  });
+});

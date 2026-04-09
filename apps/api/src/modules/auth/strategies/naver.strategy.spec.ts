@@ -34,6 +34,30 @@ describe('NaverStrategy', () => {
     });
   });
 
+  it('should use default callbackURL containing /social/ segment when env var is not set', async () => {
+    const { NaverStrategy } = await import('./naver.strategy.js');
+
+    const mockConfigService = {
+      get: vi.fn().mockImplementation((key: string, defaultValue?: string) => {
+        const config: Record<string, string> = {
+          NAVER_CLIENT_ID: 'test-naver-client-id',
+          NAVER_CLIENT_SECRET: 'test-naver-client-secret',
+        };
+        return config[key] ?? defaultValue;
+      }),
+    } as unknown as ConfigService;
+
+    const strategy = new NaverStrategy(mockConfigService);
+
+    const callbackCall = mockConfigService.get.mock.calls.find(
+      (call: unknown[]) => call[0] === 'NAVER_CALLBACK_URL',
+    );
+    expect(callbackCall).toBeDefined();
+    expect(callbackCall![1]).toContain('/auth/social/naver/callback');
+
+    expect(strategy).toBeDefined();
+  });
+
   it('should handle missing email gracefully', async () => {
     const { NaverStrategy } = await import('./naver.strategy.js');
 

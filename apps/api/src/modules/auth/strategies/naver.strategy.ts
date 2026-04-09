@@ -22,7 +22,7 @@ export class NaverStrategy extends NaverPassportStrategy {
     super({
       clientID: configService.get<string>('NAVER_CLIENT_ID', 'not-configured'),
       clientSecret: configService.get<string>('NAVER_CLIENT_SECRET', 'not-configured'),
-      callbackURL: configService.get<string>('NAVER_CALLBACK_URL', 'http://localhost:8080/api/v1/auth/naver/callback'),
+      callbackURL: configService.get<string>('NAVER_CALLBACK_URL', 'http://localhost:8080/api/v1/auth/social/naver/callback'),
     });
   }
 
@@ -42,9 +42,7 @@ export class NaverStrategy extends NaverPassportStrategy {
     _accessToken: string,
     _refreshToken: string,
     profile: NaverProfile,
-    done: (error: Error | null, user?: SocialProfile) => void,
-  ): Promise<void> {
-    const socialProfile = this.extractProfile(profile);
-    done(null, socialProfile);
+  ): Promise<SocialProfile> {
+    return this.extractProfile(profile);
   }
 }

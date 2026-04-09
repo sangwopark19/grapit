@@ -39,7 +39,7 @@ started: Phase 03 구현 이후
   found: 다른 사용자가 내가 이미 선택한 좌석을 잠갔을 때만 토스트 + removeSeat 실행. 이것은 "이미 선택 중인 좌석이 뺏기는" 시나리오이지, "이미 locked인 좌석을 새로 클릭하는" 시나리오와는 다름.
   implication: use-socket.ts의 토스트는 다른 유즈케이스를 커버하는 것이며, locked 좌석 클릭에 대한 피드백은 시스템 어디에서도 제공하지 않음
 
-## Resolution
+## Resolutiontkrkr0119@gmail.com
 
 root_cause: seat-map-viewer.tsx의 handleClick (119행)이 `state === 'available' || isSelected` 조건으로 locked/sold 좌석 클릭을 완전히 무시(silent drop)하며, 코드베이스 전체에 locked 좌석 클릭 시 사용자 피드백(토스트)을 제공하는 로직이 존재하지 않음
 fix:

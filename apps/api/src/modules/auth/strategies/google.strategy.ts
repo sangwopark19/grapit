@@ -16,7 +16,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     super({
       clientID: configService.get<string>('GOOGLE_CLIENT_ID', 'not-configured'),
       clientSecret: configService.get<string>('GOOGLE_CLIENT_SECRET', 'not-configured'),
-      callbackURL: configService.get<string>('GOOGLE_CALLBACK_URL', 'http://localhost:8080/api/v1/auth/google/callback'),
+      callbackURL: configService.get<string>('GOOGLE_CALLBACK_URL', 'http://localhost:8080/api/v1/auth/social/google/callback'),
       scope: ['email', 'profile'],
     });
   }
@@ -37,9 +37,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     _accessToken: string,
     _refreshToken: string,
     profile: GoogleProfile,
-    done: (error: Error | null, user?: SocialProfile) => void,
-  ): Promise<void> {
-    const socialProfile = this.extractProfile(profile);
-    done(null, socialProfile);
+  ): Promise<SocialProfile> {
+    return this.extractProfile(profile);
   }
 }
