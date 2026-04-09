@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Request, Response } from 'express';
 import { AuthController } from './auth.controller.js';
+import { AUTH_COOKIE_NAME } from '@grapit/shared/constants/index.js';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -51,7 +52,7 @@ describe('AuthController', () => {
   });
 
   describe('setRefreshTokenCookie via socialKakaoCallback — Gap 1', () => {
-    it('refresh token 쿠키에 sameSite가 항상 lax로 설정된다 (프로덕션 환경 포함)', async () => {
+    it('refresh token 쿠키에 sameSite가 항상 none으로 설정된다 (프로덕션 환경 포함)', async () => {
       mockAuthService.findOrCreateSocialUser.mockResolvedValue({
         status: 'authenticated',
         accessToken: 'mock-access-token',
@@ -73,10 +74,10 @@ describe('AuthController', () => {
 
       expect(mockResponse.cookie).toHaveBeenCalledOnce();
       const cookieOptions = mockResponse.cookie.mock.calls[0]![2] as Record<string, unknown>;
-      expect(cookieOptions['sameSite']).toBe('lax');
+      expect(cookieOptions['sameSite']).toBe('none');
     });
 
-    it('refresh token 쿠키에 sameSite가 개발 환경에서도 lax로 설정된다', async () => {
+    it('refresh token 쿠키에 sameSite가 개발 환경에서도 none으로 설정된다', async () => {
       mockAuthService.findOrCreateSocialUser.mockResolvedValue({
         status: 'authenticated',
         accessToken: 'mock-access-token',
@@ -93,7 +94,26 @@ describe('AuthController', () => {
 
       expect(mockResponse.cookie).toHaveBeenCalledOnce();
       const cookieOptions = mockResponse.cookie.mock.calls[0]![2] as Record<string, unknown>;
-      expect(cookieOptions['sameSite']).toBe('lax');
+      expect(cookieOptions['sameSite']).toBe('none');
+    });
+
+    it('secure가 환경변수와 무관하게 항상 true로 설정된다', async () => {
+      mockAuthService.findOrCreateSocialUser.mockResolvedValue({
+        status: 'authenticated',
+        accessToken: 'mock-access-token',
+        refreshToken: 'mock-refresh-token',
+        user: { id: 'user-1', email: 'test@test.com' },
+      });
+
+      process.env['NODE_ENV'] = 'development';
+
+      await controller.socialKakaoCallback(
+        mockRequest as Request,
+        mockResponse as unknown as Response,
+      );
+
+      const cookieOptions = mockResponse.cookie.mock.calls[0]![2] as Record<string, unknown>;
+      expect(cookieOptions['secure']).toBe(true);
     });
 
     it('refresh token 쿠키에 httpOnly가 true로 설정된다', async () => {
@@ -212,6 +232,43 @@ describe('AuthController', () => {
       const redirectUrl = mockResponse.redirect.mock.calls[0]![0] as string;
       expect(redirectUrl).toContain('error=server_error');
       expect(redirectUrl).toContain('provider=naver');
+    });
+  });
+
+  describe('logout clearCookie options', () => {
+    it('logout 시 clearCookie에 sameSite:none, secure:true가 포함된다', async () => {
+      const mockClearCookie = vi.fn();
+      const mockRevokeRefreshToken = vi.fn();
+
+      const logoutResponse = {
+        ...mockResponse,
+        clearCookie: mockClearCookie,
+      };
+
+      const logoutAuthService = {
+        ...mockAuthService,
+        revokeRefreshToken: mockRevokeRefreshToken,
+      };
+
+      const logoutController = new AuthController(
+        logoutAuthService as never,
+        mockConfigService as never,
+      );
+
+      const logoutRequest = {
+        cookies: { [AUTH_COOKIE_NAME]: 'test-token' },
+      } as unknown as Request;
+
+      await logoutController.logout(logoutRequest, logoutResponse as unknown as Response);
+
+      expect(mockClearCookie).toHaveBeenCalledWith(
+        AUTH_COOKIE_NAME,
+        expect.objectContaining({
+          sameSite: 'none',
+          secure: true,
+          path: '/',
+        }),
+      );
     });
   });
 
