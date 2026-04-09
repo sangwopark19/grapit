@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 Phase: 06 (social-login-bugfix) — EXECUTING
 Plan: 2 of 2
 Status: Phase complete — ready for verification
-Last activity: 2026-04-09 - Completed quick task 260409-obb: CI 파이프라인 실패 수정
+Last activity: 2026-04-09 - Completed quick task 260409-os1: 프로덕션 소셜로그인 쿠키 SameSite 버그 수정
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -83,6 +83,7 @@ None.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260409-obb | CI 파이프라인 실패 수정 | 2026-04-09 | c937274 | [260409-obb-ci](./quick/260409-obb-ci/) |
+| 260409-os1 | 프로덕션 소셜로그인 쿠키 SameSite 버그 수정 | 2026-04-09 | 21eb3d6 | [260409-os1-gcloud](./quick/260409-os1-gcloud/) |
 
 ## Session Continuity
 
