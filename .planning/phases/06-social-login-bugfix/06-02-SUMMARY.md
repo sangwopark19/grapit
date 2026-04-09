@@ -29,7 +29,7 @@ requirements_completed: []
 metrics:
   duration: 3m
   completed: "2026-04-09T07:08:15Z"
-  tasks_completed: 1
+  tasks_completed: 2
   tasks_total: 2
   files_changed: 5
 ---
@@ -55,7 +55,7 @@ metrics:
 ## Task Commits
 
 1. **Task 1: Playwright 설정 + 소셜 로그인 E2E 테스트 작성** - `bf24815` (test)
-2. **Task 2: 소셜 로그인 재로그인 수동 검증** - PENDING CHECKPOINT (human-verify 대기)
+2. **Task 2: 소셜 로그인 재로그인 수동 검증** - VERIFIED (카카오/네이버/구글 모두 성공)
 
 **Plan metadata:** (pending -- Task 2 완료 후)
 
@@ -92,9 +92,9 @@ metrics:
 
 None
 
-## Pending Checkpoint
+## Manual Verification (Completed)
 
-**Task 2 (checkpoint:human-verify)** 가 대기 중입니다. 실제 OAuth provider(카카오, 네이버, 구글)로 재로그인이 정상 동작하는지 사용자가 수동 검증해야 합니다. 자동화 불가 사유: OAuth provider 로그인 페이지의 봇 감지.
+카카오/네이버/구글 세 프로바이더 모두 재로그인 수동 검증 완료 (2026-04-09). 추가 발견: validate() 메서드의 done() 수동 호출 버그 수정 (53da7d8).
 
 ## User Setup Required
 
@@ -103,8 +103,7 @@ None - Playwright 브라우저(Chromium)가 자동 설치됨.
 ## Next Phase Readiness
 
 - E2E 테스트 인프라 구축 완료 -- 향후 테스트 추가 용이
-- Task 2 수동 검증 완료 시 Phase 06 종료 가능
-- AUTH-01 요구사항은 수동 검증(Task 2) 완료 후 mark-complete 가능
+- Phase 06 완료 — AUTH-01 요구사항 충족
 
 ---
 *Phase: 06-social-login-bugfix*
