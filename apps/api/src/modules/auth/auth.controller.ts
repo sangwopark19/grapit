@@ -10,6 +10,7 @@ import {
   HttpStatus,
   UnauthorizedException,
   Param,
+  Logger,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
@@ -38,6 +39,8 @@ import { AUTH_COOKIE_NAME } from '@grapit/shared/constants/index.js';
 
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
@@ -210,19 +213,36 @@ export class AuthController {
   // -- Private helpers --
 
   private async handleSocialCallback(req: Request, res: Response): Promise<void> {
-    const profile = req.user as SocialProfile;
-    const result = await this.authService.findOrCreateSocialUser(profile);
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
 
-    if (result.status === 'authenticated') {
-      if (result.refreshToken) {
-        this.setRefreshTokenCookie(res, result.refreshToken);
+    if (res.headersSent || !req.user) {
+      if (!res.headersSent) {
+        this.logger.warn('Social callback received without user profile');
       }
-      res.redirect(`${frontendUrl}/auth/callback?status=authenticated`);
-    } else {
-      res.redirect(
-        `${frontendUrl}/auth/callback?registrationToken=${result.registrationToken}&status=needs_registration`,
-      );
+      return;
+    }
+
+    const profile = req.user as SocialProfile;
+
+    try {
+      this.logger.log(`Social callback: provider=${profile.provider}, providerId=${profile.providerId}`);
+      const result = await this.authService.findOrCreateSocialUser(profile);
+
+      if (result.status === 'authenticated') {
+        this.logger.log(`Social login authenticated: provider=${profile.provider}, providerId=${profile.providerId}`);
+        if (result.refreshToken) {
+          this.setRefreshTokenCookie(res, result.refreshToken);
+        }
+        res.redirect(`${frontendUrl}/auth/callback?status=authenticated`);
+      } else {
+        this.logger.log(`Social login needs registration: provider=${profile.provider}`);
+        res.redirect(
+          `${frontendUrl}/auth/callback?registrationToken=${result.registrationToken}&status=needs_registration`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(`Social callback failed: provider=${profile.provider}`, (error as Error).stack);
+      res.redirect(`${frontendUrl}/auth/callback?error=server_error&provider=${profile.provider}`);
     }
   }
 
