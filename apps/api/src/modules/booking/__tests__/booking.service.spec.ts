@@ -16,6 +16,7 @@ function createMockRedis() {
     scard: vi.fn(),
     expire: vi.fn(),
     eval: vi.fn(),
+    ttl: vi.fn(),
   };
 }
 
@@ -77,13 +78,18 @@ describe('BookingService', () => {
       const after = Date.now();
 
       // Verify redis.eval called with script containing SMEMBERS + EXISTS loop
+      // ioredis flat signature: eval(script, numKeys, ...keysAndArgs)
       expect(mockRedis.eval).toHaveBeenCalledOnce();
-      const [script, keys, args] = mockRedis.eval.mock.calls[0] as [string, string[], unknown[]];
+      const callArgs = mockRedis.eval.mock.calls[0] as unknown[];
+      const script = callArgs[0] as string;
+      const numKeys = callArgs[1] as number;
+      const flatKeys = callArgs.slice(2, 2 + numKeys) as string[];
       expect(script).toContain('SMEMBERS');
       expect(script).toContain('EXISTS');
-      expect(keys).toContain(`user-seats:${showtimeId}:${userId}`);
-      expect(keys).toContain(`seat:${showtimeId}:${seatId}`);
-      expect(keys).toContain(`locked-seats:${showtimeId}`);
+      expect(numKeys).toBe(3);
+      expect(flatKeys).toContain(`user-seats:${showtimeId}:${userId}`);
+      expect(flatKeys).toContain(`seat:${showtimeId}:${seatId}`);
+      expect(flatKeys).toContain(`locked-seats:${showtimeId}`);
 
       // Verify response shape
       expect(result.success).toBe(true);
@@ -188,16 +194,22 @@ describe('BookingService', () => {
 
       expect(result).toBe(true);
       expect(mockRedis.eval).toHaveBeenCalledOnce();
-      const [script, keys, args] = mockRedis.eval.mock.calls[0] as [string, string[], string[]];
+      // ioredis flat signature: eval(script, numKeys, ...keysAndArgs)
+      const callArgs = mockRedis.eval.mock.calls[0] as unknown[];
+      const script = callArgs[0] as string;
+      const numKeys = callArgs[1] as number;
+      const flatKeys = callArgs.slice(2, 2 + numKeys) as string[];
+      const flatArgs = callArgs.slice(2 + numKeys) as string[];
       expect(script).toContain('GET');
       expect(script).toContain('DEL');
       expect(script).toContain('SREM');
-      expect(keys).toEqual([
+      expect(numKeys).toBe(3);
+      expect(flatKeys).toEqual([
         `seat:${showtimeId}:${seatId}`,
         `user-seats:${showtimeId}:${userId}`,
         `locked-seats:${showtimeId}`,
       ]);
-      expect(args).toEqual([userId, seatId]);
+      expect(flatArgs).toEqual([userId, seatId]);
     });
 
     it('returns false when Lua script detects different owner', async () => {
@@ -318,12 +330,18 @@ describe('BookingService', () => {
       expect(result.seats['B-1']).toBe('sold');
 
       // Verify eval called with GET_VALID_LOCKED_SEATS_LUA pattern
+      // ioredis flat signature: eval(script, numKeys, ...keysAndArgs)
       expect(mockRedis.eval).toHaveBeenCalledOnce();
-      const [script, keys, args] = mockRedis.eval.mock.calls[0] as [string, string[], string[]];
+      const callArgs = mockRedis.eval.mock.calls[0] as unknown[];
+      const script = callArgs[0] as string;
+      const numKeys = callArgs[1] as number;
+      const flatKeys = callArgs.slice(2, 2 + numKeys) as string[];
+      const flatArgs = callArgs.slice(2 + numKeys) as string[];
       expect(script).toContain('SMEMBERS');
       expect(script).toContain('EXISTS');
-      expect(keys).toEqual([`locked-seats:${showtimeId}`]);
-      expect(args).toEqual([`seat:${showtimeId}:`]);
+      expect(numKeys).toBe(1);
+      expect(flatKeys).toEqual([`locked-seats:${showtimeId}`]);
+      expect(flatArgs).toEqual([`seat:${showtimeId}:`]);
     });
   });
 });

@@ -1,7 +1,7 @@
 import { Injectable, Inject, ConflictException } from '@nestjs/common';
-import type { Redis } from '@upstash/redis';
+import type IORedis from 'ioredis';
 import { eq, and } from 'drizzle-orm';
-import { UPSTASH_REDIS } from './providers/redis.provider.js';
+import { REDIS_CLIENT } from './providers/redis.provider.js';
 import { DRIZZLE } from '../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../database/drizzle.provider.js';
 import { seatInventories } from '../../database/schema/seat-inventories.js';
@@ -96,7 +96,7 @@ return alive
 @Injectable()
 export class BookingService {
   constructor(
-    @Inject(UPSTASH_REDIS) private readonly redis: Redis,
+    @Inject(REDIS_CLIENT) private readonly redis: IORedis,
     @Inject(DRIZZLE) private readonly db: DrizzleDB,
     private readonly gateway: BookingGateway,
   ) {}
@@ -127,11 +127,18 @@ export class BookingService {
     const lockedSeatsKey = `locked-seats:${showtimeId}`;
     const keyPrefix = `seat:${showtimeId}:`;
 
-    const result = await this.redis.eval<[string, string, string, string, string], [number, string, string?]>(
+    const result = (await this.redis.eval(
       LOCK_SEAT_LUA,
-      [userSeatsKey, lockKey, lockedSeatsKey],
-      [userId, String(LOCK_TTL), String(MAX_SEATS), seatId, keyPrefix],
-    );
+      3,
+      userSeatsKey,
+      lockKey,
+      lockedSeatsKey,
+      userId,
+      String(LOCK_TTL),
+      String(MAX_SEATS),
+      seatId,
+      keyPrefix,
+    )) as [number, string, string?];
 
     const [status, reason] = result;
 
@@ -162,11 +169,15 @@ export class BookingService {
     const userSeatsKey = `user-seats:${showtimeId}:${userId}`;
     const lockedSeatsKey = `locked-seats:${showtimeId}`;
 
-    const result = await this.redis.eval<[string, string], number>(
+    const result = (await this.redis.eval(
       UNLOCK_SEAT_LUA,
-      [lockKey, userSeatsKey, lockedSeatsKey],
-      [userId, seatId],
-    );
+      3,
+      lockKey,
+      userSeatsKey,
+      lockedSeatsKey,
+      userId,
+      seatId,
+    )) as number;
 
     if (result === 0) {
       return false;
@@ -186,7 +197,7 @@ export class BookingService {
     const userSeatsKey = `user-seats:${showtimeId}:${userId}`;
     const lockedSeatsKey = `locked-seats:${showtimeId}`;
 
-    const members = await this.redis.smembers(userSeatsKey) as string[];
+    const members = await this.redis.smembers(userSeatsKey);
 
     if (members.length === 0) {
       return { unlockedSeats: [] };
@@ -216,7 +227,7 @@ export class BookingService {
    * Returns the current user's locked seats for a showtime.
    */
   async getMyLocks(userId: string, showtimeId: string): Promise<{ seatIds: string[]; expiresAt: number | null }> {
-    const userSeats = await this.redis.smembers(`user-seats:${showtimeId}:${userId}`) as string[];
+    const userSeats = await this.redis.smembers(`user-seats:${showtimeId}:${userId}`);
 
     if (userSeats.length === 0) {
       return { seatIds: [], expiresAt: null };
@@ -245,11 +256,12 @@ export class BookingService {
     // 1. Get locked seats from Redis (with stale entry cleanup)
     const lockedSeatsKey = `locked-seats:${showtimeId}`;
     const keyPrefix = `seat:${showtimeId}:`;
-    const lockedSeats = await this.redis.eval<[string], string[]>(
+    const lockedSeats = (await this.redis.eval(
       GET_VALID_LOCKED_SEATS_LUA,
-      [lockedSeatsKey],
-      [keyPrefix],
-    );
+      1,
+      lockedSeatsKey,
+      keyPrefix,
+    )) as string[];
 
     // 2. Get sold seats from DB
     const soldSeats = await this.db
