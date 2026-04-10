@@ -59,9 +59,9 @@ Plans:
   5. Lua 스크립트 3개(좌석 잠금/해제/상태 조회)가 ioredis eval() 시그니처로 정상 실행
 **Plans:** 3 plans
 Plans:
-- [ ] 07-01-PLAN.md -- @upstash/redis 제거 + ioredis 단일 provider 통합 + eval() 시그니처 변환
-- [ ] 07-02-PLAN.md -- 공연 카탈로그 캐시 레이어 구현 (CacheService + 무효화)
-- [ ] 07-03-PLAN.md -- GCP Memorystore 프로비저닝 + Cloud Run VPC Egress 설정
+- [x] 07-01-PLAN.md -- @upstash/redis 제거 + ioredis 단일 provider 통합 + eval() 시그니처 변환
+- [x] 07-02-PLAN.md -- 공연 카탈로그 캐시 레이어 구현 (CacheService + 무효화)
+- [x] 07-03-PLAN.md -- GCP Memorystore 프로비저닝 + Cloud Run VPC Egress 설정
 
 ### Phase 8: R2 프로덕션 연동
 **Goal**: 포스터/SVG 좌석맵 파일이 Cloudflare R2에 업로드되고 CDN을 통해 빠르게 서빙된다
