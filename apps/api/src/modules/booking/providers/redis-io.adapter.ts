@@ -8,12 +8,21 @@ import type { ServerOptions } from 'socket.io';
 /**
  * Creates a Socket.IO Redis adapter using the provided ioredis client.
  * Uses the client as pub and a duplicate as sub for Redis pub/sub.
+ *
+ * The sub client is duplicated with `{ maxRetriesPerRequest: null,
+ * enableReadyCheck: false }` per @socket.io/redis-adapter requirements:
+ * subscription commands must not be aborted mid-stream by retry limits,
+ * and the READY info check is meaningless for a subscriber connection.
+ * See 07-REVIEWS.md MEDIUM concern (Claude-only #8) and T-07-13 mitigation.
  */
 export function createSocketIoRedisAdapter(
   ioredisClient: IORedis,
 ): ReturnType<typeof createAdapter> {
   const pubClient = ioredisClient;
-  const subClient = pubClient.duplicate();
+  const subClient = pubClient.duplicate({
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false,
+  });
 
   return createAdapter(pubClient, subClient);
 }
@@ -62,7 +71,7 @@ export class RedisIoAdapter extends IoAdapter {
    * the default in-process transport.
    */
   connectToRedis(): boolean {
-    const maybeClient = this.redisClient as { duplicate?: () => IORedis };
+    const maybeClient = this.redisClient as { duplicate?: (opts?: unknown) => IORedis };
     if (typeof maybeClient.duplicate !== 'function') {
       this.logger.warn(
         'REDIS_CLIENT has no duplicate() — assuming InMemoryRedis mock. Multi-instance Socket.IO pub/sub DISABLED. Set REDIS_URL to enable.',
@@ -70,9 +79,18 @@ export class RedisIoAdapter extends IoAdapter {
       return false;
     }
     const pubClient = this.redisClient as IORedis;
-    const subClient = pubClient.duplicate();
+    // @socket.io/redis-adapter requires maxRetriesPerRequest: null on the sub
+    // client so that subscription commands are not aborted mid-stream by retry
+    // limits, and enableReadyCheck: false so that SUBSCRIBE can happen before
+    // the INFO ready check (which is not meaningful for a subscriber connection).
+    // Pub client inherits ioredis options from redis.provider.ts (maxRetriesPerRequest: 3).
+    // Addresses 07-REVIEWS.md MEDIUM concern (Claude-only #8) and T-07-13 mitigation.
+    const subClient = pubClient.duplicate({
+      maxRetriesPerRequest: null,
+      enableReadyCheck: false,
+    });
     this.adapterConstructor = createAdapter(pubClient, subClient);
-    this.logger.log('Socket.IO Redis adapter wired (pub/sub via duplicated ioredis client)');
+    this.logger.log('Socket.IO Redis adapter wired (pub/sub via duplicated ioredis client with null retries on sub)');
     return true;
   }
 

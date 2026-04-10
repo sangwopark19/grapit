@@ -28,6 +28,12 @@ describe('RedisIoAdapter', () => {
 
     expect(wired).toBe(true);
     expect(duplicate).toHaveBeenCalledTimes(1);
+    // @socket.io/redis-adapter requires maxRetriesPerRequest: null + enableReadyCheck: false
+    // on the sub client (Phase 07-04 review fix, 07-REVIEWS.md Claude #8, T-07-13).
+    expect(duplicate).toHaveBeenCalledWith({
+      maxRetriesPerRequest: null,
+      enableReadyCheck: false,
+    });
   });
 
   it('falls back gracefully when the client has no duplicate() method', () => {
