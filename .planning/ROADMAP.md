@@ -57,11 +57,13 @@ Plans:
   3. 공연 카탈로그 캐시가 Valkey에서 서빙되어 DB 직접 조회 대비 응답 시간 단축
   4. Cloud Run에서 Valkey로의 VPC 연결이 안정적으로 유지
   5. Lua 스크립트 3개(좌석 잠금/해제/상태 조회)가 ioredis eval() 시그니처로 정상 실행
-**Plans:** 3 plans
+**Plans:** 5 plans
 Plans:
 - [x] 07-01-PLAN.md -- @upstash/redis 제거 + ioredis 단일 provider 통합 + eval() 시그니처 변환
 - [x] 07-02-PLAN.md -- 공연 카탈로그 캐시 레이어 구현 (CacheService + 무효화)
 - [x] 07-03-PLAN.md -- GCP Memorystore 프로비저닝 + Cloud Run VPC Egress 설정
+- [ ] 07-04-PLAN.md -- 리뷰 피드백 1차: production REDIS_URL hard-fail + invalidate try/catch + adapter duplicate 옵션 + release gate 문서화
+- [ ] 07-05-PLAN.md -- 리뷰 피드백 2차: HealthController Valkey ping + testcontainers 실 Valkey 통합 테스트
 
 ### Phase 8: R2 프로덕션 연동
 **Goal**: 포스터/SVG 좌석맵 파일이 Cloudflare R2에 업로드되고 CDN을 통해 빠르게 서빙된다
@@ -136,7 +138,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
 | 4. Booking + Payment | v1.0 | 3/3 | Complete | 2026-04-07 |
 | 5. Polish + Launch | v1.0 | 5/5 | Complete | 2026-04-08 |
 | 6. 소셜 로그인 버그 수정 | v1.1 | 0/2 | Planning | - |
-| 7. Valkey 마이그레이션 | v1.1 | 0/3 | Planning | - |
+| 7. Valkey 마이그레이션 | v1.1 | 3/5 | Executing | - |
 | 8. R2 프로덕션 연동 | v1.1 | 0/0 | Not started | - |
 | 9. 기술부채 청산 | v1.1 | 0/0 | Not started | - |
 | 10. SMS 인증 실연동 | v1.1 | 0/0 | Not started | - |
