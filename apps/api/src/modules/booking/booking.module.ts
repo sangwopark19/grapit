@@ -3,7 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { BookingController } from './booking.controller.js';
 import { BookingService } from './booking.service.js';
 import { BookingGateway } from './booking.gateway.js';
-import { upstashRedisProvider, ioredisClientProvider } from './providers/redis.provider.js';
+import { redisProvider } from './providers/redis.provider.js';
 
 @Module({
   imports: [ConfigModule],
@@ -11,9 +11,8 @@ import { upstashRedisProvider, ioredisClientProvider } from './providers/redis.p
   providers: [
     BookingService,
     BookingGateway,
-    upstashRedisProvider,
-    ioredisClientProvider,
+    redisProvider,
   ],
-  exports: [BookingService, BookingGateway],
+  exports: [BookingService, BookingGateway, redisProvider],
 })
 export class BookingModule {}
