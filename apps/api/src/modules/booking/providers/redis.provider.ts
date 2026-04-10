@@ -216,7 +216,21 @@ export const redisProvider: Provider = {
     const url = config.get<string>('redis.url', '');
 
     if (!url) {
-      console.warn('[redis] No REDIS_URL — using in-memory mock. Seat locking works but is not persistent.');
+      // Production misconfig must hard-fail: silent InMemoryRedis fallback would
+      // isolate seat locking to a single Cloud Run instance (no cross-instance
+      // pub/sub, no persistence) and silently allow duplicate bookings.
+      // Addresses cross-AI review HIGH concern (07-REVIEWS.md Codex + Claude consensus #1).
+      if (process.env['NODE_ENV'] === 'production') {
+        throw new Error(
+          '[redis] REDIS_URL is required in production environment. ' +
+            'Silent InMemoryRedis fallback is disabled to prevent duplicate bookings from instance-isolated seat locking. ' +
+            'Check Cloud Run secret binding for redis-url.',
+        );
+      }
+      console.warn(
+        '[redis] No REDIS_URL — using in-memory mock. Seat locking works but is not persistent. ' +
+          '(Development/test only — production now hard-fails.)',
+      );
       return new InMemoryRedis() as unknown as IORedis;
     }
 
