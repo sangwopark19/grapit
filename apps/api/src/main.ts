@@ -2,13 +2,24 @@ import './instrument.js';
 import { NestFactory } from '@nestjs/core';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import type IORedis from 'ioredis';
 import { AppModule } from './app.module.js';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
 import { TossPaymentExceptionFilter } from './common/filters/toss-payment-exception.filter.js';
 import { ZodValidationPipe } from './common/pipes/zod-validation.pipe.js';
+import { RedisIoAdapter } from './modules/booking/providers/redis-io.adapter.js';
+import { REDIS_CLIENT } from './modules/booking/providers/redis.provider.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Wire Socket.IO to the shared ioredis REDIS_CLIENT so seat-update events
+  // broadcast across Cloud Run instances via Valkey pub/sub (VALK-04).
+  // Falls back to the default in-process adapter when REDIS_URL is not set.
+  const redisClient = app.get<IORedis>(REDIS_CLIENT);
+  const redisIoAdapter = new RedisIoAdapter(app, redisClient);
+  redisIoAdapter.connectToRedis();
+  app.useWebSocketAdapter(redisIoAdapter);
 
   app.enableCors({
     origin: process.env['FRONTEND_URL']
