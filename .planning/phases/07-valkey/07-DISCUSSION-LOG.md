@@ -11,8 +11,9 @@
 
 ## 클라이언트 라이브러리
 
-ROADMAP.md에서 iovalkey로 이미 확정되어 있어 gray area가 아닌 locked decision으로 처리.
+### Round 1: iovalkey vs Valkey GLIDE
 
+ROADMAP.md에서 iovalkey로 초기 확정되어 있어 locked decision으로 처리.
 사용자 요청으로 iovalkey vs Valkey GLIDE 심층 비교 분석 수행:
 
 | 항목 | iovalkey | Valkey GLIDE |
@@ -23,8 +24,25 @@ ROADMAP.md에서 iovalkey로 이미 확정되어 있어 gray area가 아닌 lock
 | 성능 | 8,158 ops/s (SET) | 6,585 ops/s (-19%) |
 | 마이그레이션 비용 | 1-2시간 | 1-2일 |
 
-**User's choice:** iovalkey (ROADMAP 확정 + 심층 분석으로 재확인)
-**Notes:** Socket.IO adapter 호환성이 결정적 차이점. GLIDE의 정적 Pub/Sub 모델은 현재 아키텍처와 근본적 불호환.
+결론: GLIDE 미채택 (Socket.IO adapter 근본적 불호환)
+
+### Round 2: iovalkey vs ioredis 유지 (사용자 추가 요청)
+
+사용자가 iovalkey와 ioredis 중 어느 것이 더 적합한지 추가 심층 조사 요청.
+
+| 항목 | ioredis | iovalkey |
+|------|---------|---------|
+| 최신 버전 | v5.10.1 (2026-03-19) | v0.3.1 (2025-03-10) |
+| 최근 릴리스 | 2026년 1~3월 6개 릴리스 | 13개월째 릴리스 없음 |
+| npm 주간 다운로드 | 1,470만 | 수만 (극소량) |
+| @socket.io/redis-adapter | 공식 지원 | 비공식 (언급 없음) |
+| 버전 안정성 | v5.x (안정) | v0.x (1.0 미도달) |
+| Valkey 호환 | 기본 커맨드 100% 호환 | 공식 지원 |
+
+iovalkey 우려사항: 13개월 릴리스 없음, export 문서 불일치(#27 미해결), Valkey 조직 내 GLIDE 1순위로 밀려남
+
+**User's choice:** ioredis 유지 (ROADMAP 수정 — iovalkey → ioredis)
+**Notes:** @upstash/redis만 제거하고 ioredis 단일 클라이언트로 통합. 향후 iovalkey 1.0 + @socket.io/redis-adapter 공식 지원 시 재평가.
 
 ---
 
@@ -32,12 +50,12 @@ ROADMAP.md에서 iovalkey로 이미 확정되어 있어 gray area가 아닌 lock
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| 둘 다 지원 (추천) | env 없으면 InMemoryRedis, REDIS_URL 있으면 iovalkey 접속. 현재 패턴 유지 | ✓ |
+| 둘 다 지원 (추천) | env 없으면 InMemoryRedis, REDIS_URL 있으면 ioredis 접속. 현재 패턴 유지 | ✓ |
 | Docker Valkey 컨테이너 | docker-compose 구성. 실제 환경 동일. Docker 의존성 추가 | |
 | mock 제거, Docker만 | InMemoryRedis 삭제하고 Docker Valkey로 통일 | |
 
 **User's choice:** 둘 다 지원 (추천)
-**Notes:** 기존 graceful degradation 패턴 유지. mock eval() 시그니처만 iovalkey에 맞춰 업데이트.
+**Notes:** 기존 graceful degradation 패턴 유지. mock eval() 시그니처만 ioredis에 맞춰 업데이트.
 
 ---
 

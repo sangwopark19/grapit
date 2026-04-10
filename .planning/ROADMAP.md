@@ -25,7 +25,7 @@ Full details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 **Milestone Goal:** 인프라 안정화(Redis->Valkey 전환, R2 연동, 기술부채 청산, SMS 실연동)를 완료하고, 어드민 고도화 및 UX 현대화로 서비스 품질을 끌어올린다.
 
 - [ ] **Phase 6: 소셜 로그인 버그 수정** - 소셜 로그인 재로그인 실패 버그 해결 (전제 조건)
-- [ ] **Phase 7: Valkey 마이그레이션** - Upstash Redis/ioredis 이원화를 Google Valkey 단일 클라이언트로 전환
+- [ ] **Phase 7: Valkey 마이그레이션** - Upstash Redis 제거, ioredis 단일 클라이언트로 Google Valkey 전환
 - [ ] **Phase 8: R2 프로덕션 연동** - Cloudflare R2 키 발급부터 CDN 서빙까지 프로덕션 파일 스토리지 완성
 - [ ] **Phase 9: 기술부채 청산** - v1.0에서 누적된 stub/회귀/미검증 6건 해소
 - [ ] **Phase 10: SMS 인증 실연동** - dev mock을 실제 SMS 발송/검증으로 전환
@@ -48,7 +48,7 @@ Plans:
 - [x] 06-02-PLAN.md -- E2E 테스트 + 수동 검증
 
 ### Phase 7: Valkey 마이그레이션
-**Goal**: Upstash Redis + ioredis 이원화 구조를 Google Memorystore for Valkey 단일 클라이언트로 전환하여 인프라를 단순화한다
+**Goal**: Upstash Redis 제거, ioredis 단일 클라이언트로 Google Memorystore for Valkey에 연결하여 인프라를 단순화한다
 **Depends on**: Phase 6
 **Requirements**: VALK-01, VALK-02, VALK-03, VALK-04, VALK-05, VALK-06
 **Success Criteria** (what must be TRUE):
@@ -56,7 +56,7 @@ Plans:
   2. Socket.IO 실시간 좌석 동기화가 Valkey pub/sub로 동작 (다중 인스턴스 포함)
   3. 공연 카탈로그 캐시가 Valkey에서 서빙되어 DB 직접 조회 대비 응답 시간 단축
   4. Cloud Run에서 Valkey로의 VPC 연결이 안정적으로 유지
-  5. Lua 스크립트 3개(좌석 잠금/해제/상태 조회)가 Valkey eval() 시그니처로 정상 실행
+  5. Lua 스크립트 3개(좌석 잠금/해제/상태 조회)가 ioredis eval() 시그니처로 정상 실행
 **Plans**: TBD
 
 ### Phase 8: R2 프로덕션 연동
