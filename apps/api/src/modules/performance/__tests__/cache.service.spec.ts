@@ -144,6 +144,54 @@ describe('CacheService', () => {
     });
   });
 
+  describe('invalidate() error handling', () => {
+    it('swallows redis errors and logs a warning (does not throw)', async () => {
+      mockRedis.del.mockRejectedValueOnce(new Error('ECONNREFUSED'));
+      const warnSpy = vi.spyOn(service['logger'], 'warn').mockImplementation(() => {});
+
+      await expect(
+        service.invalidate('cache:performances:detail:abc', 'cache:home:banners'),
+      ).resolves.toBeUndefined();
+
+      expect(warnSpy).toHaveBeenCalled();
+      const warnCall = warnSpy.mock.calls[0] as unknown[];
+      const payload = warnCall[0] as { err: string; op: string };
+      expect(payload.op).toBe('invalidate');
+      expect(payload.err).toBe('ECONNREFUSED');
+
+      warnSpy.mockRestore();
+    });
+  });
+
+  describe('invalidatePattern() error handling', () => {
+    it('swallows redis errors and logs a warning (does not throw)', async () => {
+      mockRedis.keys.mockRejectedValueOnce(new Error('ECONNREFUSED'));
+      const warnSpy = vi.spyOn(service['logger'], 'warn').mockImplementation(() => {});
+
+      await expect(service.invalidatePattern('cache:home:*')).resolves.toBeUndefined();
+
+      expect(warnSpy).toHaveBeenCalled();
+      const warnCall = warnSpy.mock.calls[0] as unknown[];
+      const payload = warnCall[0] as { err: string; op: string; pattern: string };
+      expect(payload.op).toBe('invalidatePattern');
+      expect(payload.err).toBe('ECONNREFUSED');
+      expect(payload.pattern).toBe('cache:home:*');
+
+      warnSpy.mockRestore();
+    });
+
+    it('swallows redis.del errors after successful keys() lookup', async () => {
+      mockRedis.keys.mockResolvedValueOnce(['cache:home:banners']);
+      mockRedis.del.mockRejectedValueOnce(new Error('ECONNRESET'));
+      const warnSpy = vi.spyOn(service['logger'], 'warn').mockImplementation(() => {});
+
+      await expect(service.invalidatePattern('cache:home:*')).resolves.toBeUndefined();
+      expect(warnSpy).toHaveBeenCalled();
+
+      warnSpy.mockRestore();
+    });
+  });
+
   describe('round-trip', () => {
     it('set() followed by get() returns the same object', async () => {
       const data = { id: 'perf-1', title: '레미제라블', viewCount: 42 };
