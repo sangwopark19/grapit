@@ -13,6 +13,18 @@ import type {
 } from '@grapit/shared/schemas/performance.schema';
 
 import { AdminService } from './admin.service.js';
+import { CacheService } from '../performance/cache.service.js';
+
+function createMockCacheService(): CacheService {
+  // Admin mutations trigger invalidate* — mocks swallow them so we can
+  // still assert the DB-mutation side effects without an ioredis client.
+  return {
+    get: vi.fn().mockResolvedValue(null),
+    set: vi.fn().mockResolvedValue(undefined),
+    invalidate: vi.fn().mockResolvedValue(undefined),
+    invalidatePattern: vi.fn().mockResolvedValue(undefined),
+  } as unknown as CacheService;
+}
 
 /**
  * Phase 2 Plan 00: RED-state test stubs for AdminService
@@ -113,10 +125,15 @@ const sampleCreateInput: CreatePerformanceInput = {
 describe('AdminService', () => {
   let service: AdminService;
   let mockDb: ReturnType<typeof createMockDb>;
+  let mockCache: CacheService;
 
   beforeEach(() => {
     mockDb = createMockDb();
-    service = new AdminService(mockDb as unknown as ConstructorParameters<typeof AdminService>[0]);
+    mockCache = createMockCacheService();
+    service = new AdminService(
+      mockDb as unknown as ConstructorParameters<typeof AdminService>[0],
+      mockCache,
+    );
   });
 
   describe('createPerformance', () => {

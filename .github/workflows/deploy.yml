@@ -78,6 +78,9 @@ jobs:
             --no-cpu-throttling
             --session-affinity
             --allow-unauthenticated
+            --network=default
+            --subnet=default
+            --vpc-egress=private-ranges-only
           env_vars: |
             NODE_ENV=production
             FRONTEND_URL=https://grapit-web-d3c6wrfdbq-du.a.run.app
@@ -94,6 +97,7 @@ jobs:
             NAVER_CLIENT_SECRET=naver-client-secret:latest
             GOOGLE_CLIENT_ID=google-client-id:latest
             GOOGLE_CLIENT_SECRET=google-client-secret:latest
+            REDIS_URL=redis-url:latest
 
   deploy-web:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}

@@ -13,10 +13,10 @@ Requirements for v1.1 안정화 + 고도화. Each maps to roadmap phases.
 
 ### Valkey 마이그레이션
 
-- [ ] **VALK-01**: @upstash/redis + ioredis → iovalkey 단일 클라이언트로 전환
+- [ ] **VALK-01**: @upstash/redis 제거, ioredis 단일 클라이언트로 Valkey 연결 통합
 - [ ] **VALK-02**: Google Memorystore for Valkey 프로비저닝 (PSC + Direct VPC Egress)
 - [ ] **VALK-03**: 좌석 잠금 Lua 스크립트 Valkey 호환성 검증 및 수정
-- [ ] **VALK-04**: Socket.IO Redis adapter를 Valkey 클라이언트로 전환
+- [ ] **VALK-04**: Socket.IO Redis adapter가 ioredis로 Valkey pub/sub 정상 동작 확인
 - [ ] **VALK-05**: Cloud Run → Valkey VPC 네트워킹 설정
 - [ ] **VALK-06**: 성능 카탈로그 캐시 레이어 구현
 

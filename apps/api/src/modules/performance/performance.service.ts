@@ -17,11 +17,13 @@ import type {
   Banner,
   PerformanceQuery,
 } from '@grapit/shared';
+import { CacheService } from './cache.service.js';
 
 @Injectable()
 export class PerformanceService {
   constructor(
     @Inject(DRIZZLE) private readonly db: DrizzleDB,
+    private readonly cacheService: CacheService,
   ) {}
 
   async findByGenre(
@@ -29,6 +31,11 @@ export class PerformanceService {
     query: PerformanceQuery,
   ): Promise<PerformanceListResponse> {
     const { page = 1, limit = 20, sort = 'latest', ended = false, sub } = query;
+
+    const cacheKey = `cache:performances:list:${genre}:${page}:${limit}:${sort}:${ended}:${sub ?? 'none'}`;
+    const cached = await this.cacheService.get<PerformanceListResponse>(cacheKey);
+    if (cached) return cached;
+
     const offset = (page - 1) * limit;
 
     const conditions = [eq(performances.genre, genre as typeof performances.genre.enumValues[number])];
@@ -73,7 +80,7 @@ export class PerformanceService {
 
     const total = countResult[0]?.count ?? 0;
 
-    return {
+    const result: PerformanceListResponse = {
       data: data.map((row) => ({
         id: row.id,
         title: row.title,
@@ -89,14 +96,23 @@ export class PerformanceService {
       limit,
       totalPages: Math.ceil(total / limit),
     };
+
+    await this.cacheService.set(cacheKey, result);
+    return result;
   }
 
   async findById(id: string): Promise<PerformanceWithDetails | null> {
-    // Increment view count (fire regardless - no-op if ID doesn't exist)
+    // Increment view count BEFORE the cache check so view counters keep
+    // accruing on every request, not just on DB hits (per plan acceptance).
+    // no-op if ID doesn't exist.
     await this.db
       .update(performances)
       .set({ viewCount: sql`${performances.viewCount} + 1` })
       .where(eq(performances.id, id));
+
+    const cacheKey = `cache:performances:detail:${id}`;
+    const cached = await this.cacheService.get<PerformanceWithDetails>(cacheKey);
+    if (cached) return cached;
 
     // Get performance with venue
     const [performanceRow] = await this.db
@@ -135,7 +151,7 @@ export class PerformanceService {
     const perf = performanceRow.performances;
     const venue = performanceRow.venues;
 
-    return {
+    const result: PerformanceWithDetails = {
       id: perf.id,
       title: perf.title,
       genre: perf.genre,
@@ -185,25 +201,39 @@ export class PerformanceService {
           }
         : null,
     };
+
+    await this.cacheService.set(cacheKey, result);
+    return result;
   }
 
   async getHomeBanners(): Promise<Banner[]> {
+    const cacheKey = 'cache:home:banners';
+    const cached = await this.cacheService.get<Banner[]>(cacheKey);
+    if (cached) return cached;
+
     const rows = await this.db
       .select()
       .from(banners)
       .where(eq(banners.isActive, true))
       .orderBy(banners.sortOrder);
 
-    return rows.map((b) => ({
+    const result: Banner[] = rows.map((b) => ({
       id: b.id,
       imageUrl: b.imageUrl,
       linkUrl: b.linkUrl,
       sortOrder: b.sortOrder,
       isActive: b.isActive,
     }));
+
+    await this.cacheService.set(cacheKey, result);
+    return result;
   }
 
   async getHotPerformances(): Promise<PerformanceCardData[]> {
+    const cacheKey = 'cache:home:hot';
+    const cached = await this.cacheService.get<PerformanceCardData[]>(cacheKey);
+    if (cached) return cached;
+
     const rows = await this.db
       .select({
         id: performances.id,
@@ -221,7 +251,7 @@ export class PerformanceService {
       .orderBy(desc(performances.viewCount))
       .limit(4);
 
-    return rows.map((row) => ({
+    const result: PerformanceCardData[] = rows.map((row) => ({
       id: row.id,
       title: row.title,
       genre: row.genre,
@@ -231,9 +261,16 @@ export class PerformanceService {
       endDate: row.endDate?.toISOString() ?? '',
       venueName: row.venueName ?? null,
     }));
+
+    await this.cacheService.set(cacheKey, result);
+    return result;
   }
 
   async getNewPerformances(): Promise<PerformanceCardData[]> {
+    const cacheKey = 'cache:home:new';
+    const cached = await this.cacheService.get<PerformanceCardData[]>(cacheKey);
+    if (cached) return cached;
+
     const rows = await this.db
       .select({
         id: performances.id,
@@ -251,7 +288,7 @@ export class PerformanceService {
       .orderBy(desc(performances.createdAt))
       .limit(4);
 
-    return rows.map((row) => ({
+    const result: PerformanceCardData[] = rows.map((row) => ({
       id: row.id,
       title: row.title,
       genre: row.genre,
@@ -261,5 +298,8 @@ export class PerformanceService {
       endDate: row.endDate?.toISOString() ?? '',
       venueName: row.venueName ?? null,
     }));
+
+    await this.cacheService.set(cacheKey, result);
+    return result;
   }
 }

@@ -1,14 +1,15 @@
 import type { Provider } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Redis } from '@upstash/redis';
 import IORedis from 'ioredis';
 
-export const UPSTASH_REDIS = Symbol('UPSTASH_REDIS');
-export const IOREDIS_CLIENT = Symbol('IOREDIS_CLIENT');
+export const REDIS_CLIENT = Symbol('REDIS_CLIENT');
 
 /**
- * In-memory Redis mock for local dev when Upstash is not configured.
+ * In-memory Redis mock for local dev when REDIS_URL is not configured.
  * Implements only the subset of commands used by BookingService.
+ *
+ * NOTE: eval() follows ioredis flat signature (script, numKeys, ...keysAndArgs),
+ * not the Upstash object-keys pattern.
  */
 class InMemoryRedis {
   private store = new Map<string, string>();
@@ -99,15 +100,20 @@ class InMemoryRedis {
   }
 
   /**
-   * Dispatches Lua script emulation by key/arg count.
+   * Dispatches Lua script emulation using the ioredis flat signature.
+   *
+   * Signature: eval(script, numKeys, ...keysAndArgs)
    * Supports: LOCK_SEAT (3 keys, 5 args), UNLOCK_SEAT (3 keys, 2 args),
    * GET_VALID_LOCKED_SEATS (1 key, 1 arg).
    */
   async eval(
     _script: string,
-    keys: string[],
-    args: string[],
+    numKeys: number,
+    ...keysAndArgs: (string | number)[]
   ): Promise<unknown> {
+    const keys = keysAndArgs.slice(0, numKeys).map(String);
+    const args = keysAndArgs.slice(numKeys).map(String);
+
     if (keys.length === 3 && args.length === 5) {
       return this.evalLockSeat(keys, args);
     }
@@ -196,27 +202,37 @@ class InMemoryRedis {
   }
 }
 
-export const upstashRedisProvider: Provider = {
-  provide: UPSTASH_REDIS,
-  inject: [ConfigService],
-  useFactory: (config: ConfigService): Redis | InMemoryRedis => {
-    const url = config.get<string>('redis.upstashUrl', '');
-    const token = config.get<string>('redis.upstashToken', '');
+let redisWarned = false;
 
-    if (!url || !token) {
-      console.warn('[upstash] No UPSTASH_REDIS_REST_URL/TOKEN — using in-memory mock. Seat locking works but is not persistent.');
-      return new InMemoryRedis() as unknown as Redis;
+/**
+ * Unified Redis provider: single ioredis TCP client for both seat locking
+ * and Socket.IO pub/sub adapter. Falls back to InMemoryRedis when REDIS_URL
+ * is not set (local dev only; production enforces REDIS_URL via deploy secrets).
+ */
+export const redisProvider: Provider = {
+  provide: REDIS_CLIENT,
+  inject: [ConfigService],
+  useFactory: (config: ConfigService): IORedis | InMemoryRedis => {
+    const url = config.get<string>('redis.url', '');
+
+    if (!url) {
+      // Production misconfig must hard-fail: silent InMemoryRedis fallback would
+      // isolate seat locking to a single Cloud Run instance (no cross-instance
+      // pub/sub, no persistence) and silently allow duplicate bookings.
+      // Addresses cross-AI review HIGH concern (07-REVIEWS.md Codex + Claude consensus #1).
+      if (process.env['NODE_ENV'] === 'production') {
+        throw new Error(
+          '[redis] REDIS_URL is required in production environment. ' +
+            'Silent InMemoryRedis fallback is disabled to prevent duplicate bookings from instance-isolated seat locking. ' +
+            'Check Cloud Run secret binding for redis-url.',
+        );
+      }
+      console.warn(
+        '[redis] No REDIS_URL — using in-memory mock. Seat locking works but is not persistent. ' +
+          '(Development/test only — production now hard-fails.)',
+      );
+      return new InMemoryRedis() as unknown as IORedis;
     }
-
-    return new Redis({ url, token });
-  },
-};
-
-export const ioredisClientProvider: Provider = {
-  provide: IOREDIS_CLIENT,
-  inject: [ConfigService],
-  useFactory: (config: ConfigService): IORedis => {
-    const url = config.get<string>('redis.ioredisUrl', 'redis://localhost:6379');
 
     const client = new IORedis(url, {
       maxRetriesPerRequest: 3,
@@ -229,17 +245,16 @@ export const ioredisClientProvider: Provider = {
 
     client.on('error', (err: Error) => {
       if (err.message.includes('ECONNREFUSED')) {
-        if (!ioredisWarned) {
-          ioredisWarned = true;
-          console.warn('[ioredis] Redis unavailable — Socket.IO multi-instance broadcast disabled. This is fine for local dev.');
+        if (!redisWarned) {
+          redisWarned = true;
+          console.warn('[redis] Redis unavailable — seat locking will fail. This is fine for local dev without REDIS_URL.');
         }
+      } else {
+        console.error('[redis] Error:', err.message);
       }
     });
 
     client.connect().catch(() => {});
-
     return client;
   },
 };
-
-let ioredisWarned = false;

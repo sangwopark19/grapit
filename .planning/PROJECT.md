@@ -23,6 +23,8 @@
 - ✓ 예매 확인/취소/환불 (마이페이지) — v1.0
 - ✓ 모바일 반응형 + 스켈레톤 UI + 한국어 에러 핸들링 — v1.0
 - ✓ CI/CD + Docker + Sentry + Cloud Run 배포 — v1.0
+- ✓ Upstash Redis 제거, ioredis 단일 클라이언트로 Google Memorystore for Valkey 전환 — Phase 7 (v1.1) *(코드 레벨 완료, 런타임 검증은 07-HUMAN-UAT.md)*
+- ✓ 공연 카탈로그 Redis 캐시 레이어 (read-through + admin CRUD 무효화) — Phase 7 (v1.1)
 
 ### Active
 
@@ -32,7 +34,7 @@
 
 **Target features:**
 - [ ] 기술부채 12건 청산 (password reset, 테스트 회귀, Toss E2E 등)
-- [ ] Upstash Redis → Google Valkey 전환 (좌석 잠금, pub/sub, 캐시 전부)
+- [x] Upstash Redis → Google Valkey 전환 (좌석 잠금, pub/sub, 캐시 전부) — Phase 7 (코드 완료, 런타임 검증 4건은 배포 후)
 - [ ] Cloudflare R2 완전 연동 (키 발급 → 프로덕션 업로드/서빙)
 - [ ] SMS 인증 실연동 (dev mock → 실제 SMS 발송/검증)
 - [ ] 어드민 고도화 + 통계 대시보드
@@ -57,7 +59,7 @@
 ### Current State (v1.0 shipped)
 
 - **코드베이스:** 23,547 LOC TypeScript, 331 commits
-- **Tech stack:** Next.js 16 + NestJS 11 + Drizzle ORM + PostgreSQL 16 + Upstash Redis + Socket.IO + Toss Payments
+- **Tech stack:** Next.js 16 + NestJS 11 + Drizzle ORM + PostgreSQL 16 + Google Memorystore for Valkey (ioredis) + Socket.IO + Toss Payments
 - **배포:** Cloud Run (서울 asia-northeast3), GitHub Actions CI/CD, Sentry 에러 추적
 - **테스트:** 63 백엔드 유닛 테스트, 45 프론트엔드 테스트
 - **알려진 기술 부채:** 12건 (password reset stub, 테스트 회귀 1건, Toss E2E 미검증 등)
@@ -95,7 +97,12 @@ NOL 티켓(nol.interpark.com/ticket)을 상세 분석한 5개 문서가 docs/에
 | Admin을 /admin 라우트로 | 별도 앱 분리 불필요 | ✓ Good — LayoutShell 조건부 렌더링으로 깔끔 분리 |
 | Drizzle ORM (TypeORM/Prisma 제외) | 14x 낮은 지연, ~7kb 번들, SQL-first | ✓ Good — 스키마 기반 zod 통합, 빠른 cold start |
 | Access token Zustand 메모리 저장 | OWASP XSS 방어 best practice | ✓ Good — localStorage 노출 없음, 401 자동 refresh |
-| Redis 이원화 (Upstash HTTP + ioredis TCP) | Pub/Sub는 TCP 필수, 나머지는 서버리스 HTTP | ✓ Good — 각 용도에 최적화 |
+| ~~Redis 이원화 (Upstash HTTP + ioredis TCP)~~ | ~~Pub/Sub는 TCP 필수, 나머지는 서버리스 HTTP~~ | ✗ Reversed in Phase 7 — ioredis 단일화 + Google Memorystore for Valkey(VPC private endpoint)로 전환. 이원화의 운영 복잡도가 Valkey 전환 비용보다 커서 `@upstash/redis` 제거 |
+| ioredis 단일 클라이언트 + Memorystore Valkey | Cloud Run Direct VPC Egress로 private endpoint 직결, Lua 스크립트 호환성 + Socket.IO Redis adapter 양쪽을 동일 클라이언트로 처리 | Phase 7 — 코드 완료 (plans 01~05), 배포 후 런타임 검증 4건 대기 |
+| Production REDIS_URL hard-fail + InMemoryRedis dev-only | 미설정 시 silent fallback → 조용한 운영 장애 원인이 됨. `NODE_ENV=production`이면 throw, dev/test만 mock 허용 | Phase 7 Plan 04 — cross-AI 리뷰 HIGH #1 대응 |
+| CacheService invalidate best-effort | Redis 장애가 admin CRUD API를 500으로 떨어뜨리면 안 됨 → try/catch + warn 로그만 | Phase 7 Plan 04 — cross-AI 리뷰 MEDIUM #6 대응 |
+| testcontainers 기반 Valkey 통합 테스트 (격리 vitest config) | Lua 스크립트가 실제 Valkey Lua 5.1 interpreter에서 돌아가는지 단위 테스트로는 검증 불가. `pnpm test:integration`으로만 실행되어 기본 피드백 루프 보호 | Phase 7 Plan 05 — cross-AI 리뷰 HIGH #2 대응 |
+| HealthController Valkey ping (Terminus 11) | Cloud Run liveness probe가 Valkey 장애를 즉시 감지 → silent outage 차단 | Phase 7 Plan 05 — cross-AI 리뷰 MEDIUM #7 대응 |
 | Family-based refresh token rotation | 토큰 탈취 감지 | ✓ Good — SHA-256 해시 저장, 가족 단위 무효화 |
 
 ## Evolution
@@ -116,4 +123,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-09 after v1.1 milestone start*
+*Last updated: 2026-04-10 after Phase 7 re-verification (plans 04+05: operational safety fix-ups, health indicator, testcontainers integration)*
