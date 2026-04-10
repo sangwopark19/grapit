@@ -23,15 +23,32 @@ import type {
   CreateBannerInput,
   SeatMapConfigInput,
 } from '@grapit/shared';
+import { CacheService } from '../performance/cache.service.js';
 
 @Injectable()
 export class AdminService {
   constructor(
     @Inject(DRIZZLE) private readonly db: DrizzleDB,
+    private readonly cacheService: CacheService,
   ) {}
 
+  /**
+   * Invalidate all catalog caches (list + home + detail by id if provided).
+   * Called after any mutation that can change the published catalog output.
+   */
+  private async invalidateCatalogCache(id?: string): Promise<void> {
+    const ops: Array<Promise<void>> = [
+      this.cacheService.invalidatePattern('cache:performances:list:*'),
+      this.cacheService.invalidatePattern('cache:home:*'),
+    ];
+    if (id) {
+      ops.push(this.cacheService.invalidate(`cache:performances:detail:${id}`));
+    }
+    await Promise.all(ops);
+  }
+
   async createPerformance(input: CreatePerformanceInput): Promise<PerformanceWithDetails> {
-    return this.db.transaction(async (tx) => {
+    const result = await this.db.transaction(async (tx) => {
       // Insert or find venue by name
       const [venue] = await tx
         .insert(venues)
@@ -130,10 +147,13 @@ export class AdminService {
         seatMap: null,
       };
     });
+
+    await this.invalidateCatalogCache();
+    return result;
   }
 
   async updatePerformance(id: string, input: UpdatePerformanceInput): Promise<PerformanceWithDetails> {
-    return this.db.transaction(async (tx) => {
+    const result = await this.db.transaction(async (tx) => {
       // Handle venue update if venueName changed
       let venueId: string | undefined;
       if (input.venueName) {
@@ -250,10 +270,14 @@ export class AdminService {
         seatMap: null,
       };
     });
+
+    await this.invalidateCatalogCache(id);
+    return result;
   }
 
   async deletePerformance(id: string): Promise<void> {
     await this.db.delete(performances).where(eq(performances.id, id));
+    await this.invalidateCatalogCache(id);
   }
 
   async saveSeatMap(
@@ -372,6 +396,8 @@ export class AdminService {
       })
       .returning();
 
+    await this.cacheService.invalidate('cache:home:banners');
+
     return {
       id: result!.id,
       imageUrl: result!.imageUrl,
@@ -399,6 +425,8 @@ export class AdminService {
       throw new NotFoundException(`배너를 찾을 수 없습니다 (id: ${id})`);
     }
 
+    await this.cacheService.invalidate('cache:home:banners');
+
     return {
       id: result.id,
       imageUrl: result.imageUrl,
@@ -410,6 +438,7 @@ export class AdminService {
 
   async deleteBanner(id: string): Promise<void> {
     await this.db.delete(banners).where(eq(banners.id, id));
+    await this.cacheService.invalidate('cache:home:banners');
   }
 
   async listBanners(): Promise<Banner[]> {
@@ -436,5 +465,6 @@ export class AdminService {
           .where(eq(banners.id, orderedIds[i]!));
       }
     });
+    await this.cacheService.invalidate('cache:home:banners');
   }
 }

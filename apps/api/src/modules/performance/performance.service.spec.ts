@@ -6,6 +6,18 @@ import type {
 } from '@grapit/shared';
 
 import { PerformanceService } from './performance.service.js';
+import { CacheService } from './cache.service.js';
+
+function createMockCacheService(): CacheService {
+  // Miss-by-default cache so the service falls through to the DB path
+  // just like it did before Plan 07-02 wired CacheService in.
+  return {
+    get: vi.fn().mockResolvedValue(null),
+    set: vi.fn().mockResolvedValue(undefined),
+    invalidate: vi.fn().mockResolvedValue(undefined),
+    invalidatePattern: vi.fn().mockResolvedValue(undefined),
+  } as unknown as CacheService;
+}
 
 /**
  * Phase 2 Plan 00: RED-state test stubs for PerformanceService
@@ -67,10 +79,15 @@ function createMockDb() {
 describe('PerformanceService', () => {
   let service: PerformanceService;
   let mockDb: ReturnType<typeof createMockDb>;
+  let mockCache: CacheService;
 
   beforeEach(() => {
     mockDb = createMockDb();
-    service = new PerformanceService(mockDb as unknown as ConstructorParameters<typeof PerformanceService>[0]);
+    mockCache = createMockCacheService();
+    service = new PerformanceService(
+      mockDb as unknown as ConstructorParameters<typeof PerformanceService>[0],
+      mockCache,
+    );
   });
 
   describe('findByGenre', () => {
