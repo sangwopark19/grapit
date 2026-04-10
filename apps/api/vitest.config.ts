@@ -8,6 +8,11 @@ export default defineConfig({
     root: './src',
     hookTimeout: 30000,
     testTimeout: 30000,
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/*.integration.spec.ts',
+    ],
   },
   resolve: {
     alias: {
