@@ -1,20 +1,24 @@
 ---
 phase: 07-valkey
 verified: 2026-04-10T04:00:00Z
+re_verified: 2026-04-10T04:30:00Z
 status: human_needed
-score: 8/10 must-haves verified
-gaps:
+score: 10/10 must-haves verified (code-level)
+gaps: []
+gaps_resolved:
   - truth: "Socket.IO Redis adapter가 동일 ioredis 클라이언트(REDIS_CLIENT)를 사용하여 Valkey pub/sub로 동작한다"
-    status: partial
-    reason: "redis-io.adapter.ts에 createSocketIoRedisAdapter() 함수가 정의되어 있으나, main.ts 또는 어떤 모듈에서도 app.useAdapter()로 연결되지 않았다. 현재 Socket.IO는 Redis 없이 단독 서버 모드로 실행 중이며, 다중 인스턴스 간 pub/sub 동기화가 동작하지 않는다."
-    artifacts:
-      - path: "apps/api/src/modules/booking/providers/redis-io.adapter.ts"
-        issue: "createSocketIoRedisAdapter() 함수가 정의만 되어 있고 app.useAdapter() 호출이 없다"
-      - path: "apps/api/src/main.ts"
-        issue: "createSocketIoRedisAdapter 임포트 및 app.useAdapter() 호출이 없다"
-    missing:
-      - "main.ts에서 REDIS_CLIENT를 주입받아 createSocketIoRedisAdapter를 호출하고 app.useAdapter()에 연결해야 한다"
-      - "또는 BookingGateway가 @WebSocketGateway 데코레이터 내에서 adapter를 설정해야 한다"
+    resolved_in: "commit 2747566 fix(07-04): wire Socket.IO to REDIS_CLIENT via RedisIoAdapter"
+    resolution: |
+      apps/api/src/modules/booking/providers/redis-io.adapter.ts에 NestJS
+      IoAdapter를 확장한 `RedisIoAdapter` 클래스를 추가했다. `connectToRedis()`가
+      주입된 ioredis 클라이언트를 `duplicate()`하여 @socket.io/redis-adapter용
+      pub/sub 쌍을 구성하고, `createIOServer()`에서 server.adapter()로 연결한다.
+      InMemoryRedis mock처럼 `duplicate()`가 없는 클라이언트는 false를 반환하고
+      기본 in-process adapter로 graceful fallback 한다.
+      main.ts의 bootstrap()이 REDIS_CLIENT를 DI에서 해석하여 `app.useWebSocketAdapter()`에
+      등록하므로 Cloud Run 다중 인스턴스에서 seat-update 이벤트가 Valkey pub/sub를
+      통해 전파된다. 단위 테스트 3건(wired TRUE / fallback FALSE / safe duplicate)이
+      redis-io.adapter.spec.ts에 추가되었고 148/148 테스트가 통과한다.
 human_verification:
   - test: "Cloud Run 배포 후 좌석 잠금(SET NX + TTL) 동작 확인"
     expected: "lockSeat 호출 시 Valkey(10.178.0.3:6379)에 SET NX가 성공하고, 600초(10분) 후 키가 자동 만료된다"
@@ -34,8 +38,8 @@ human_verification:
 
 **Phase Goal:** Upstash Redis 제거, ioredis 단일 클라이언트로 Google Memorystore for Valkey에 연결하여 인프라를 단순화한다
 **Verified:** 2026-04-10T04:00:00Z
-**Status:** human_needed
-**Re-verification:** No — initial verification
+**Re-verified:** 2026-04-10T04:30:00Z — VALK-04 gap closed by commit `2747566`
+**Status:** human_needed (code-level VERIFIED 10/10, 4 items require post-deploy runtime verification)
 
 ## Goal Achievement
 
@@ -47,14 +51,14 @@ human_verification:
 | 2 | REDIS_CLIENT 단일 Symbol로 provider가 통합되어 있다 | VERIFIED | redis.provider.ts: `export const REDIS_CLIENT = Symbol('REDIS_CLIENT')`. UPSTASH_REDIS/IOREDIS_CLIENT 심볼 없음 |
 | 3 | BookingService eval() 3곳이 ioredis 플랫 시그니처(script, numKeys, ...keysAndArgs)를 사용한다 | VERIFIED | lockSeat: `eval(LOCK_SEAT_LUA, 3, ...)`, unlockSeat: `eval(UNLOCK_SEAT_LUA, 3, ...)`, getSeatStatus: `eval(GET_VALID_LOCKED_SEATS_LUA, 1, ...)` |
 | 4 | InMemoryRedis mock의 eval()이 ioredis 시그니처로 동작한다 | VERIFIED | redis.provider.ts line 109: `async eval(_script: string, numKeys: number, ...keysAndArgs: (string \| number)[])` |
-| 5 | Socket.IO Redis adapter가 동일 ioredis 클라이언트(REDIS_CLIENT)를 사용한다 | FAILED | createSocketIoRedisAdapter()는 정의만 있고 main.ts에서 app.useAdapter() 연결 없음 |
+| 5 | Socket.IO Redis adapter가 동일 ioredis 클라이언트(REDIS_CLIENT)를 사용한다 | VERIFIED | commit `2747566`: `RedisIoAdapter` NestJS class 추가 + main.ts `useWebSocketAdapter()` 연결. InMemoryRedis 시 graceful fallback. 148/148 tests |
 | 6 | CacheService(get/set/invalidate/invalidatePattern)가 존재하고 ioredis REDIS_CLIENT를 주입받는다 | VERIFIED | cache.service.ts: `@Inject(REDIS_CLIENT) private readonly redis: IORedis`. DEFAULT_TTL=300 확인 |
 | 7 | PerformanceService 5개 엔드포인트에 read-through 캐시가 적용되어 있다 | VERIFIED | findByGenre/findById/getHomeBanners/getHotPerformances/getNewPerformances 모두 캐시 hit/miss 패턴 구현 |
 | 8 | AdminService 7개 쓰기 경로에 캐시 무효화가 적용되어 있다 | VERIFIED | createPerformance/updatePerformance/deletePerformance(invalidateCatalogCache 헬퍼), createBanner/updateBanner/deleteBanner/reorderBanners(cache:home:banners) |
 | 9 | scripts/provision-valkey.sh가 존재하고 실행 가능하다 | VERIFIED | 파일 존재 + chmod +x 확인. gcloud memorystore instances create, PSC policy, VALKEY_8_0, asia-northeast3 포함 |
 | 10 | deploy.yml에 Direct VPC Egress 플래그 3개 + REDIS_URL Secret이 추가되어 있다 | VERIFIED | --network=default, --subnet=default, --vpc-egress=private-ranges-only 및 REDIS_URL=redis-url:latest 확인. UPSTASH 관련 변수 없음 |
 
-**Score:** 8/10 truths (Truth #5 FAILED — Socket.IO adapter 미연결)
+**Score:** 10/10 truths (Truth #5 resolved by commit `2747566` during verification cycle)
 
 ---
 
@@ -84,7 +88,7 @@ human_verification:
 | performance.service.ts | cache.service.ts | DI injection | WIRED | `this.cacheService.get/set` 11곳 |
 | admin.service.ts | cache.service.ts | DI injection | WIRED | `this.cacheService.invalidate/invalidatePattern` 11곳 |
 | admin.module.ts | performance.module.ts | imports array | WIRED | `imports: [PerformanceModule, ...]` — CacheService 자동 주입 |
-| redis-io.adapter.ts | main.ts | app.useAdapter() | NOT_WIRED | createSocketIoRedisAdapter() 정의만 있고 main.ts에서 호출 없음 |
+| redis-io.adapter.ts | main.ts | app.useWebSocketAdapter() | WIRED | commit `2747566`: main.ts bootstrap()에서 `RedisIoAdapter` 인스턴스화 + `connectToRedis()` + `app.useWebSocketAdapter()` |
 | deploy.yml | GCP Secret Manager | secrets mapping | WIRED | REDIS_URL=redis-url:latest |
 
 ---
@@ -114,7 +118,7 @@ Step 7b: SKIPPED (Valkey 인스턴스가 VPC 내부 전용 엔드포인트 10.17
 | VALK-01 | Plan 07-01 | @upstash/redis 제거, ioredis 단일 클라이언트로 Valkey 연결 통합 | SATISFIED | package.json에서 제거, REDIS_CLIENT 단일 Symbol, src/ 전체 import 제거 |
 | VALK-02 | Plan 07-03 | Google Memorystore for Valkey 프로비저닝 (PSC + Direct VPC Egress) | SATISFIED | provision-valkey.sh 실행 완료(07-03-SUMMARY), 인스턴스 ACTIVE, deploy.yml VPC 플래그 적용 |
 | VALK-03 | Plan 07-01 | 좌석 잠금 Lua 스크립트 Valkey 호환성 검증 및 수정 | SATISFIED (코드 수준) | eval() ioredis 플랫 시그니처로 변환, InMemoryRedis mock 동기화, 16/16 테스트 통과. 런타임 Valkey 검증은 human_verification |
-| VALK-04 | Plan 07-01 | Socket.IO Redis adapter가 ioredis로 Valkey pub/sub 정상 동작 확인 | BLOCKED | createSocketIoRedisAdapter()가 정의되어 있으나 main.ts에서 app.useAdapter() 연결 없음. 단일 인스턴스에서는 동작하지만 다중 인스턴스 pub/sub 불가 |
+| VALK-04 | Plan 07-01 | Socket.IO Redis adapter가 ioredis로 Valkey pub/sub 정상 동작 확인 | SATISFIED (코드 수준) | commit `2747566`: `RedisIoAdapter` 클래스 + main.ts `useWebSocketAdapter()` 연결. 단위 테스트 3건으로 wired/fallback 분기 검증. 런타임 다중 인스턴스 검증은 human_verification #4 |
 | VALK-05 | Plan 07-03 | Cloud Run → Valkey VPC 네트워킹 설정 | SATISFIED (코드 수준) | deploy.yml에 --network=default --subnet=default --vpc-egress=private-ranges-only 적용. 실제 연결 확인은 human_verification |
 | VALK-06 | Plan 07-02 | 성능 카탈로그 캐시 레이어 구현 | SATISFIED | CacheService + PerformanceService 5개 캐시 + AdminService 7개 무효화. TTL 300초. 145/145 테스트 통과 |
 
@@ -125,7 +129,7 @@ Step 7b: SKIPPED (Valkey 인스턴스가 VPC 내부 전용 엔드포인트 10.17
 | File | Line | Pattern | Severity | Impact |
 |------|------|---------|----------|--------|
 | apps/api/dist/ | N/A | 오래된 빌드 아티팩트에 @upstash/redis 참조 남아 있음 | INFO | dist/는 런타임에 사용되지 않음 (Docker 이미지에서 새 빌드 수행). 무시 가능 |
-| apps/api/src/modules/booking/providers/redis-io.adapter.ts | 1-16 | createSocketIoRedisAdapter() 정의만 있고 실제 연결 없음 | WARNING | Socket.IO가 Redis adapter 없이 실행 중. 단일 인스턴스에서는 동작하지만 Cloud Run 다중 인스턴스 배포 시 좌석 상태가 인스턴스 간 동기화되지 않음 |
+| ~~apps/api/src/modules/booking/providers/redis-io.adapter.ts~~ | ~~1-16~~ | ~~createSocketIoRedisAdapter() 정의만 있고 실제 연결 없음~~ | RESOLVED | commit `2747566`에서 `RedisIoAdapter` 클래스 + main.ts 연결로 해소. 단위 테스트 3건 추가 |
 | apps/api/src/modules/admin/admin.service.ts | 39-47 | invalidatePattern에서 KEYS 명령어 사용 (O(N)) | INFO | Plan 07 SUMMARY에서 accept로 결정. 현재 캐시 키 수 <1k로 안전. 트래픽 증가 시 SCAN으로 교체 필요 |
 
 ---
@@ -160,35 +164,34 @@ Step 7b: SKIPPED (Valkey 인스턴스가 VPC 내부 전용 엔드포인트 10.17
 
 ### Gaps Summary
 
-**VALK-04 (Socket.IO Redis adapter 미연결) — 코드 레벨 버그:**
+**모든 코드 레벨 gap 해소됨.** 최초 검증에서 VALK-04(Socket.IO Redis adapter 미연결)가 FAILED로 식별되었으나, 인라인 수정으로 동일 사이클 내에서 해소되었습니다.
 
-`apps/api/src/modules/booking/providers/redis-io.adapter.ts`에 `createSocketIoRedisAdapter()` 함수가 존재하지만, `apps/api/src/main.ts` 어디에서도 `app.useAdapter()`가 호출되지 않습니다. 현재 Socket.IO는 Redis adapter 없이 단독 실행 중입니다.
+**VALK-04 해소 내역 (commit `2747566`):**
 
-**영향:** 단일 Cloud Run 인스턴스에서는 좌석 잠금 브로드캐스트가 동작합니다(같은 프로세스 내 브로드캐스트). 그러나 Cloud Run이 2개 이상의 인스턴스로 스케일 아웃되면 인스턴스 간 pub/sub 동기화가 되지 않아 일부 클라이언트가 좌석 상태 업데이트를 받지 못합니다.
+- `apps/api/src/modules/booking/providers/redis-io.adapter.ts`에 NestJS `IoAdapter`를 확장한 `RedisIoAdapter` 클래스를 추가했습니다.
+- `connectToRedis()`가 주입된 ioredis 클라이언트를 `duplicate()`하여 `@socket.io/redis-adapter`용 pub/sub 쌍을 구성하고, `createIOServer()`에서 `server.adapter()`로 연결합니다.
+- `duplicate()`가 없는 클라이언트(InMemoryRedis mock) 시 `false`를 반환하고 기본 in-process adapter로 graceful fallback — 로컬 dev(`REDIS_URL` 미설정)는 영향 없음.
+- `apps/api/src/main.ts` bootstrap()이 `REDIS_CLIENT`를 DI에서 해석하여 `app.useWebSocketAdapter()`에 등록합니다.
+- 단위 테스트 3건(`apps/api/src/modules/booking/__tests__/redis-io.adapter.spec.ts`): wired=true 분기, fallback=false 분기, safe duplicate 동작. 148/148 tests passing, `tsc --noEmit` 0 errors.
 
-**수정 방법:** main.ts에서 REDIS_CLIENT를 주입받아 app.useAdapter()로 연결하거나, NestJS WebSocket adapter 패턴에 따라 AppModule에서 처리해야 합니다.
-
-```typescript
-// main.ts 예시
-import { createSocketIoRedisAdapter } from './modules/booking/providers/redis-io.adapter.js';
-
-// bootstrap 함수 내에서:
-const redisClient = app.get<IORedis>(REDIS_CLIENT);
-app.useWebSocketAdapter(new IoAdapter(app)); // 기본 어댑터
-// 또는 Redis adapter를 직접 연결하는 커스텀 adapter 구현 필요
-```
+**런타임 검증(human_verification #4):** Cloud Run 다중 인스턴스 pub/sub 전파는 실제 배포 환경에서만 관찰 가능하므로 human_verification 항목으로 유지됩니다.
 
 ---
 
 ## 요약
 
-Phase 07 코드 작업의 핵심 목표(Upstash 제거, ioredis 통합, 캐시 레이어 구현, VPC 인프라 설정)는 대부분 달성되었습니다. 10개 Observable Truth 중 8개가 코드 레벨에서 완전히 검증되었으며, 나머지 2개는 런타임(VPC) 검증이 필요합니다.
+Phase 07 코드 작업의 모든 핵심 목표(Upstash 제거, ioredis 통합, Lua 시그니처 변환, 캐시 레이어 구현, Socket.IO Redis adapter 연결, VPC 인프라 설정)가 코드 수준에서 달성되었습니다. 10개 Observable Truth 전부가 VERIFIED 상태이며, 최초 검증에서 FAILED였던 Truth #5(VALK-04 Socket.IO adapter 미연결)는 동일 사이클에서 인라인 수정(commit `2747566`)으로 해소되었습니다.
 
-**코드 레벨 버그 1건 발견:** VALK-04 — `createSocketIoRedisAdapter()`가 정의되어 있으나 `main.ts`에서 연결되지 않아 Socket.IO Redis adapter가 비활성화 상태입니다. 단일 인스턴스에서는 동작하지만 Cloud Run 스케일 아웃 시 좌석 실시간 동기화가 깨집니다.
+**남은 검증 항목 4건은 모두 런타임/배포 의존적**이며 로컬 또는 CI에서 검증 불가하여 `human_verification` 섹션에 기록되었습니다:
+1. Cloud Run 배포 후 좌석 잠금 SET NX + TTL 10분 동작
+2. CLUSTER 모드 Valkey ↔ ioredis standalone 호환성 (Plan 03 open question)
+3. Cloud Run → Valkey VPC 연결 안정성 (`[redis] Error` 부재 확인)
+4. Socket.IO Redis adapter 다중 인스턴스 pub/sub 전파
 
-다음 배포 전 수정이 권장됩니다.
+GCP 인프라는 이미 ACTIVE 상태(`grapit-valkey`, discovery endpoint `10.178.0.3:6379`, Secret Manager `redis-url` v1, Cloud Run SA에 `secretmanager.secretAccessor` 바인딩 완료)이므로 다음 Cloud Run 배포부터 즉시 실연동됩니다.
 
 ---
 
 _Verified: 2026-04-10T04:00:00Z_
-_Verifier: Claude (gsd-verifier)_
+_Re-verified: 2026-04-10T04:30:00Z (VALK-04 gap closed inline)_
+_Verifier: Claude (gsd-verifier) + inline gap closure (gsd orchestrator)_
