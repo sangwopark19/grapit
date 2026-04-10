@@ -98,7 +98,11 @@ NOL 티켓(nol.interpark.com/ticket)을 상세 분석한 5개 문서가 docs/에
 | Drizzle ORM (TypeORM/Prisma 제외) | 14x 낮은 지연, ~7kb 번들, SQL-first | ✓ Good — 스키마 기반 zod 통합, 빠른 cold start |
 | Access token Zustand 메모리 저장 | OWASP XSS 방어 best practice | ✓ Good — localStorage 노출 없음, 401 자동 refresh |
 | ~~Redis 이원화 (Upstash HTTP + ioredis TCP)~~ | ~~Pub/Sub는 TCP 필수, 나머지는 서버리스 HTTP~~ | ✗ Reversed in Phase 7 — ioredis 단일화 + Google Memorystore for Valkey(VPC private endpoint)로 전환. 이원화의 운영 복잡도가 Valkey 전환 비용보다 커서 `@upstash/redis` 제거 |
-| ioredis 단일 클라이언트 + Memorystore Valkey | Cloud Run Direct VPC Egress로 private endpoint 직결, Lua 스크립트 호환성 + Socket.IO Redis adapter 양쪽을 동일 클라이언트로 처리 | Phase 7 — 코드 완료, 배포 후 런타임 검증 4건 대기 |
+| ioredis 단일 클라이언트 + Memorystore Valkey | Cloud Run Direct VPC Egress로 private endpoint 직결, Lua 스크립트 호환성 + Socket.IO Redis adapter 양쪽을 동일 클라이언트로 처리 | Phase 7 — 코드 완료 (plans 01~05), 배포 후 런타임 검증 4건 대기 |
+| Production REDIS_URL hard-fail + InMemoryRedis dev-only | 미설정 시 silent fallback → 조용한 운영 장애 원인이 됨. `NODE_ENV=production`이면 throw, dev/test만 mock 허용 | Phase 7 Plan 04 — cross-AI 리뷰 HIGH #1 대응 |
+| CacheService invalidate best-effort | Redis 장애가 admin CRUD API를 500으로 떨어뜨리면 안 됨 → try/catch + warn 로그만 | Phase 7 Plan 04 — cross-AI 리뷰 MEDIUM #6 대응 |
+| testcontainers 기반 Valkey 통합 테스트 (격리 vitest config) | Lua 스크립트가 실제 Valkey Lua 5.1 interpreter에서 돌아가는지 단위 테스트로는 검증 불가. `pnpm test:integration`으로만 실행되어 기본 피드백 루프 보호 | Phase 7 Plan 05 — cross-AI 리뷰 HIGH #2 대응 |
+| HealthController Valkey ping (Terminus 11) | Cloud Run liveness probe가 Valkey 장애를 즉시 감지 → silent outage 차단 | Phase 7 Plan 05 — cross-AI 리뷰 MEDIUM #7 대응 |
 | Family-based refresh token rotation | 토큰 탈취 감지 | ✓ Good — SHA-256 해시 저장, 가족 단위 무효화 |
 
 ## Evolution
@@ -119,4 +123,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-10 after Phase 7 (Valkey 마이그레이션) completion*
+*Last updated: 2026-04-10 after Phase 7 re-verification (plans 04+05: operational safety fix-ups, health indicator, testcontainers integration)*
