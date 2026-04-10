@@ -109,7 +109,7 @@ export class AuthController {
       await this.authService.revokeRefreshToken(token);
     }
 
-    res.clearCookie(AUTH_COOKIE_NAME, { path: '/' });
+    res.clearCookie(AUTH_COOKIE_NAME, { path: '/', sameSite: 'none', secure: true });
 
     return { message: 'Logged out' };
   }
@@ -247,11 +247,10 @@ export class AuthController {
   }
 
   private setRefreshTokenCookie(res: Response, token: string): void {
-    const isProduction = process.env['NODE_ENV'] === 'production';
     res.cookie(AUTH_COOKIE_NAME, token, {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: 'lax',
+      secure: true,
+      sameSite: 'none',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       path: '/',
     });
