@@ -74,7 +74,11 @@ Plans:
   2. 업로드된 파일이 커스텀 도메인 CDN URL로 접근 가능
   3. 브라우저에서 CORS 에러 없이 이미지/SVG 로딩 (AllowedHeaders 명시적 설정)
   4. 기존 로컬/임시 파일 참조가 R2 URL로 완전 교체
-**Plans**: TBD
+**Plans:** 3 plans
+Plans:
+- [ ] 08-01-PLAN.md -- S3Client forcePathStyle 추가 + 검증 테스트
+- [ ] 08-02-PLAN.md -- Next.js remotePatterns + Dockerfile + deploy.yml R2 시크릿
+- [ ] 08-03-PLAN.md -- R2 인프라 설정 (버킷/CORS/토큰) + 업로드 플로우 검증
 
 ### Phase 9: 기술부채 청산
 **Goal**: v1.0에서 누적된 stub, 테스트 회귀, 미검증 항목을 해소하여 코드베이스 신뢰도를 확보한다
@@ -89,7 +93,7 @@ Plans:
 **Plans**: TBD
 
 ### Phase 10: SMS 인증 실연동
-**Goal**: 회원가입 시 실제 SMS OTP가 발송되고 인증번호 검증으로 본인 확인이 완료된다
+**Goal**: 회원가입 시 실제 SMS OTP�� 발송되고 인증번호 검증으로 본인 확인이 완료된다
 **Depends on**: Phase 9
 **Requirements**: SMS-01, SMS-02, SMS-03, SMS-04
 **Success Criteria** (what must be TRUE):
@@ -139,7 +143,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
 | 5. Polish + Launch | v1.0 | 5/5 | Complete | 2026-04-08 |
 | 6. 소셜 로그인 버그 수정 | v1.1 | 0/2 | Planning | - |
 | 7. Valkey 마이그레이션 | v1.1 | 3/5 | Executing | - |
-| 8. R2 프로덕션 연동 | v1.1 | 0/0 | Not started | - |
+| 8. R2 프로덕션 연동 | v1.1 | 0/3 | Planning | - |
 | 9. 기술부채 청산 | v1.1 | 0/0 | Not started | - |
 | 10. SMS 인증 실연동 | v1.1 | 0/0 | Not started | - |
 | 11. 어드민 대시보드 | v1.1 | 0/0 | Not started | - |
