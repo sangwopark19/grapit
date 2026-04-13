@@ -24,6 +24,8 @@ try {
   // .env not found — ok in CI/production where env vars are injected directly
 }
 
+const r2Hostname = process.env.NEXT_PUBLIC_R2_HOSTNAME;
+
 const nextConfig: NextConfig = {
   allowedDevOrigins: ['192.168.0.78', 'craig-paravail-yee.ngrok-free.dev'],
   output: 'standalone',
@@ -47,8 +49,9 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: process.env.NODE_ENV !== 'production',
     remotePatterns: [
-      // Production: R2 CDN domain (add when R2 is configured)
-      // { protocol: 'https', hostname: 'cdn.grapit.kr' },
+      ...(r2Hostname
+        ? [{ protocol: 'https' as const, hostname: r2Hostname }]
+        : []),
     ],
   },
 };
