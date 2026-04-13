@@ -30,6 +30,7 @@ export class UploadService {
       this.s3 = new S3Client({
         region: 'auto',
         endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+        forcePathStyle: true,
         credentials: {
           accessKeyId: config.get<string>('R2_ACCESS_KEY_ID', '') as string,
           secretAccessKey: config.get<string>(

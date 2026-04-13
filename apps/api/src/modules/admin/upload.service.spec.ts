@@ -101,6 +101,18 @@ describe('UploadService', () => {
 
       expect(result.publicUrl).toBe(`https://cdn.grapit.kr/${result.key}`);
     });
+
+    it('should create S3Client with forcePathStyle: true for R2 compatibility', async () => {
+      const { S3Client } = await import('@aws-sdk/client-s3');
+
+      expect(S3Client).toHaveBeenCalledWith(
+        expect.objectContaining({
+          forcePathStyle: true,
+          region: 'auto',
+          endpoint: 'https://test-account-id.r2.cloudflarestorage.com',
+        }),
+      );
+    });
   });
 
   describe('Local mode (R2 credentials not configured)', () => {
