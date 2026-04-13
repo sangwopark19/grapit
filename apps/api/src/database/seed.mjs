@@ -21,7 +21,11 @@ async function seed() {
     await client.query("DELETE FROM terms_agreements WHERE user_id IN (SELECT id FROM users WHERE email = 'admin@grapit.test')");
     await client.query("DELETE FROM users WHERE email = 'admin@grapit.test'");
 
-    // Clean existing seed data
+    // Clean existing seed data (FK-safe order)
+    await client.query('DELETE FROM payments');
+    await client.query('DELETE FROM reservation_seats');
+    await client.query('DELETE FROM reservations');
+    await client.query('DELETE FROM seat_inventories');
     await client.query('DELETE FROM banners');
     await client.query('DELETE FROM castings');
     await client.query('DELETE FROM price_tiers');
