@@ -92,7 +92,7 @@ None.
 | 260409-obb | CI 파이프라인 실패 수정 | 2026-04-09 | c937274 | [260409-obb-ci](./quick/260409-obb-ci/) |
 | 260409-os1 | 프로덕션 소셜로그인 쿠키 SameSite 버그 수정 | 2026-04-09 | 21eb3d6 | [260409-os1-gcloud](./quick/260409-os1-gcloud/) |
 | 260413-jw1 | seed.mjs에 어드민 유저(admin@grapit.test) 추가 | 2026-04-13 | 7bd1753 | [260413-jw1-admin-grapit-test](./quick/260413-jw1-admin-grapit-test/) |
-| 260413-k99 | 프로덕션 어드민 접속 불가 수정 (proxy.ts 쿠키 체크 제거) | 2026-04-13 | pending | [260413-k99-admin-grapit-test-cli](./quick/260413-k99-admin-grapit-test-cli/) |
+| 260413-k99 | 프로덕션 어드민 접속 불가 수정 (proxy.ts 쿠키 체크 제거) | 2026-04-13 | 5f15b7a | [260413-k99-admin-grapit-test-cli](./quick/260413-k99-admin-grapit-test-cli/) |
 
 ## Session Continuity
 
