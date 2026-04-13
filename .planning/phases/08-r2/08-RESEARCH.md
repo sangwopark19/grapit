@@ -341,22 +341,19 @@ R2 URL을 `<Image>` src로 전달받는 컴포넌트:
 | A2 | r2.dev rate limiting이 현재 트래픽 수준에서 문제되지 않음 | Pitfalls | 초기 트래픽이 적으므로 r2.dev로 시작 가능하나, 트래픽 증가 시 커스텀 도메인 필요 |
 | A3 | GCP Secret Manager에 R2 시크릿 저장 후 Cloud Run secrets 참조 방식 사용 | Code Examples | 현재 deploy.yml의 DATABASE_URL 등과 동일 패턴. GCP Secret Manager 접근 권한 확인 필요 |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **R2 API 토큰 발급 범위**
+1. **R2 API 토큰 발급 범위** (RESOLVED)
    - What we know: Cloudflare 대시보드에서 R2 API 토큰 발급 필요. Object Read & Write 권한 부여
-   - What's unclear: 버킷 단위 제한(특정 버킷만 접근) 가능 여부
-   - Recommendation: 보안 최소 권한 원칙에 따라 특정 버킷만 접근 가능하도록 설정. 대시보드에서 확인 후 진행
+   - Resolution: Cloudflare R2 API 토큰 생성 시 "Specify bucket(s)" 옵션으로 특정 버킷(grapit-assets)만 접근 허용 가능. 08-03-PLAN Task 1 Step 4에서 버킷 스코프 제한 명시함
 
-2. **r2.dev URL 형식**
+2. **r2.dev URL 형식** (RESOLVED)
    - What we know: r2.dev 활성화 후 공개 URL 제공. 형식은 `pub-<hash>.r2.dev` 또는 `<bucket>.<account>.r2.dev`
-   - What's unclear: 정확한 URL 형식은 버킷 생성 후 확인 필요
-   - Recommendation: 환경변수 기반 설계이므로 실제 URL 확인 후 즉시 적용 가능
+   - Resolution: 환경변수 기반 설계(R2_PUBLIC_URL, NEXT_PUBLIC_R2_HOSTNAME)이므로 정확한 URL 형식은 버킷 생성 후 즉시 적용 가능. 코드가 특정 URL 형식에 의존하지 않음
 
-3. **NEXT_PUBLIC_R2_HOSTNAME 빌드 타임 vs 런타임**
+3. **NEXT_PUBLIC_R2_HOSTNAME 빌드 타임 vs 런타임** (RESOLVED)
    - What we know: `NEXT_PUBLIC_*` 환경변수는 Next.js 빌드 타임에 인라인됨. Cloud Run 런타임 env_vars로는 주입 불가
-   - What's unclear: 없음 -- 이것은 확인된 사실
-   - Recommendation: Dockerfile의 build arg로 주입하고, deploy.yml에서 `--build-arg`로 전달 (현재 NEXT_PUBLIC_API_URL과 동일 패턴)
+   - Resolution: 확인된 사실. Dockerfile의 build arg로 주입하고, deploy.yml에서 `--build-arg`로 전달 (현재 NEXT_PUBLIC_API_URL과 동일 패턴). 08-02-PLAN에서 구현
 
 ## Environment Availability
 
