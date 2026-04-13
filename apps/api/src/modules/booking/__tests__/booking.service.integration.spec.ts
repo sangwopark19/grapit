@@ -79,10 +79,10 @@ describe('BookingService Lua scripts — real Valkey 8 integration', () => {
   const showtimeId = 'show-integ-1';
   const seatId = 'A-1';
 
-  const userSeatsKey = `user-seats:${showtimeId}:${userId}`;
-  const lockKey = `seat:${showtimeId}:${seatId}`;
-  const lockedSeatsKey = `locked-seats:${showtimeId}`;
-  const keyPrefix = `seat:${showtimeId}:`;
+  const userSeatsKey = `{${showtimeId}}:user-seats:${userId}`;
+  const lockKey = `{${showtimeId}}:seat:${seatId}`;
+  const lockedSeatsKey = `{${showtimeId}}:locked-seats`;
+  const keyPrefix = `{${showtimeId}}:seat:`;
   const LOCK_TTL = 600;
   const MAX_SEATS = 4;
 
@@ -156,7 +156,7 @@ describe('BookingService Lua scripts — real Valkey 8 integration', () => {
 
   it('rejects duplicate lock on same seat with [0, CONFLICT]', async () => {
     const otherUser = 'user-integ-2';
-    const otherUserSeatsKey = `user-seats:${showtimeId}:${otherUser}`;
+    const otherUserSeatsKey = `{${showtimeId}}:user-seats:${otherUser}`;
 
     const result = (await redis.eval(
       LOCK_SEAT_LUA,
@@ -203,7 +203,7 @@ describe('BookingService Lua scripts — real Valkey 8 integration', () => {
   it('unlock for non-owner returns 0 (no-op)', async () => {
     // Set up a lock owned by userId
     const seatId2 = 'A-2';
-    const lockKey2 = `seat:${showtimeId}:${seatId2}`;
+    const lockKey2 = `{${showtimeId}}:seat:${seatId2}`;
 
     await redis.set(lockKey2, userId, 'EX', LOCK_TTL);
     await redis.sadd(userSeatsKey, seatId2);
@@ -214,7 +214,7 @@ describe('BookingService Lua scripts — real Valkey 8 integration', () => {
       UNLOCK_SEAT_LUA,
       3,
       lockKey2,
-      `user-seats:${showtimeId}:user-impostor`,
+      `{${showtimeId}}:user-seats:user-impostor`,
       lockedSeatsKey,
       'user-impostor',
       seatId2,

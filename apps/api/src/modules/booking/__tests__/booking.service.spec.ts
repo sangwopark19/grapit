@@ -70,7 +70,7 @@ describe('BookingService', () => {
     it('cleans stale user-seats entries before count check via Lua eval', async () => {
       mockNoSoldRecord();
       // Lua returns [1, lockKey, seatId] = success
-      const lockKey = `seat:${showtimeId}:${seatId}`;
+      const lockKey = `{${showtimeId}}:seat:${seatId}`;
       mockRedis.eval.mockResolvedValue([1, lockKey, seatId]);
 
       const before = Date.now();
@@ -87,9 +87,9 @@ describe('BookingService', () => {
       expect(script).toContain('SMEMBERS');
       expect(script).toContain('EXISTS');
       expect(numKeys).toBe(3);
-      expect(flatKeys).toContain(`user-seats:${showtimeId}:${userId}`);
-      expect(flatKeys).toContain(`seat:${showtimeId}:${seatId}`);
-      expect(flatKeys).toContain(`locked-seats:${showtimeId}`);
+      expect(flatKeys).toContain(`{${showtimeId}}:user-seats:${userId}`);
+      expect(flatKeys).toContain(`{${showtimeId}}:seat:${seatId}`);
+      expect(flatKeys).toContain(`{${showtimeId}}:locked-seats`);
 
       // Verify response shape
       expect(result.success).toBe(true);
@@ -120,7 +120,7 @@ describe('BookingService', () => {
 
     it('calls gateway.broadcastSeatUpdate after successful lock', async () => {
       mockNoSoldRecord();
-      const lockKey = `seat:${showtimeId}:${seatId}`;
+      const lockKey = `{${showtimeId}}:seat:${seatId}`;
       mockRedis.eval.mockResolvedValue([1, lockKey, seatId]);
 
       await service.lockSeat(userId, showtimeId, seatId);
@@ -164,7 +164,7 @@ describe('BookingService', () => {
 
       it('should proceed to Redis lock when no sold record exists in seat_inventories', async () => {
         mockNoSoldRecord();
-        mockRedis.eval.mockResolvedValue([1, `seat:${showtimeId}:${seatId}`, seatId]);
+        mockRedis.eval.mockResolvedValue([1, `{${showtimeId}}:seat:${seatId}`, seatId]);
 
         const result = await service.lockSeat(userId, showtimeId, seatId);
 
@@ -175,7 +175,7 @@ describe('BookingService', () => {
 
       it('should proceed normally when seat_inventories record exists with status=available', async () => {
         mockNoSoldRecord();
-        mockRedis.eval.mockResolvedValue([1, `seat:${showtimeId}:${seatId}`, seatId]);
+        mockRedis.eval.mockResolvedValue([1, `{${showtimeId}}:seat:${seatId}`, seatId]);
 
         const result = await service.lockSeat(userId, showtimeId, seatId);
 
@@ -205,9 +205,9 @@ describe('BookingService', () => {
       expect(script).toContain('SREM');
       expect(numKeys).toBe(3);
       expect(flatKeys).toEqual([
-        `seat:${showtimeId}:${seatId}`,
-        `user-seats:${showtimeId}:${userId}`,
-        `locked-seats:${showtimeId}`,
+        `{${showtimeId}}:seat:${seatId}`,
+        `{${showtimeId}}:user-seats:${userId}`,
+        `{${showtimeId}}:locked-seats`,
       ]);
       expect(flatArgs).toEqual([userId, seatId]);
     });
@@ -260,12 +260,12 @@ describe('BookingService', () => {
       expect(result.unlockedSeats).toEqual(['A-1', 'A-2']);
 
       // Verify del called for each seat lock key
-      expect(mockRedis.del).toHaveBeenCalledWith(`seat:${showtimeId}:A-1`);
-      expect(mockRedis.del).toHaveBeenCalledWith(`seat:${showtimeId}:A-2`);
+      expect(mockRedis.del).toHaveBeenCalledWith(`{${showtimeId}}:seat:A-1`);
+      expect(mockRedis.del).toHaveBeenCalledWith(`{${showtimeId}}:seat:A-2`);
 
       // Verify srem called for locked-seats for each seat
       const lockedSeatsCalls = mockRedis.srem.mock.calls.filter(
-        (call: unknown[]) => typeof call[0] === 'string' && (call[0] as string).startsWith('locked-seats:'),
+        (call: unknown[]) => typeof call[0] === 'string' && (call[0] as string).includes(':locked-seats'),
       );
       expect(lockedSeatsCalls).toHaveLength(2);
 
@@ -275,7 +275,7 @@ describe('BookingService', () => {
       expect(mockGateway.broadcastSeatUpdate).toHaveBeenCalledWith(showtimeId, 'A-2', 'available', userId);
 
       // Verify user-seats key deleted entirely at the end
-      expect(mockRedis.del).toHaveBeenCalledWith(`user-seats:${showtimeId}:${userId}`);
+      expect(mockRedis.del).toHaveBeenCalledWith(`{${showtimeId}}:user-seats:${userId}`);
     });
 
     it('skips seats not owned by user', async () => {
@@ -292,7 +292,7 @@ describe('BookingService', () => {
       expect(result.unlockedSeats).toEqual(['A-1']);
 
       // Verify del called only for A-1
-      expect(mockRedis.del).toHaveBeenCalledWith(`seat:${showtimeId}:A-1`);
+      expect(mockRedis.del).toHaveBeenCalledWith(`{${showtimeId}}:seat:A-1`);
 
       // Verify broadcast only for A-1
       expect(mockGateway.broadcastSeatUpdate).toHaveBeenCalledTimes(1);
@@ -340,8 +340,8 @@ describe('BookingService', () => {
       expect(script).toContain('SMEMBERS');
       expect(script).toContain('EXISTS');
       expect(numKeys).toBe(1);
-      expect(flatKeys).toEqual([`locked-seats:${showtimeId}`]);
-      expect(flatArgs).toEqual([`seat:${showtimeId}:`]);
+      expect(flatKeys).toEqual([`{${showtimeId}}:locked-seats`]);
+      expect(flatArgs).toEqual([`{${showtimeId}}:seat:`]);
     });
   });
 });

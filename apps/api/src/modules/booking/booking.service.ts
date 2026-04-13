@@ -18,14 +18,16 @@ const LOCK_TTL = 600;
  * Lua script for atomic seat locking.
  * Cleans stale user-seats entries, checks count, SET NX, SADD + EXPIRE.
  *
- * KEYS[1] = user-seats:{showtimeId}:{userId}
- * KEYS[2] = seat:{showtimeId}:{seatId}
- * KEYS[3] = locked-seats:{showtimeId}
+ * KEYS[1] = {showtimeId}:user-seats:{userId}
+ * KEYS[2] = {showtimeId}:seat:{seatId}
+ * KEYS[3] = {showtimeId}:locked-seats
  * ARGV[1] = userId
  * ARGV[2] = LOCK_TTL (600)
  * ARGV[3] = MAX_SEATS (4)
  * ARGV[4] = seatId
- * ARGV[5] = key prefix "seat:{showtimeId}:"
+ * ARGV[5] = key prefix "{showtimeId}:seat:"
+ *
+ * Hash tag {showtimeId} ensures all keys hash to the same Redis Cluster slot.
  */
 const LOCK_SEAT_LUA = `
 local members = redis.call('SMEMBERS', KEYS[1])
@@ -55,9 +57,9 @@ return {1, KEYS[2], ARGV[4]}
  * Lua script for atomic seat unlocking.
  * Checks ownership before deleting to prevent TOCTOU race.
  *
- * KEYS[1] = seat:{showtimeId}:{seatId}
- * KEYS[2] = user-seats:{showtimeId}:{userId}
- * KEYS[3] = locked-seats:{showtimeId}
+ * KEYS[1] = {showtimeId}:seat:{seatId}
+ * KEYS[2] = {showtimeId}:user-seats:{userId}
+ * KEYS[3] = {showtimeId}:locked-seats
  * ARGV[1] = userId
  * ARGV[2] = seatId
  * Returns: 1 if unlocked, 0 if not owner
@@ -76,8 +78,8 @@ return 0
  * Lua script to get valid locked seats, cleaning stale entries.
  * Checks each seat in locked-seats set against its actual Redis key.
  *
- * KEYS[1] = locked-seats:{showtimeId}
- * ARGV[1] = key prefix "seat:{showtimeId}:"
+ * KEYS[1] = {showtimeId}:locked-seats
+ * ARGV[1] = key prefix "{showtimeId}:seat:"
  * Returns: array of valid (still-locked) seat IDs
  */
 const GET_VALID_LOCKED_SEATS_LUA = `
@@ -122,10 +124,10 @@ export class BookingService {
       throw new ConflictException('이미 판매된 좌석입니다');
     }
 
-    const userSeatsKey = `user-seats:${showtimeId}:${userId}`;
-    const lockKey = `seat:${showtimeId}:${seatId}`;
-    const lockedSeatsKey = `locked-seats:${showtimeId}`;
-    const keyPrefix = `seat:${showtimeId}:`;
+    const userSeatsKey = `{${showtimeId}}:user-seats:${userId}`;
+    const lockKey = `{${showtimeId}}:seat:${seatId}`;
+    const lockedSeatsKey = `{${showtimeId}}:locked-seats`;
+    const keyPrefix = `{${showtimeId}}:seat:`;
 
     const result = (await this.redis.eval(
       LOCK_SEAT_LUA,
@@ -165,9 +167,9 @@ export class BookingService {
    * Removes from both user-seats and locked-seats Redis sets.
    */
   async unlockSeat(userId: string, showtimeId: string, seatId: string): Promise<boolean> {
-    const lockKey = `seat:${showtimeId}:${seatId}`;
-    const userSeatsKey = `user-seats:${showtimeId}:${userId}`;
-    const lockedSeatsKey = `locked-seats:${showtimeId}`;
+    const lockKey = `{${showtimeId}}:seat:${seatId}`;
+    const userSeatsKey = `{${showtimeId}}:user-seats:${userId}`;
+    const lockedSeatsKey = `{${showtimeId}}:locked-seats`;
 
     const result = (await this.redis.eval(
       UNLOCK_SEAT_LUA,
@@ -194,8 +196,8 @@ export class BookingService {
    * and we need per-seat broadcast calls in Node.
    */
   async unlockAllSeats(userId: string, showtimeId: string): Promise<UnlockAllResponse> {
-    const userSeatsKey = `user-seats:${showtimeId}:${userId}`;
-    const lockedSeatsKey = `locked-seats:${showtimeId}`;
+    const userSeatsKey = `{${showtimeId}}:user-seats:${userId}`;
+    const lockedSeatsKey = `{${showtimeId}}:locked-seats`;
 
     const members = await this.redis.smembers(userSeatsKey);
 
@@ -206,7 +208,7 @@ export class BookingService {
     const unlockedSeats: string[] = [];
 
     for (const seatId of members) {
-      const lockKey = `seat:${showtimeId}:${seatId}`;
+      const lockKey = `{${showtimeId}}:seat:${seatId}`;
       const owner = await this.redis.get(lockKey);
 
       if (owner === userId) {
@@ -227,7 +229,7 @@ export class BookingService {
    * Returns the current user's locked seats for a showtime.
    */
   async getMyLocks(userId: string, showtimeId: string): Promise<{ seatIds: string[]; expiresAt: number | null }> {
-    const userSeats = await this.redis.smembers(`user-seats:${showtimeId}:${userId}`);
+    const userSeats = await this.redis.smembers(`{${showtimeId}}:user-seats:${userId}`);
 
     if (userSeats.length === 0) {
       return { seatIds: [], expiresAt: null };
@@ -241,7 +243,7 @@ export class BookingService {
     // Filter to only seats still actually locked by this user
     const validSeats: string[] = [];
     for (const seatId of userSeats) {
-      const owner = await this.redis.get(`seat:${showtimeId}:${seatId}`);
+      const owner = await this.redis.get(`{${showtimeId}}:seat:${seatId}`);
       if (owner === userId) validSeats.push(seatId);
     }
 
@@ -254,8 +256,8 @@ export class BookingService {
    */
   async getSeatStatus(showtimeId: string): Promise<SeatStatusResponse> {
     // 1. Get locked seats from Redis (with stale entry cleanup)
-    const lockedSeatsKey = `locked-seats:${showtimeId}`;
-    const keyPrefix = `seat:${showtimeId}:`;
+    const lockedSeatsKey = `{${showtimeId}}:locked-seats`;
+    const keyPrefix = `{${showtimeId}}:seat:`;
     const lockedSeats = (await this.redis.eval(
       GET_VALID_LOCKED_SEATS_LUA,
       1,

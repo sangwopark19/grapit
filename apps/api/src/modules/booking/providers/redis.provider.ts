@@ -29,13 +29,15 @@ class InMemoryRedis {
         this.ttls.delete(key);
         this.expiries.delete(key);
         // Clean up locked-seats and user-seats when a seat lock expires
+        // Key format: {showtimeId}:seat:seatId (hash-tagged for Redis Cluster)
         const parts = key.split(':');
-        if (parts[0] === 'seat' && parts.length === 3) {
-          const [, showtimeId, seatId] = parts;
-          const lockedSet = this.sets.get(`locked-seats:${showtimeId}`);
+        if (parts[1] === 'seat' && parts.length === 3) {
+          const showtimeId = parts[0].slice(1, -1); // strip { }
+          const seatId = parts[2];
+          const lockedSet = this.sets.get(`{${showtimeId}}:locked-seats`);
           if (lockedSet) lockedSet.delete(seatId);
           const userId = value;
-          const userSet = this.sets.get(`user-seats:${showtimeId}:${userId}`);
+          const userSet = this.sets.get(`{${showtimeId}}:user-seats:${userId}`);
           if (userSet) userSet.delete(seatId);
         }
       }, opts.ex * 1000));
