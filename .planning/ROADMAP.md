@@ -77,7 +77,7 @@ Plans:
 **Plans:** 3 plans
 Plans:
 - [x] 08-01-PLAN.md -- S3Client forcePathStyle 추가 + 검증 테스트
-- [ ] 08-02-PLAN.md -- Next.js remotePatterns + Dockerfile + deploy.yml R2 시크릿
+- [x] 08-02-PLAN.md -- Next.js remotePatterns + Dockerfile + deploy.yml R2 시크릿
 - [ ] 08-03-PLAN.md -- R2 인프라 설정 (버킷/CORS/토큰) + 업로드 플로우 검증
 
 ### Phase 9: 기술부채 청산

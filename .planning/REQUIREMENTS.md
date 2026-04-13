@@ -25,7 +25,7 @@ Requirements for v1.1 안정화 + 고도화. Each maps to roadmap phases.
 - [x] **R2-01**: Cloudflare R2 API 토큰 발급 + 버킷 생성
 - [ ] **R2-02**: R2 CORS 설정 (AllowedHeaders 명시적 지정)
 - [x] **R2-03**: 포스터/SVG 프로덕션 업로드 및 CDN 서빙 동작
-- [ ] **R2-04**: 커스텀 도메인 설정 (CDN 서빙)
+- [x] **R2-04**: 커스텀 도메인 설정 (CDN 서빙)
 
 ### 기술부채 청산
 
@@ -106,7 +106,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | R2-01 | Phase 8 | Complete |
 | R2-02 | Phase 8 | Pending |
 | R2-03 | Phase 8 | Complete |
-| R2-04 | Phase 8 | Pending |
+| R2-04 | Phase 8 | Complete |
 | DEBT-01 | Phase 9 | Pending |
 | DEBT-02 | Phase 9 | Pending |
 | DEBT-03 | Phase 9 | Pending |

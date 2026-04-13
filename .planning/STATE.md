@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
 status: executing
-stopped_at: Completed 08-01-PLAN.md
-last_updated: "2026-04-13T03:09:18.033Z"
+stopped_at: Completed 08-r2-02-PLAN.md
+last_updated: "2026-04-13T03:10:14.056Z"
 last_activity: 2026-04-13 -- Phase 08 planning complete
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 10
-  completed_plans: 8
-  percent: 80
+  completed_plans: 9
+  percent: 90
 ---
 
 # Project State
@@ -59,6 +59,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 06 P01 | 5m | 2 tasks | 12 files |
 | Phase 06 P02 | 3m | 1 tasks | 5 files |
 | Phase 08 P01 | 1min | 1 tasks | 2 files |
+| Phase 08-r2 P02 | 1m | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,8 @@ Full decision log in PROJECT.md Key Decisions table (10 decisions, all Good).
 - [Phase 06]: Guard에서 factory 패턴 대신 개별 클래스 + 공통 헬퍼 함수 패턴으로 NestJS DI 안정성 확보
 - [Phase 06]: OAuth provider 봇 감지로 callback URL 직접 접근 방식의 E2E 테스트 구성
 - [Phase 08]: S3Client forcePathStyle: true 추가로 R2 path-style URL 호환성 확보
+- [Phase 08-r2]: remotePatterns에 spread+조건부 패턴으로 환경변수 미설정 시 빈 배열 유지
+- [Phase 08-r2]: R2 credentials를 secrets 섹션에 배치하여 T-08-04 위협 완화
 
 ### Pending Todos
 
@@ -90,6 +93,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-13T03:09:18.030Z
-Stopped at: Completed 08-01-PLAN.md
+Last session: 2026-04-13T03:10:14.054Z
+Stopped at: Completed 08-r2-02-PLAN.md
 Resume file: None
