@@ -56,7 +56,9 @@ Source: `apps/web/app/globals.css` lines 49-55 (already defined as CSS custom pr
 | Body | 16px (Tailwind default) | 400 (regular) | 1.5 |
 | Label/Caption | 14px (--text-caption) | 600 (semibold) | 1.4 |
 | Heading | 20px (--text-heading) | 600 (semibold) | 1.2 |
-| Display | 28px (--text-display) | 700 (bold) | 1.2 |
+| Display | 28px (--text-display) | 600 (semibold) | 1.2 |
+
+Weights used: 400 (regular), 600 (semibold) — 2 weights total.
 
 Source: `apps/web/app/globals.css` lines 58-60 (already defined as CSS custom properties)
 
@@ -99,7 +101,7 @@ Source: `apps/web/app/globals.css` lines 5-46
 | Upload error toast (CORS) | "파일 업로드 중 오류가 발생했습니다. 관리자에게 문의해주세요." |
 | Upload error toast (size limit poster) | "포스터 이미지는 5MB 이하여야 합니다." (existing) |
 | Upload error toast (size limit SVG) | "SVG 파일은 10MB 이하여야 합니다." (existing) |
-| Image load error fallback | No visible text — show placeholder icon (ImageOff from lucide) on gray-100 background |
+| Image load error fallback | No visible text — show ImageOff icon (lucide) at 24px, color gray-400, centered horizontally and vertically within the container via flexbox (`flex items-center justify-center`), on gray-100 background |
 | Empty state heading | Not applicable — upload drop zone IS the empty state (existing pattern) |
 | Empty state body | Not applicable — existing pattern preserved |
 | Destructive confirmation (remove poster) | No confirmation dialog — single click removes (existing pattern, poster only affects form state before submit) |
@@ -138,6 +140,12 @@ All `<Image>` and `<img>` tags displaying poster/banner/SVG content MUST:
 3. Use native `<img>` or `fetch` for SVG seat maps (SVG must be loaded as DOM, not optimized by Next.js Image)
 4. Handle image load errors gracefully — no broken image icons visible to user
 
+**Image load failure fallback spec:**
+- Icon: `ImageOff` from lucide, 24px size, color `text-gray-400`
+- Layout: container uses `flex items-center justify-center` to center the icon both horizontally and vertically
+- Background: `bg-gray-100` filling the full container dimensions
+- Container dimensions: poster 160px x 240px, banner aspect-ratio preserved within form width, SVG full-width within preview container
+
 ---
 
 ## Interaction States
@@ -164,7 +172,7 @@ All `<Image>` and `<img>` tags displaying poster/banner/SVG content MUST:
 ```
 [Loading] → <Image> or <img> fetches from R2 public URL
   ↓ success → Display image normally
-  ↓ fail (404 / CORS / network) → Show gray-100 placeholder (160x240 poster, aspect-ratio preserved for banners)
+  ↓ fail (404 / CORS / network) → Show gray-100 container with ImageOff icon (24px, gray-400, centered via flexbox)
 ```
 
 ---
@@ -187,6 +195,7 @@ No third-party registries used. No new shadcn components needed for this phase.
 | Remove poster button | `aria-label="포스터 삭제"` — existing |
 | Upload progress | `aria-live="polite"` on toast container (Sonner handles this) — existing |
 | Image alt text | Poster: "포스터 미리보기" (existing). Public-facing: performance title as alt text (existing) |
+| Image load error fallback | `aria-label="이미지를 불러올 수 없습니다"` on the fallback container |
 | SVG seat map | Loaded via fetch, not `<Image>` — CORS must allow GET from web origin |
 
 ---
