@@ -1,4 +1,5 @@
 import pg from 'pg';
+import argon2 from 'argon2';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
@@ -14,6 +15,12 @@ async function seed() {
   try {
     await client.query('BEGIN');
 
+    // Clean existing seed admin user (FK-safe order)
+    await client.query("DELETE FROM refresh_tokens WHERE user_id IN (SELECT id FROM users WHERE email = 'admin@grapit.test')");
+    await client.query("DELETE FROM social_accounts WHERE user_id IN (SELECT id FROM users WHERE email = 'admin@grapit.test')");
+    await client.query("DELETE FROM terms_agreements WHERE user_id IN (SELECT id FROM users WHERE email = 'admin@grapit.test')");
+    await client.query("DELETE FROM users WHERE email = 'admin@grapit.test'");
+
     // Clean existing seed data
     await client.query('DELETE FROM banners');
     await client.query('DELETE FROM castings');
@@ -24,6 +31,20 @@ async function seed() {
     await client.query('DELETE FROM venues');
 
     console.log('Cleared existing data');
+
+    // Admin user
+    const adminPasswordHash = await argon2.hash('TestAdmin2026!', {
+      type: argon2.argon2id,
+      memoryCost: 19456,
+      timeCost: 2,
+      parallelism: 1,
+    });
+
+    await client.query(`
+      INSERT INTO users (id, email, password_hash, name, phone, gender, country, birth_date, role, is_phone_verified, is_email_verified)
+      VALUES (gen_random_uuid(), 'admin@grapit.test', $1, '관리자', '010-0000-0000', 'unspecified', 'KR', '1990-01-01', 'admin', true, true)
+    `, [adminPasswordHash]);
+    console.log('Inserted admin user: admin@grapit.test');
 
     // Venues
     const venueRows = await client.query(`
