@@ -5,7 +5,7 @@ milestone_name: 안정화 + 고도화
 status: executing
 stopped_at: Phase 08 complete — all 3 plans executed and deployed
 last_updated: "2026-04-13T03:34:00.000Z"
-last_activity: 2026-04-13 -- Phase 08 R2 프로덕션 연동 완료
+last_activity: 2026-04-13 -- Quick task 260413-k99: 프로덕션 어드민 접속 불가 수정
 progress:
   total_phases: 7
   completed_phases: 3
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 Phase: 8 (completed)
 Plan: 3/3 완료
 Status: Phase complete, deployed to production
-Last activity: 2026-04-13 -- Phase 08 R2 프로덕션 연동 완료
+Last activity: 2026-04-13 -- Quick task 260413-k99: 프로덕션 어드민 접속 불가 수정
 
 Progress: [██████████] 100%
 
@@ -92,6 +92,7 @@ None.
 | 260409-obb | CI 파이프라인 실패 수정 | 2026-04-09 | c937274 | [260409-obb-ci](./quick/260409-obb-ci/) |
 | 260409-os1 | 프로덕션 소셜로그인 쿠키 SameSite 버그 수정 | 2026-04-09 | 21eb3d6 | [260409-os1-gcloud](./quick/260409-os1-gcloud/) |
 | 260413-jw1 | seed.mjs에 어드민 유저(admin@grapit.test) 추가 | 2026-04-13 | 7bd1753 | [260413-jw1-admin-grapit-test](./quick/260413-jw1-admin-grapit-test/) |
+| 260413-k99 | 프로덕션 어드민 접속 불가 수정 (proxy.ts 쿠키 체크 제거) | 2026-04-13 | pending | [260413-k99-admin-grapit-test-cli](./quick/260413-k99-admin-grapit-test-cli/) |
 
 ## Session Continuity
 
