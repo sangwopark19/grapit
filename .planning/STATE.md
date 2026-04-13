@@ -91,9 +91,10 @@ None.
 |---|-------------|------|--------|-----------|
 | 260409-obb | CI 파이프라인 실패 수정 | 2026-04-09 | c937274 | [260409-obb-ci](./quick/260409-obb-ci/) |
 | 260409-os1 | 프로덕션 소셜로그인 쿠키 SameSite 버그 수정 | 2026-04-09 | 21eb3d6 | [260409-os1-gcloud](./quick/260409-os1-gcloud/) |
+| 260413-jw1 | seed.mjs에 어드민 유저(admin@grapit.test) 추가 | 2026-04-13 | 7bd1753 | [260413-jw1-admin-grapit-test](./quick/260413-jw1-admin-grapit-test/) |
 
 ## Session Continuity
 
-Last session: 2026-04-13T03:34:00.000Z
-Stopped at: Phase 08 complete — all plans executed, deployed, verified
+Last session: 2026-04-13T05:30:00.000Z
+Stopped at: Quick task 260413-jw1 complete — admin user seed added
 Resume file: None
