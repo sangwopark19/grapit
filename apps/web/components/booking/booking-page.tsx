@@ -7,7 +7,6 @@ import { toast } from 'sonner';
 import type { SeatSelection, SeatState, SeatMapConfig } from '@grapit/shared';
 import { usePerformanceDetail } from '@/hooks/use-performances';
 import {
-  useShowtimes,
   useSeatStatus,
   useMyLocks,
   useLockSeat,
@@ -41,7 +40,6 @@ export function BookingPage({ performanceId }: { performanceId: string }) {
   const router = useRouter();
   const { data: performance, isLoading: performanceLoading } =
     usePerformanceDetail(performanceId);
-  const { data: showtimesData } = useShowtimes(performanceId);
 
   const {
     selectedDate,
@@ -65,10 +63,10 @@ export function BookingPage({ performanceId }: { performanceId: string }) {
   const unlockSeat = useUnlockSeat();
   const unlockAll = useUnlockAllSeats();
 
-  // All showtimes from either dedicated hook or performance detail
+  // All showtimes sourced from performance detail
   const allShowtimes = useMemo(
-    () => showtimesData ?? performance?.showtimes ?? [],
-    [showtimesData, performance?.showtimes],
+    () => performance?.showtimes ?? [],
+    [performance?.showtimes],
   );
 
   // Available dates: unique dates from showtimes

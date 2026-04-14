@@ -23,17 +23,6 @@ interface MyLocksResponse {
 
 export type { SeatSelection, SeatStatusResponse, LockSeatRequest, LockSeatResponse, UnlockAllResponse };
 
-export function useShowtimes(performanceId: string) {
-  return useQuery({
-    queryKey: ['showtimes', performanceId],
-    queryFn: () =>
-      apiClient.get<import('@grapit/shared').Showtime[]>(
-        `/api/v1/performances/${performanceId}/showtimes`,
-      ),
-    enabled: false,
-  });
-}
-
 export function useSeatStatus(showtimeId: string | null) {
   return useQuery({
     queryKey: ['seat-status', showtimeId],
