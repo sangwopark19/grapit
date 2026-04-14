@@ -14,6 +14,7 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAdminBookingDetail } from '@/hooks/use-reservations';
+import { formatDateTime } from '@/lib/format-datetime';
 import type { ReservationStatus } from '@grapit/shared';
 
 const STATUS_CONFIG: Record<
@@ -37,16 +38,6 @@ const STATUS_CONFIG: Record<
     className: 'bg-[#FEF2F2] text-[#C62828] border-transparent',
   },
 };
-
-function formatDateTime(dateString: string): string {
-  const date = new Date(dateString);
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  const h = String(date.getHours()).padStart(2, '0');
-  const min = String(date.getMinutes()).padStart(2, '0');
-  return `${y}.${m}.${d} ${h}:${min}`;
-}
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -147,7 +138,7 @@ export function AdminBookingDetailModal({
                 <Separator />
                 <InfoRow
                   label="결제일시"
-                  value={booking.paymentInfo.paidAt ? formatDateTime(booking.paymentInfo.paidAt) : '—'}
+                  value={formatDateTime(booking.paymentInfo.paidAt)}
                 />
                 <Separator />
               </>
