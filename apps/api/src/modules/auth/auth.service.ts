@@ -15,6 +15,7 @@ import { DRIZZLE, type DrizzleDB } from '../../database/drizzle.provider.js';
 import * as schema from '../../database/schema/index.js';
 import { UserRepository } from '../user/user.repository.js';
 import { SmsService } from '../sms/sms.service.js';
+import { EmailService } from './email/email.service.js';
 import type { RegisterBody } from './dto/register.dto.js';
 import type { SocialRegisterBody } from './dto/social-register.dto.js';
 import type { SocialProfile } from './interfaces/social-profile.interface.js';
@@ -55,6 +56,7 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly userRepository: UserRepository,
     private readonly smsService: SmsService,
+    private readonly emailService: EmailService,
     @Inject(DRIZZLE) private readonly db: DrizzleDB,
   ) {}
 
@@ -231,13 +233,11 @@ export class AuthService {
       { secret, expiresIn: '1h' },
     );
 
-    // Send email (dev: console.log, prod: Resend via EmailService — wired in Task 5)
+    // Dispatch reset link via EmailService (dev: console.log mock, prod: Resend).
     const frontendUrl = this.configService.get<string>('FRONTEND_URL');
     const resetLink = `${frontendUrl}/auth/reset-password?token=${resetToken}`;
 
-    // TODO(09-02): Wire EmailService.sendPasswordResetEmail in Task 5.
-    // For now, log the link (will be replaced with actual email service)
-    console.log(`[Password Reset] Link for ${email}: ${resetLink}`);
+    await this.emailService.sendPasswordResetEmail(email, resetLink);
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {

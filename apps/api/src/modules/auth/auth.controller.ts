@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
+import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js';
@@ -116,6 +117,8 @@ export class AuthController {
 
   @Public()
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 3, ttl: 900000 } })
+  // 3 req / 15 min / IP (REVIEWS.md HIGH-04; v6 object signature, ttl = 900_000ms = 15min, NOT 900s)
   @Post('password-reset/request')
   async requestReset(
     @Body(new ZodValidationPipe(resetPasswordRequestBodySchema))
@@ -127,6 +130,8 @@ export class AuthController {
 
   @Public()
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 3, ttl: 900000 } })
+  // 3 req / 15 min / IP (REVIEWS.md HIGH-04; v6 object signature)
   @Post('password-reset/confirm')
   async confirmReset(
     @Body(new ZodValidationPipe(resetPasswordBodySchema))

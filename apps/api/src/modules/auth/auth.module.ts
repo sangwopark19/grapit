@@ -11,12 +11,14 @@ import { NaverStrategy } from './strategies/naver.strategy.js';
 import { GoogleStrategy } from './strategies/google.strategy.js';
 import { UserModule } from '../user/user.module.js';
 import { SmsModule } from '../sms/sms.module.js';
+import { EmailModule } from './email/email.module.js';
 
 @Module({
   imports: [
     PassportModule,
     UserModule,
     SmsModule,
+    EmailModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
