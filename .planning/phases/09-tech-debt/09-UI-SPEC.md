@@ -1,10 +1,11 @@
 ---
 phase: 9
 slug: tech-debt
-status: draft
+status: approved
 shadcn_initialized: true
 preset: new-york
 created: 2026-04-14
+reviewed_at: 2026-04-14
 ---
 
 # Phase 9 — UI Design Contract
@@ -332,11 +333,11 @@ Phase 9는 신규 반응형 요구사항 없음.
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS (locked toast, em dash, 법률 배너 문구, MD 타이포 매핑 확정)
-- [ ] Dimension 2 Visuals: PASS (신규 배너 명세 + MD 본문 매핑 테이블)
-- [ ] Dimension 3 Color: PASS (기존 토큰만 사용, 60/30/10 준수)
-- [ ] Dimension 4 Typography: PASS (2 weights, 3 sizes, prose-alike 매핑)
-- [ ] Dimension 5 Spacing: PASS (8-point grid 준수, 예외 없음)
-- [ ] Dimension 6 Registry Safety: PASS (shadcn official only, 신규 블록 없음)
+- [x] Dimension 1 Copywriting: PASS (locked toast, em dash, 법률 배너 문구, MD 타이포 매핑 확정)
+- [x] Dimension 2 Visuals: PASS (신규 배너 명세 + MD 본문 매핑 테이블)
+- [x] Dimension 3 Color: PASS (기존 토큰만 사용, 60/30/10 준수)
+- [x] Dimension 4 Typography: PASS (2 weights, 3 sizes, prose-alike 매핑)
+- [x] Dimension 5 Spacing: PASS (8-point grid 준수, 예외 없음)
+- [x] Dimension 6 Registry Safety: PASS (shadcn official only, 신규 블록 없음)
 
-**Approval:** pending
+**Approval:** approved 2026-04-14
