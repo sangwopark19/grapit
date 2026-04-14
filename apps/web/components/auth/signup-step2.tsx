@@ -24,11 +24,16 @@ interface SignupStep2Props {
   defaultValues: RegisterStep2Input | null;
 }
 
-const LEGAL_CONTENT: Record<string, { title: string; content: string }> = {
+// WR-07: LEGAL_CONTENT 키 집합을 타입으로 고정.
+//        LegalKey 외 임의 string 이 dialogKey 로 전달되는 경로를 차단하여
+//        LEGAL_CONTENT[dialogKey] 의 `?.` 없이 안전한 인덱싱을 가능케 한다.
+const LEGAL_CONTENT = {
   termsOfService: { title: '이용약관', content: termsOfServiceMd },
   privacyPolicy: { title: '개인정보처리방침', content: privacyPolicyMd },
   marketingConsent: { title: '마케팅 수신 동의', content: marketingConsentMd },
-};
+} as const satisfies Record<string, { title: string; content: string }>;
+
+type LegalKey = keyof typeof LEGAL_CONTENT;
 
 export function SignupStep2({ onComplete, onBack, defaultValues }: SignupStep2Props) {
   const [termsOfService, setTermsOfService] = useState(
@@ -41,7 +46,7 @@ export function SignupStep2({ onComplete, onBack, defaultValues }: SignupStep2Pr
     defaultValues?.marketingConsent ?? false,
   );
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogKey, setDialogKey] = useState<string>('termsOfService');
+  const [dialogKey, setDialogKey] = useState<LegalKey>('termsOfService');
 
   const allChecked = termsOfService && privacyPolicy && marketingConsent;
   const canProceed = termsOfService && privacyPolicy;
@@ -52,7 +57,7 @@ export function SignupStep2({ onComplete, onBack, defaultValues }: SignupStep2Pr
     setMarketingConsent(checked);
   }
 
-  function handleViewTerms(key: string) {
+  function handleViewTerms(key: LegalKey) {
     setDialogKey(key);
     setDialogOpen(true);
   }
@@ -176,13 +181,14 @@ export function SignupStep2({ onComplete, onBack, defaultValues }: SignupStep2Pr
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{LEGAL_CONTENT[dialogKey]?.title}</DialogTitle>
+            {/* WR-07: dialogKey 가 LegalKey 로 좁혀져 있어 `?.` 가 불필요. */}
+            <DialogTitle>{LEGAL_CONTENT[dialogKey].title}</DialogTitle>
             <DialogDescription className="sr-only">
-              {LEGAL_CONTENT[dialogKey]?.title} 상세 내용
+              {LEGAL_CONTENT[dialogKey].title} 상세 내용
             </DialogDescription>
           </DialogHeader>
           <LegalDraftBanner />
-          <TermsMarkdown>{LEGAL_CONTENT[dialogKey]?.content ?? ''}</TermsMarkdown>
+          <TermsMarkdown>{LEGAL_CONTENT[dialogKey].content}</TermsMarkdown>
         </DialogContent>
       </Dialog>
     </div>
