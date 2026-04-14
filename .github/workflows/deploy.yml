@@ -103,6 +103,8 @@ jobs:
             R2_PUBLIC_URL=r2-public-url:latest
             R2_ACCESS_KEY_ID=r2-access-key-id:latest
             R2_SECRET_ACCESS_KEY=r2-secret-access-key:latest
+            RESEND_API_KEY=resend-api-key:latest
+            RESEND_FROM_EMAIL=resend-from-email:latest
 
   deploy-web:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
