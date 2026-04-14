@@ -231,11 +231,11 @@ export class AuthService {
       { secret, expiresIn: '1h' },
     );
 
-    // Send email (in production, use nodemailer/SES)
+    // Send email (dev: console.log, prod: Resend via EmailService — wired in Task 5)
     const frontendUrl = this.configService.get<string>('FRONTEND_URL');
     const resetLink = `${frontendUrl}/auth/reset-password?token=${resetToken}`;
 
-    // TODO: Wire up nodemailer transport in production
+    // TODO(09-02): Wire EmailService.sendPasswordResetEmail in Task 5.
     // For now, log the link (will be replaced with actual email service)
     console.log(`[Password Reset] Link for ${email}: ${resetLink}`);
   }
