@@ -4,6 +4,7 @@ on:
     branches: [main]
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   check:
@@ -19,3 +20,38 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+
+      # REVIEWS.md HIGH-02: Hard-gate on non-fork events.
+      # main push / schedule / workflow_dispatch / same-repo PR MUST have Toss test secrets.
+      # Fork PRs: skip gracefully (GitHub Actions strips secrets for forks automatically).
+      - name: Verify Toss test secrets present (hard-gate on non-fork events)
+        if: |
+          github.event_name == 'push' ||
+          github.event_name == 'schedule' ||
+          github.event_name == 'workflow_dispatch' ||
+          (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+        env:
+          TOSS_CLIENT_KEY_TEST: ${{ secrets.TOSS_CLIENT_KEY_TEST }}
+          TOSS_SECRET_KEY_TEST: ${{ secrets.TOSS_SECRET_KEY_TEST }}
+        run: |
+          if [ -z "$TOSS_CLIENT_KEY_TEST" ] || [ -z "$TOSS_SECRET_KEY_TEST" ]; then
+            echo "Missing TOSS_CLIENT_KEY_TEST or TOSS_SECRET_KEY_TEST in repo secrets."
+            echo "Register via: gh secret set TOSS_CLIENT_KEY_TEST"
+            echo "See .planning/phases/09-tech-debt/09-CONTEXT.md D-13 for rationale."
+            exit 1
+          fi
+          echo "Toss test secrets present."
+
+      - name: Install Playwright browsers
+        run: pnpm --filter @grapit/web exec playwright install --with-deps chromium
+
+      - name: E2E tests (Toss Payments)
+        env:
+          TOSS_CLIENT_KEY_TEST: ${{ secrets.TOSS_CLIENT_KEY_TEST }}
+          TOSS_SECRET_KEY_TEST: ${{ secrets.TOSS_SECRET_KEY_TEST }}
+          NEXT_PUBLIC_TOSS_CLIENT_KEY: ${{ secrets.TOSS_CLIENT_KEY_TEST }}
+          # Blocker B2: propagate CI test user credentials (auth helper falls back
+          # to seed.mjs defaults when unset, which matches local developer flow).
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+        run: pnpm --filter @grapit/web test:e2e
