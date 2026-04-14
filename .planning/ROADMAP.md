@@ -92,8 +92,8 @@ Plans:
   5. 타입 경고 0건 + 미사용 라우트 정리 완료
 **Plans:** 3 plans
 Plans:
-- [ ] 09-01-PLAN.md -- Quick cleanup (DEBT-03 toast 일원화 + DEBT-04 formatDateTime + DEBT-06 useShowtimes 제거)
-- [ ] 09-02-PLAN.md -- Terms + Email (DEBT-02 MD 약관 + DEBT-01 Resend EmailService)
+- [x] 09-01-PLAN.md -- Quick cleanup (DEBT-03 toast 일원화 + DEBT-04 formatDateTime + DEBT-06 useShowtimes 제거)
+- [x] 09-02-PLAN.md -- Terms + Email (DEBT-02 MD 약관 + DEBT-01 Resend EmailService)
 - [ ] 09-03-PLAN.md -- Toss E2E (DEBT-05 Playwright + CI secrets + D-13 격리)
 
 ### Phase 10: SMS 인증 실연동
