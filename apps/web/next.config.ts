@@ -26,8 +26,18 @@ try {
 
 const r2Hostname = process.env.NEXT_PUBLIC_R2_HOSTNAME;
 
+// WR-04: allowedDevOrigins 를 NEXT_DEV_ALLOWED_ORIGINS 환경변수로 분리.
+// 이전에는 특정 개발자의 사설 IP(`192.168.0.78`) 및 ngrok 터널 도메인이
+// 레포에 하드코딩되어 있어 다른 협업자가 매번 수정해야 했다.
+// 빈 문자열은 필터링하며, 미설정이면 비어있는 배열을 전달한다.
+const devOriginsEnv = process.env.NEXT_DEV_ALLOWED_ORIGINS ?? '';
+const allowedDevOrigins = devOriginsEnv
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ['192.168.0.78', 'craig-paravail-yee.ngrok-free.dev'],
+  allowedDevOrigins,
   output: 'standalone',
   outputFileTracingRoot: resolve(__dirname, '../../'),
   transpilePackages: ['@grapit/shared'],
