@@ -90,7 +90,11 @@ Plans:
   3. 전체 테스트 스위트가 0 failure로 통과 (locked seat click 회귀 포함)
   4. Toss Payments 결제 플로우가 E2E로 검증 완료
   5. 타입 경고 0건 + 미사용 라우트 정리 완료
-**Plans**: TBD
+**Plans:** 3 plans
+Plans:
+- [ ] 09-01-PLAN.md -- Quick cleanup (DEBT-03 toast 일원화 + DEBT-04 formatDateTime + DEBT-06 useShowtimes 제거)
+- [ ] 09-02-PLAN.md -- Terms + Email (DEBT-02 MD 약관 + DEBT-01 Resend EmailService)
+- [ ] 09-03-PLAN.md -- Toss E2E (DEBT-05 Playwright + CI secrets + D-13 격리)
 
 ### Phase 10: SMS 인증 실연동
 **Goal**: 회원가입 시 실제 SMS OTP�� 발송되고 인증번호 검증으로 본인 확인이 완료된다
