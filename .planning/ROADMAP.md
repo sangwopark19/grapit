@@ -94,7 +94,7 @@ Plans:
 Plans:
 - [x] 09-01-PLAN.md -- Quick cleanup (DEBT-03 toast 일원화 + DEBT-04 formatDateTime + DEBT-06 useShowtimes 제거)
 - [x] 09-02-PLAN.md -- Terms + Email (DEBT-02 MD 약관 + DEBT-01 Resend EmailService)
-- [ ] 09-03-PLAN.md -- Toss E2E (DEBT-05 Playwright + CI secrets + D-13 격리)
+- [x] 09-03-PLAN.md -- Toss E2E (DEBT-05 Playwright + CI secrets + D-13 격리)
 
 ### Phase 10: SMS 인증 실연동
 **Goal**: 회원가입 시 실제 SMS OTP�� 발송되고 인증번호 검증으로 본인 확인이 완료된다
