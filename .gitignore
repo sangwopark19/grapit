@@ -20,11 +20,15 @@ dist/
 # Test coverage
 coverage/
 
-# Playwright
+# Playwright (root + per-workspace in apps/web)
 /test-results/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/blob-report/
+apps/web/playwright/.cache/
 
 # Docker volumes
 pgdata/
