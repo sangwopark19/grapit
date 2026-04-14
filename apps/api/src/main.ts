@@ -11,6 +11,21 @@ import { RedisIoAdapter } from './modules/booking/providers/redis-io.adapter.js'
 import { REDIS_CLIENT } from './modules/booking/providers/redis.provider.js';
 
 async function bootstrap() {
+  // REVIEWS.md MED: FRONTEND_URL production hard-fail.
+  // Password reset email links embed FRONTEND_URL; a missing or non-https value
+  // breaks password recovery and phishing-protection guarantees.
+  if (process.env['NODE_ENV'] === 'production') {
+    const frontendUrl = process.env['FRONTEND_URL'];
+    if (!frontendUrl || !frontendUrl.startsWith('https://')) {
+      console.error(
+        `[bootstrap] FRONTEND_URL must be an https URL in production. ` +
+          `Received: ${frontendUrl ?? '<unset>'}. ` +
+          'Reset links and email deliverability depend on this. Aborting startup.',
+      );
+      process.exit(1);
+    }
+  }
+
   const app = await NestFactory.create(AppModule);
 
   // Wire Socket.IO to the shared ioredis REDIS_CLIENT so seat-update events
