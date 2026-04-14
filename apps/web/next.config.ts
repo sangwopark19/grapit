@@ -33,6 +33,9 @@ const nextConfig: NextConfig = {
   transpilePackages: ['@grapit/shared'],
   turbopack: {
     root: resolve(__dirname, '../../'),
+    rules: {
+      '*.md': { as: '*.js', loaders: ['raw-loader'] },
+    },
   },
   async rewrites() {
     return [
