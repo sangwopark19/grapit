@@ -106,3 +106,48 @@ export const useBookingStore = create<BookingState>((set) => ({
 
   resetBooking: () => set(initialState),
 }));
+
+// ============================================================================
+// E2E fixture hook (dev/test only) — Phase 9 DEBT-05 / REVIEWS.md HIGH-01
+// Allows Playwright specs to inject booking state via `window.__BOOKING_FIXTURE__`
+// so the confirm page doesn't redirect to /booking/:id (see confirm/page.tsx:62-66).
+//
+// Blocker B1 (revision-2): seats payload uses SeatSelection shape from
+// packages/shared/src/types/booking.types.ts:30-37 — { seatId, tierName, price,
+// row, number, tierColor? } — matching setBookingData's selectedSeats parameter.
+//
+// Production tree-shake: the `process.env.NODE_ENV !== 'production'` gate is
+// resolved at build time by Next.js / Turbopack, removing this entire block
+// from the production bundle.
+// ============================================================================
+if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+  // Defer to next tick so the store is fully constructed when we read it.
+  queueMicrotask(() => {
+    const fixture = (
+      window as unknown as {
+        __BOOKING_FIXTURE__?: {
+          performanceId: string;
+          showtimeId: string;
+          seats: SeatSelection[];
+          performanceTitle: string;
+          showDateTime: string;
+          venue: string;
+          posterUrl?: string;
+        };
+      }
+    ).__BOOKING_FIXTURE__;
+
+    if (fixture) {
+      useBookingStore.getState().setBookingData({
+        selectedSeats: fixture.seats,
+        showtimeId: fixture.showtimeId,
+        performanceId: fixture.performanceId,
+        performanceTitle: fixture.performanceTitle,
+        showDateTime: fixture.showDateTime,
+        venue: fixture.venue,
+        posterUrl: fixture.posterUrl ?? null,
+        expiresAt: Date.now() + 10 * 60 * 1000,
+      });
+    }
+  });
+}
