@@ -14,13 +14,30 @@ async function bootstrap() {
   // REVIEWS.md MED: FRONTEND_URL production hard-fail.
   // Password reset email links embed FRONTEND_URL; a missing or non-https value
   // breaks password recovery and phishing-protection guarantees.
+  //
+  // WR-06: split(',') 결과 각 origin 이 모두 https 여야 한다(일부가 http 면 mixed-content
+  // 조용히 허용되는 현상을 차단). 빈 문자열은 필터링한다.
+  const rawFrontend = process.env['FRONTEND_URL']?.trim() ?? '';
+  const frontendOrigins = rawFrontend
+    ? rawFrontend
+        .split(',')
+        .map((o) => o.trim())
+        .filter(Boolean)
+    : [];
+
   if (process.env['NODE_ENV'] === 'production') {
-    const frontendUrl = process.env['FRONTEND_URL'];
-    if (!frontendUrl || !frontendUrl.startsWith('https://')) {
+    if (frontendOrigins.length === 0) {
       console.error(
-        `[bootstrap] FRONTEND_URL must be an https URL in production. ` +
-          `Received: ${frontendUrl ?? '<unset>'}. ` +
-          'Reset links and email deliverability depend on this. Aborting startup.',
+        `[bootstrap] FRONTEND_URL must be set in production. ` +
+          `Reset links and email deliverability depend on this. Aborting startup.`,
+      );
+      process.exit(1);
+    }
+    const nonHttps = frontendOrigins.filter((o) => !o.startsWith('https://'));
+    if (nonHttps.length > 0) {
+      console.error(
+        `[bootstrap] All FRONTEND_URL origins must be https in production. ` +
+          `Received non-https: ${nonHttps.join(', ')}. Aborting startup.`,
       );
       process.exit(1);
     }
@@ -36,10 +53,13 @@ async function bootstrap() {
   redisIoAdapter.connectToRedis();
   app.useWebSocketAdapter(redisIoAdapter);
 
+  // WR-06: origin 은 항상 배열로 통일(dev default 포함) — express-cors 는 배열마다
+  //        요청 origin 을 echo 하므로 cookie + credentials 시 일관된 동작이 보장된다.
+  const corsOrigins =
+    frontendOrigins.length > 0 ? frontendOrigins : ['http://localhost:3000'];
+
   app.enableCors({
-    origin: process.env['FRONTEND_URL']
-      ? process.env['FRONTEND_URL'].split(',').map((o) => o.trim())
-      : 'http://localhost:3000',
+    origin: corsOrigins,
     credentials: true,
   });
 
@@ -58,4 +78,10 @@ async function bootstrap() {
   console.log(`API server running on http://localhost:${port}`);
 }
 
-bootstrap();
+bootstrap().catch((err) => {
+  // Logger 초기화 실패 가능성을 고려해 raw console.error 사용.
+  // 초기화 단계 에러(DB/Redis/helmet)는 unhandled rejection 으로 새어나가면
+  // Cloud Run stdout 에 흔적이 남지 않을 수 있어 명시적으로 exit(1) 한다.
+  console.error('[bootstrap] Fatal startup error:', err);
+  process.exit(1);
+});
