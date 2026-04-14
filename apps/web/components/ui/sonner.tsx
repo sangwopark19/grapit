@@ -15,6 +15,7 @@ function Toaster() {
         classNames: {
           success: 'bg-success-surface text-success border-success/20',
           error: 'bg-error-surface text-error border-error/20',
+          info: 'bg-info-surface text-info border-info/20',
         },
       }}
     />
