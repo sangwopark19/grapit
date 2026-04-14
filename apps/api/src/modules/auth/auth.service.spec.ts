@@ -72,6 +72,12 @@ describe('AuthService', () => {
     select: ReturnType<typeof vi.fn>;
     update: ReturnType<typeof vi.fn>;
   };
+  let mockConfigService: {
+    get: ReturnType<typeof vi.fn>;
+  };
+  let mockEmailService: {
+    sendPasswordResetEmail: ReturnType<typeof vi.fn>;
+  };
 
   beforeAll(async () => {
     preHashedPassword = await argon2.hash('Test1234!', {
@@ -97,7 +103,7 @@ describe('AuthService', () => {
       verifyAsync: vi.fn(),
     };
 
-    const mockConfigService = {
+    mockConfigService = {
       get: vi.fn().mockImplementation((key: string) => {
         const config: Record<string, string> = {
           'auth.jwtSecret': 'test-jwt-secret',
@@ -129,12 +135,18 @@ describe('AuthService', () => {
       sendVerificationCode: vi.fn().mockResolvedValue({ success: true, message: '' }),
     };
 
+    // REVIEWS.md HIGH-03: capture reset link via EmailService spy
+    mockEmailService = {
+      sendPasswordResetEmail: vi.fn().mockResolvedValue({ success: true }),
+    };
+
     // Instantiate AuthService directly (no NestJS DI overhead)
     authService = new AuthService(
       mockJwtService as unknown as JwtService,
       mockConfigService as unknown as ConfigService,
       mockUserRepo as any,
       mockSmsService as any,
+      mockEmailService as any,
       mockDb as any,
     );
   });
@@ -561,6 +573,192 @@ describe('AuthService', () => {
       expect(mockUserRepo.create).not.toHaveBeenCalled();
       // Should insert social account link
       expect(mockDb.insert).toHaveBeenCalled();
+    });
+  });
+
+  // REVIEWS.md HIGH-03 + Blocker B4 (revision-2): End-to-end password reset flow within service layer.
+  // Proves that:
+  //   (1) the reset link captured from EmailService spy can be successfully used
+  //       to complete password change — closing the roadmap success criterion
+  //       "실제 이메일 발송 + 링크를 통해 비밀번호 변경 완료" without requiring real Resend send.
+  //   (2) JwtService.verifyAsync is called with secret = `${jwtSecret}${user.passwordHash}`
+  //       (Blocker B4 — secret-rotation argument assertion; previous mock bypassed this).
+  //   (3) Once password is reset, reusing the SAME token fails because passwordHash changed,
+  //       which is the one-time-token guarantee built into auth.service.ts:227 + L262-272.
+  describe('password reset flow integration', () => {
+    const TEST_JWT_SECRET = 'test-jwt-secret';
+
+    beforeEach(() => {
+      // The test assumes configService returns a known jwtSecret so we can compose expected secret.
+      mockConfigService.get.mockImplementation((key: string) => {
+        if (key === 'auth.jwtSecret') return TEST_JWT_SECRET;
+        if (key === 'FRONTEND_URL') return 'http://localhost:3000';
+        return undefined;
+      });
+    });
+
+    it('requestPasswordReset → EmailService.sendPasswordResetEmail captures resetLink → token extracted → resetPassword succeeds → password hash changed (+ JwtService secret rotation asserted)', async () => {
+      // Setup: existing user with a current password
+      const email = 'reset@test.com';
+      const currentUser = {
+        ...mockUser,
+        id: 'test-user-id',
+        email,
+        passwordHash: preHashedPassword, // argon2 hash of 'Test1234!'
+      };
+      mockUserRepo.findByEmail.mockResolvedValue(currentUser);
+      mockUserRepo.findById.mockResolvedValue(currentUser);
+
+      // Mock jwt sign to return a deterministic token whose base64url payload decodes to
+      // { sub: 'test-user-id', purpose: 'password-reset' } (auth.service.ts:247-249 relies on this).
+      const fakeToken =
+        'header.eyJzdWIiOiJ0ZXN0LXVzZXItaWQiLCJwdXJwb3NlIjoicGFzc3dvcmQtcmVzZXQifQ.sig';
+      mockJwtService.signAsync.mockResolvedValue(fakeToken);
+
+      // Blocker B4: use mockImplementation so we can assert the `secret` arg, and emulate
+      // the real JwtService behavior where verifyAsync fails if secret is wrong.
+      mockJwtService.verifyAsync.mockImplementation(
+        async (_token: string, opts: { secret: string }) => {
+          const expected = `${TEST_JWT_SECRET}${currentUser.passwordHash ?? ''}`;
+          if (opts.secret !== expected) {
+            // Simulate the real behavior of jwtService.verifyAsync when secret mismatches.
+            throw new Error('invalid signature');
+          }
+          return { sub: currentUser.id, purpose: 'password-reset' };
+        },
+      );
+
+      // --- Act 1: request password reset ---
+      await authService.requestPasswordReset(email);
+
+      // --- Assert 1a: EmailService.sendPasswordResetEmail called with a valid reset URL ---
+      expect(mockEmailService.sendPasswordResetEmail).toHaveBeenCalledTimes(1);
+      const [toArg, linkArg] = mockEmailService.sendPasswordResetEmail.mock.calls[0] as [
+        string,
+        string,
+      ];
+      expect(toArg).toBe(email);
+      expect(linkArg).toContain('/auth/reset-password?token=');
+      expect(linkArg).toContain(fakeToken); // token is embedded in the link
+
+      // --- Assert 1b (Blocker B4): jwtService.signAsync was called with rotation-aware secret ---
+      expect(mockJwtService.signAsync).toHaveBeenCalledWith(
+        { sub: currentUser.id, purpose: 'password-reset' },
+        expect.objectContaining({
+          secret: `${TEST_JWT_SECRET}${currentUser.passwordHash ?? ''}`,
+          expiresIn: '1h',
+        }),
+      );
+
+      // --- Act 2: extract token from link (mirrors frontend `useSearchParams().get('token')`) ---
+      const tokenFromLink = new URL(linkArg, 'http://localhost:3000').searchParams.get('token');
+      expect(tokenFromLink).toBe(fakeToken);
+
+      // --- Act 3: complete password reset with new password ---
+      const newPassword = 'NewPwd9876!';
+      await authService.resetPassword(tokenFromLink!, newPassword);
+
+      // --- Assert 3a: verifyAsync was called with the OLD passwordHash in secret ---
+      // (This is what passes because findById returned currentUser with preHashedPassword.)
+      expect(mockJwtService.verifyAsync).toHaveBeenCalledWith(
+        tokenFromLink!,
+        expect.objectContaining({
+          secret: `${TEST_JWT_SECRET}${currentUser.passwordHash ?? ''}`,
+        }),
+      );
+
+      // --- Assert 3b: userRepository.updatePassword was called with a new argon2 hash ---
+      expect(mockUserRepo.updatePassword).toHaveBeenCalledTimes(1);
+      const [updatedUserId, newHash] = mockUserRepo.updatePassword.mock.calls[0] as [
+        string,
+        string,
+      ];
+      expect(updatedUserId).toBe('test-user-id');
+      expect(newHash).not.toBe(preHashedPassword); // hash changed
+      expect(newHash).toMatch(/^\$argon2id\$/); // argon2id format
+
+      // --- Assert 4: the new hash actually verifies against the new password ---
+      const argon2 = await import('argon2');
+      const isValidNew = await argon2.verify(newHash, newPassword);
+      expect(isValidNew).toBe(true);
+
+      // --- Assert 5: old password no longer verifies ---
+      const isValidOld = await argon2.verify(newHash, 'Test1234!');
+      expect(isValidOld).toBe(false);
+    }, 15000); // argon2 hash creation is expensive
+
+    it('Blocker B4: one-time token — reusing the same reset token after password change throws UnauthorizedException (passwordHash-based secret rotated)', async () => {
+      const email = 'rotate@test.com';
+      const userBefore = {
+        ...mockUser,
+        id: 'rotate-user-id',
+        email,
+        passwordHash: preHashedPassword,
+      };
+      mockUserRepo.findByEmail.mockResolvedValue(userBefore);
+
+      const fakeToken =
+        'header.eyJzdWIiOiJyb3RhdGUtdXNlci1pZCIsInB1cnBvc2UiOiJwYXNzd29yZC1yZXNldCJ9.sig';
+
+      // Track original secret at token-sign time — mimics the fact that JwtService.signAsync
+      // bakes the secret into the token and verifyAsync rejects if verification secret differs.
+      let tokenSignedSecret: string | undefined;
+      mockJwtService.signAsync.mockImplementation(
+        async (_payload: unknown, opts: { secret: string }) => {
+          tokenSignedSecret = opts.secret;
+          return fakeToken;
+        },
+      );
+
+      // Mutable ref — findById returns the "current" user state. After first resetPassword,
+      // the test mutates `currentStoredHash` so the second findById returns the rotated user.
+      let currentStoredHash = preHashedPassword;
+      mockUserRepo.findById.mockImplementation(async (id: string) =>
+        id === userBefore.id ? { ...userBefore, passwordHash: currentStoredHash } : null,
+      );
+
+      // updatePassword simulates the DB write by updating the mutable ref.
+      mockUserRepo.updatePassword.mockImplementation(async (_id: string, newHash: string) => {
+        currentStoredHash = newHash;
+      });
+
+      // Blocker B4: verifyAsync honors the secret argument — rejects if the secret
+      // used at verify-time differs from the secret used at sign-time.
+      mockJwtService.verifyAsync.mockImplementation(
+        async (_token: string, opts: { secret: string }) => {
+          if (opts.secret !== tokenSignedSecret) {
+            throw new Error('invalid signature');
+          }
+          return { sub: userBefore.id, purpose: 'password-reset' };
+        },
+      );
+
+      // --- First use: succeeds ---
+      await authService.requestPasswordReset(email);
+      // Token was signed with jwtSecret + OLD passwordHash. At verify-time the user still
+      // has the old hash, so verify secret matches → reset succeeds and hash rotates.
+      await authService.resetPassword(fakeToken, 'FirstNewPwd!1');
+
+      // Hash should have rotated.
+      expect(currentStoredHash).not.toBe(preHashedPassword);
+
+      // --- Second use: the controller-level resetPassword manually parses JWT header and
+      //     then calls verifyAsync with secret = jwtSecret + NEW passwordHash.
+      //     But the token was signed with OLD passwordHash. verifyAsync rejects.
+      await expect(
+        authService.resetPassword(fakeToken, 'SecondAttempt!2'),
+      ).rejects.toThrow(/유효하지 않은 재설정 토큰입니다/);
+
+      // updatePassword was only called once (first time).
+      expect(mockUserRepo.updatePassword).toHaveBeenCalledTimes(1);
+    }, 15000);
+
+    it('requestPasswordReset for unknown user → EmailService is NOT called (enumeration prevention preserved)', async () => {
+      mockUserRepo.findByEmail.mockResolvedValue(null);
+
+      await authService.requestPasswordReset('unknown@test.com');
+
+      expect(mockEmailService.sendPasswordResetEmail).not.toHaveBeenCalled();
     });
   });
 });
