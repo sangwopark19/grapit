@@ -600,31 +600,35 @@ describe('AuthService', () => {
     it('requestPasswordReset → EmailService.sendPasswordResetEmail captures resetLink → token extracted → resetPassword succeeds → password hash changed (+ JwtService secret rotation asserted)', async () => {
       // Setup: existing user with a current password
       const email = 'reset@test.com';
+      const testUserId = randomUUID();
       const currentUser = {
         ...mockUser,
-        id: 'test-user-id',
+        id: testUserId,
         email,
         passwordHash: preHashedPassword, // argon2 hash of 'Test1234!'
       };
       mockUserRepo.findByEmail.mockResolvedValue(currentUser);
       mockUserRepo.findById.mockResolvedValue(currentUser);
 
-      // Mock jwt sign to return a deterministic token whose base64url payload decodes to
-      // { sub: 'test-user-id', purpose: 'password-reset' } (auth.service.ts:247-249 relies on this).
-      const fakeToken =
-        'header.eyJzdWIiOiJ0ZXN0LXVzZXItaWQiLCJwdXJwb3NlIjoicGFzc3dvcmQtcmVzZXQifQ.sig';
+      // Mock jwt sign to return a deterministic token.
+      const fakeToken = 'header.payload.sig';
       mockJwtService.signAsync.mockResolvedValue(fakeToken);
 
-      // Blocker B4: use mockImplementation so we can assert the `secret` arg, and emulate
-      // the real JwtService behavior where verifyAsync fails if secret is wrong.
+      // CR-01: auth.service.ts resetPassword는 두 번 verifyAsync를 호출한다.
+      //   1) preliminary: { secret: jwtSecret, ignoreExpiration: true } — sub 추출용
+      //   2) final:       { secret: jwtSecret + passwordHash }          — one-time 토큰 검증용
+      // 두 호출 모두 성공하려면 opts 기반으로 분기한다.
       mockJwtService.verifyAsync.mockImplementation(
-        async (_token: string, opts: { secret: string }) => {
-          const expected = `${TEST_JWT_SECRET}${currentUser.passwordHash ?? ''}`;
-          if (opts.secret !== expected) {
-            // Simulate the real behavior of jwtService.verifyAsync when secret mismatches.
-            throw new Error('invalid signature');
+        async (_token: string, opts: { secret: string; ignoreExpiration?: boolean }) => {
+          const jwtOnly = TEST_JWT_SECRET;
+          const fullSecret = `${TEST_JWT_SECRET}${currentUser.passwordHash ?? ''}`;
+          if (opts.ignoreExpiration === true && opts.secret === jwtOnly) {
+            return { sub: currentUser.id, purpose: 'password-reset' };
           }
-          return { sub: currentUser.id, purpose: 'password-reset' };
+          if (opts.secret === fullSecret) {
+            return { sub: currentUser.id, purpose: 'password-reset' };
+          }
+          throw new Error('invalid signature');
         },
       );
 
@@ -673,7 +677,7 @@ describe('AuthService', () => {
         string,
         string,
       ];
-      expect(updatedUserId).toBe('test-user-id');
+      expect(updatedUserId).toBe(testUserId);
       expect(newHash).not.toBe(preHashedPassword); // hash changed
       expect(newHash).toMatch(/^\$argon2id\$/); // argon2id format
 
@@ -689,16 +693,16 @@ describe('AuthService', () => {
 
     it('Blocker B4: one-time token — reusing the same reset token after password change throws UnauthorizedException (passwordHash-based secret rotated)', async () => {
       const email = 'rotate@test.com';
+      const rotateUserId = randomUUID();
       const userBefore = {
         ...mockUser,
-        id: 'rotate-user-id',
+        id: rotateUserId,
         email,
         passwordHash: preHashedPassword,
       };
       mockUserRepo.findByEmail.mockResolvedValue(userBefore);
 
-      const fakeToken =
-        'header.eyJzdWIiOiJyb3RhdGUtdXNlci1pZCIsInB1cnBvc2UiOiJwYXNzd29yZC1yZXNldCJ9.sig';
+      const fakeToken = 'header.payload.sig';
 
       // Track original secret at token-sign time — mimics the fact that JwtService.signAsync
       // bakes the secret into the token and verifyAsync rejects if verification secret differs.
@@ -722,10 +726,14 @@ describe('AuthService', () => {
         currentStoredHash = newHash;
       });
 
-      // Blocker B4: verifyAsync honors the secret argument — rejects if the secret
-      // used at verify-time differs from the secret used at sign-time.
+      // CR-01 + Blocker B4:
+      // - preliminary verify(ignoreExpiration + jwtSecret-only): 항상 성공(sub 확보 목적).
+      // - final verify(jwtSecret + passwordHash): sign-time 의 secret 과 일치해야 성공 → rotation 후 실패.
       mockJwtService.verifyAsync.mockImplementation(
-        async (_token: string, opts: { secret: string }) => {
+        async (_token: string, opts: { secret: string; ignoreExpiration?: boolean }) => {
+          if (opts.ignoreExpiration === true && opts.secret === TEST_JWT_SECRET) {
+            return { sub: userBefore.id, purpose: 'password-reset' };
+          }
           if (opts.secret !== tokenSignedSecret) {
             throw new Error('invalid signature');
           }

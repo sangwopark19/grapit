@@ -25,6 +25,12 @@ import {
   REFRESH_TOKEN_EXPIRY_DAYS,
 } from '@grapit/shared/constants/index.js';
 
+// UUID v4 형식 검증용 regex. resetPassword 경로에서 DB lookup 전
+// sub 클레임이 실제 UUID임을 보장하여 payload-amplification DoS와
+// PostgreSQL 22P02(invalid uuid) 예외 누출을 차단한다.
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export interface ValidatedUser {
   id: string;
   email: string;
@@ -219,14 +225,18 @@ export class AuthService {
   async requestPasswordReset(email: string): Promise<void> {
     const user = await this.userRepository.findByEmail(email);
 
-    // Silently return if user not found (prevent email enumeration)
-    if (!user) {
+    // 소셜 전용 계정(passwordHash === null)은 리셋 링크를 발송하지 않는다.
+    // - 발송 시: 유저가 링크를 따라 비밀번호를 설정하면 소셜 전용 → 비밀번호 계정으로
+    //   의도치 않게 전환되고, 첫 회전 entropy 가 빈 문자열이 되어 one-time 토큰 보장이 약화된다.
+    // - 미발송 시: enumeration 방지를 위해 에러를 노출하지 않고 silent return.
+    // 유저에게 "소셜로 로그인하세요" UX는 프론트엔드 레벨에서 별도로 제공되어야 한다.
+    if (!user || !user.passwordHash) {
       return;
     }
 
     // Generate reset token with user's password hash as additional entropy
     const secret =
-      this.configService.get<string>('auth.jwtSecret') + (user.passwordHash ?? '');
+      this.configService.get<string>('auth.jwtSecret') + user.passwordHash;
 
     const resetToken = await this.jwtService.signAsync(
       { sub: user.id, purpose: 'password-reset' },
@@ -241,27 +251,39 @@ export class AuthService {
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
-    // 1. Extract sub from JWT payload without signature verification
-    let sub: string;
+    // 1. Preliminary verify: jwtSecret-only 서명 검증으로 위조 토큰을 DB lookup 전에 차단한다.
+    //    ignoreExpiration: true 는 secret 회전(passwordHash 포함) 재검증을 아래 3단계에서 수행하기 위한 의도적 허용이다.
+    //    이 단계에서 서명이 실패하면(공격자가 임의 payload를 base64 인코딩한 위조 토큰) 즉시 401을 던져
+    //    payload-amplification DoS와 DB 에러(22P02 invalid uuid) 누출을 모두 방지한다.
+    const jwtSecret = this.configService.get<string>('auth.jwtSecret');
+    if (!jwtSecret) {
+      // 설정 누락은 500이 적절하지만, 외부에 상태를 알리지 않도록 401로 통일.
+      throw new UnauthorizedException('유효하지 않은 재설정 토큰입니다');
+    }
+
+    let preliminarySub: string;
     try {
-      const rawPayload = JSON.parse(
-        Buffer.from(token.split('.')[1]!, 'base64url').toString(),
-      ) as { sub: string };
-      sub = rawPayload.sub;
+      const decoded = await this.jwtService.verifyAsync<{ sub: unknown }>(
+        token,
+        { secret: jwtSecret, ignoreExpiration: true },
+      );
+      if (typeof decoded.sub !== 'string' || !UUID_REGEX.test(decoded.sub)) {
+        throw new Error('invalid sub');
+      }
+      preliminarySub = decoded.sub;
     } catch {
       throw new UnauthorizedException('유효하지 않은 재설정 토큰입니다');
     }
 
-    // 2. Look up user to get passwordHash for secret reconstruction
-    const user = await this.userRepository.findById(sub);
+    // 2. sub가 UUID로 확정된 뒤에만 DB lookup 수행.
+    const user = await this.userRepository.findById(preliminarySub);
     if (!user) {
       throw new UnauthorizedException('유효하지 않은 재설정 토큰입니다');
     }
 
-    // 3. Verify JWT with the full secret (jwtSecret + passwordHash)
-    const secret =
-      this.configService.get<string>('auth.jwtSecret') +
-      (user.passwordHash ?? '');
+    // 3. 최종 검증: jwtSecret + passwordHash 로 서명 + 만료 재확인.
+    //    passwordHash가 바뀌면 이 단계에서 실패 → one-time token 불변조건 유지.
+    const secret = jwtSecret + (user.passwordHash ?? '');
 
     let payload: { sub: string; purpose: string };
     try {
@@ -277,7 +299,7 @@ export class AuthService {
       throw new UnauthorizedException('유효하지 않은 재설정 토큰입니다');
     }
 
-    // 2. Hash new password
+    // 4. Hash new password
     const passwordHash = await argon2.hash(newPassword, {
       type: argon2.argon2id,
       memoryCost: 19456,
@@ -285,10 +307,10 @@ export class AuthService {
       parallelism: 1,
     });
 
-    // 3. Update password
+    // 5. Update password
     await this.userRepository.updatePassword(payload.sub, passwordHash);
 
-    // 4. Revoke all refresh tokens (force re-login)
+    // 6. Revoke all refresh tokens (force re-login)
     await this.db
       .update(schema.refreshTokens)
       .set({ revokedAt: new Date() })
