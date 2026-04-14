@@ -12,6 +12,11 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import termsOfServiceMd from '@/content/legal/terms-of-service.md';
+import privacyPolicyMd from '@/content/legal/privacy-policy.md';
+import marketingConsentMd from '@/content/legal/marketing-consent.md';
+import { LegalDraftBanner } from '@/components/legal/legal-draft-banner';
+import { TermsMarkdown } from '@/components/legal/terms-markdown';
 
 interface SignupStep2Props {
   onComplete: (data: RegisterStep2Input) => void;
@@ -19,22 +24,10 @@ interface SignupStep2Props {
   defaultValues: RegisterStep2Input | null;
 }
 
-const TERMS_CONTENT: Record<string, { title: string; content: string }> = {
-  termsOfService: {
-    title: '이용약관',
-    content:
-      '서비스 이용약관 내용이 여기에 표시됩니다. 실제 서비스 런칭 전에 법률 검토를 거친 약관으로 교체해야 합니다.',
-  },
-  privacyPolicy: {
-    title: '개인정보처리방침',
-    content:
-      '개인정보처리방침 내용이 여기에 표시됩니다. 실제 서비스 런칭 전에 법률 검토를 거친 방침으로 교체해야 합니다.',
-  },
-  marketingConsent: {
-    title: '마케팅 수신 동의',
-    content:
-      '마케팅 정보 수신에 동의하시면, Grapit의 새로운 공연 소식, 이벤트, 프로모션 등을 이메일 또는 SMS로 받아보실 수 있습니다.',
-  },
+const LEGAL_CONTENT: Record<string, { title: string; content: string }> = {
+  termsOfService: { title: '이용약관', content: termsOfServiceMd },
+  privacyPolicy: { title: '개인정보처리방침', content: privacyPolicyMd },
+  marketingConsent: { title: '마케팅 수신 동의', content: marketingConsentMd },
 };
 
 export function SignupStep2({ onComplete, onBack, defaultValues }: SignupStep2Props) {
@@ -183,14 +176,13 @@ export function SignupStep2({ onComplete, onBack, defaultValues }: SignupStep2Pr
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{TERMS_CONTENT[dialogKey]?.title}</DialogTitle>
+            <DialogTitle>{LEGAL_CONTENT[dialogKey]?.title}</DialogTitle>
             <DialogDescription className="sr-only">
-              {TERMS_CONTENT[dialogKey]?.title} 상세 내용
+              {LEGAL_CONTENT[dialogKey]?.title} 상세 내용
             </DialogDescription>
           </DialogHeader>
-          <div className="text-caption leading-relaxed text-gray-700">
-            {TERMS_CONTENT[dialogKey]?.content}
-          </div>
+          <LegalDraftBanner />
+          <TermsMarkdown>{LEGAL_CONTENT[dialogKey]?.content ?? ''}</TermsMarkdown>
         </DialogContent>
       </Dialog>
     </div>
