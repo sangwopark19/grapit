@@ -58,6 +58,13 @@ jobs:
       - name: Seed test data (admin@grapit.test)
         run: pnpm --filter @grapit/api run seed
 
+      - name: Verify seed — admin user present in DB (debug aid)
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d grapit_test -c \
+            "SELECT email, role, is_email_verified, is_phone_verified, length(password_hash) AS pw_len FROM users WHERE email='admin@grapit.test';"
+
       # REVIEWS.md HIGH-02: Hard-gate on non-fork events.
       # main push / schedule / workflow_dispatch / same-repo PR MUST have Toss test secrets.
       # Fork PRs: skip gracefully (GitHub Actions strips secrets for forks automatically).
@@ -111,6 +118,14 @@ jobs:
           echo "API did not respond on port 8080 within 60s. Full api.log:"
           cat api.log
           exit 1
+
+      - name: Smoke test login (debug aid)
+        run: |
+          echo "--- POST /api/v1/auth/login ---"
+          curl -sS -X POST http://localhost:8080/api/v1/auth/login \
+            -H "Content-Type: application/json" \
+            -d '{"email":"admin@grapit.test","password":"TestAdmin2026!"}' \
+            -w "\nHTTP %{http_code}\n" || true
 
       - name: E2E tests (Toss Payments)
         env:
