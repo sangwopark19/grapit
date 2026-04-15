@@ -66,6 +66,7 @@ describe('AuthService', () => {
   let mockJwtService: {
     signAsync: ReturnType<typeof vi.fn>;
     verifyAsync: ReturnType<typeof vi.fn>;
+    decode: ReturnType<typeof vi.fn>;
   };
   let mockDb: {
     insert: ReturnType<typeof vi.fn>;
@@ -101,6 +102,7 @@ describe('AuthService', () => {
     mockJwtService = {
       signAsync: vi.fn().mockResolvedValue('mock-access-token'),
       verifyAsync: vi.fn(),
+      decode: vi.fn(),
     };
 
     mockConfigService = {
@@ -382,6 +384,12 @@ describe('AuthService', () => {
       const payload = Buffer.from(JSON.stringify({ sub: userId, purpose: 'password-reset' })).toString('base64url');
       const fakeToken = `${header}.${payload}.fake-signature`;
 
+      // Preliminary uses jwtService.decode (no signature check) to extract sub
+      mockJwtService.decode.mockReturnValue({
+        sub: userId,
+        purpose: 'password-reset',
+      });
+      // Final verify uses jwtService.verifyAsync with jwtSecret + passwordHash
       mockJwtService.verifyAsync.mockResolvedValue({
         sub: userId,
         purpose: 'password-reset',
@@ -614,17 +622,17 @@ describe('AuthService', () => {
       const fakeToken = 'header.payload.sig';
       mockJwtService.signAsync.mockResolvedValue(fakeToken);
 
-      // CR-01: auth.service.ts resetPassword는 두 번 verifyAsync를 호출한다.
-      //   1) preliminary: { secret: jwtSecret, ignoreExpiration: true } — sub 추출용
-      //   2) final:       { secret: jwtSecret + passwordHash }          — one-time 토큰 검증용
-      // 두 호출 모두 성공하려면 opts 기반으로 분기한다.
+      // CR-02: auth.service.ts resetPassword는 이제 preliminary 에서 decode (서명 검증 없음)
+      // 만 수행하고, final verify 에서 { secret: jwtSecret + passwordHash } 로 서명/만료를 검증한다.
+      //   1) preliminary: jwtService.decode(token)                         — sub 추출용
+      //   2) final:       jwtService.verifyAsync(token, { secret: full })  — one-time 토큰 검증용
+      mockJwtService.decode.mockReturnValue({
+        sub: currentUser.id,
+        purpose: 'password-reset',
+      });
       mockJwtService.verifyAsync.mockImplementation(
-        async (_token: string, opts: { secret: string; ignoreExpiration?: boolean }) => {
-          const jwtOnly = TEST_JWT_SECRET;
+        async (_token: string, opts: { secret: string }) => {
           const fullSecret = `${TEST_JWT_SECRET}${currentUser.passwordHash ?? ''}`;
-          if (opts.ignoreExpiration === true && opts.secret === jwtOnly) {
-            return { sub: currentUser.id, purpose: 'password-reset' };
-          }
           if (opts.secret === fullSecret) {
             return { sub: currentUser.id, purpose: 'password-reset' };
           }
@@ -726,14 +734,15 @@ describe('AuthService', () => {
         currentStoredHash = newHash;
       });
 
-      // CR-01 + Blocker B4:
-      // - preliminary verify(ignoreExpiration + jwtSecret-only): 항상 성공(sub 확보 목적).
+      // CR-02 + Blocker B4:
+      // - preliminary: jwtService.decode (서명 검증 없음, sub 추출만) → 항상 성공.
       // - final verify(jwtSecret + passwordHash): sign-time 의 secret 과 일치해야 성공 → rotation 후 실패.
+      mockJwtService.decode.mockReturnValue({
+        sub: userBefore.id,
+        purpose: 'password-reset',
+      });
       mockJwtService.verifyAsync.mockImplementation(
-        async (_token: string, opts: { secret: string; ignoreExpiration?: boolean }) => {
-          if (opts.ignoreExpiration === true && opts.secret === TEST_JWT_SECRET) {
-            return { sub: userBefore.id, purpose: 'password-reset' };
-          }
+        async (_token: string, opts: { secret: string }) => {
           if (opts.secret !== tokenSignedSecret) {
             throw new Error('invalid signature');
           }

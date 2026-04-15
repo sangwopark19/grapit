@@ -251,10 +251,13 @@ export class AuthService {
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
-    // 1. Preliminary verify: jwtSecret-only 서명 검증으로 위조 토큰을 DB lookup 전에 차단한다.
-    //    ignoreExpiration: true 는 secret 회전(passwordHash 포함) 재검증을 아래 3단계에서 수행하기 위한 의도적 허용이다.
-    //    이 단계에서 서명이 실패하면(공격자가 임의 payload를 base64 인코딩한 위조 토큰) 즉시 401을 던져
-    //    payload-amplification DoS와 DB 에러(22P02 invalid uuid) 누출을 모두 방지한다.
+    // 1. Preliminary: decode 로 sub 만 추출. 서명은 검증하지 않고 형식(UUID) 검사로 DB lookup 전
+    //    payload-amplification DoS 와 PostgreSQL 22P02(invalid uuid) 에러 누출을 차단한다.
+    //    서명/만료 검증은 아래 3단계 final verify (jwtSecret + passwordHash) 에서 엄격히 수행되므로
+    //    여기서 서명 검증을 생략해도 보안 약화가 아니다.
+    //    (CR-02: 이전에는 preliminary 에서 `verifyAsync(token, { secret: jwtSecret })` 로 서명을
+    //     검증했으나, 실제 토큰은 `jwtSecret + passwordHash` 로 서명되어 있어 서명 key 불일치로
+    //     합법 토큰도 401 이 되는 regression 이 있었다.)
     const jwtSecret = this.configService.get<string>('auth.jwtSecret');
     if (!jwtSecret) {
       // 설정 누락은 500이 적절하지만, 외부에 상태를 알리지 않도록 401로 통일.
@@ -263,11 +266,13 @@ export class AuthService {
 
     let preliminarySub: string;
     try {
-      const decoded = await this.jwtService.verifyAsync<{ sub: unknown }>(
-        token,
-        { secret: jwtSecret, ignoreExpiration: true },
-      );
-      if (typeof decoded.sub !== 'string' || !UUID_REGEX.test(decoded.sub)) {
+      const decoded = this.jwtService.decode<{ sub?: unknown } | null>(token);
+      if (
+        !decoded ||
+        typeof decoded !== 'object' ||
+        typeof decoded.sub !== 'string' ||
+        !UUID_REGEX.test(decoded.sub)
+      ) {
         throw new Error('invalid sub');
       }
       preliminarySub = decoded.sub;
