@@ -65,28 +65,31 @@ function ConfirmPageContent() {
     }
   }, [selectedSeats.length, performanceId, router]);
 
-  // Handle error return from Toss
+  // Handle error return from Toss. Guard with useRef so React StrictMode's
+  // double-effect in dev mode does not fire two toasts for the same URL.
+  const errorToastFiredRef = useRef(false);
   useEffect(() => {
     const hasError = searchParams.get('error');
-    if (hasError === 'true') {
-      const code = searchParams.get('code');
-      const message = searchParams.get('message');
+    if (hasError !== 'true' || errorToastFiredRef.current) return;
+    errorToastFiredRef.current = true;
 
-      if (code === 'PAY_PROCESS_CANCELED') {
-        toast.error('결제가 취소되었습니다.');
-      } else if (message) {
-        toast.error(message);
-      } else {
-        toast.error('결제에 실패했습니다. 다시 시도해주세요.');
-      }
+    const code = searchParams.get('code');
+    const message = searchParams.get('message');
 
-      // Clean up URL params
-      const url = new URL(window.location.href);
-      url.searchParams.delete('error');
-      url.searchParams.delete('code');
-      url.searchParams.delete('message');
-      window.history.replaceState({}, '', url.pathname);
+    if (code === 'PAY_PROCESS_CANCELED') {
+      toast.error('결제가 취소되었습니다.');
+    } else if (message) {
+      toast.error(message);
+    } else {
+      toast.error('결제에 실패했습니다. 다시 시도해주세요.');
     }
+
+    // Clean up URL params
+    const url = new URL(window.location.href);
+    url.searchParams.delete('error');
+    url.searchParams.delete('code');
+    url.searchParams.delete('message');
+    window.history.replaceState({}, '', url.pathname);
   }, [searchParams]);
 
   const handleExpire = useCallback(() => {
