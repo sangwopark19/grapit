@@ -7,6 +7,14 @@ interface LoginResponse {
 }
 
 /**
+ * Phase 09.1 fix — 원인 범주: A (per artifacts/diff.md + 09.1-02-SUMMARY.md).
+ * Approved fix option: D-3. CI evidence: GitHub Actions run 24439879052.
+ *
+ * Root cause: GitHub TEST_USER_EMAIL/PASSWORD secret 미설정 → ci.yml 이 빈 문자열 env 주입
+ * → 기존 `process.env['X'] ?? 'default'` 가 null/undefined 만 catch (빈 문자열 통과)
+ * → Playwright 가 {"email":"","password":""} (26 bytes) 전송 → passport-local 401.
+ * Fix: `??` → `||` (빈 문자열 도 falsy 로 fallback) + GitHub secret 설정 (defense in depth).
+ *
  * Log the test user in via the real POST /api/v1/auth/login endpoint and propagate
  * the resulting httpOnly refreshToken cookie into the Playwright browser context.
  *
@@ -29,8 +37,10 @@ interface LoginResponse {
  * `confirmIntercepted` at false.
  */
 export async function loginAsTestUser(page: Page): Promise<void> {
-  const email = process.env['TEST_USER_EMAIL'] ?? 'admin@grapit.test';
-  const password = process.env['TEST_USER_PASSWORD'] ?? 'TestAdmin2026!';
+  // Use `||` (not `??`) so empty strings — what GitHub Actions injects when a
+  // secret is unset — also fall back to seed defaults. Phase 09.1 fix.
+  const email = process.env['TEST_USER_EMAIL'] || 'admin@grapit.test';
+  const password = process.env['TEST_USER_PASSWORD'] || 'TestAdmin2026!';
 
   // Hit the API directly (bypass Next.js rewrites). Next.js 16 dev-mode
   // rewrites do not reliably forward POST bodies, causing passport-local

@@ -4,13 +4,13 @@ milestone: v1.1
 milestone_name: 안정화 + 고도화
 status: executing
 stopped_at: Phase 9 UI-SPEC approved
-last_updated: "2026-04-15T02:33:35.694Z"
+last_updated: "2026-04-15T07:33:53.555Z"
 last_activity: 2026-04-15
 progress:
-  total_phases: 7
-  completed_phases: 4
-  total_plans: 14
-  completed_plans: 14
+  total_phases: 8
+  completed_phases: 5
+  total_plans: 19
+  completed_plans: 19
   percent: 100
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** 사용자가 원하는 공연을 발견하고, 좌석을 직접 선택하여, 안정적으로 예매를 완료할 수 있는 것
-**Current focus:** Phase 09 — tech-debt
+**Current focus:** Phase 09.1 — ci-login-e2e-playwright-login-helper-post-auth-login-body-40
 
 ## Current Position
 
-Phase: 09 (tech-debt) — EXECUTING
-Plan: 2 of 4
-Status: Ready to execute
+Phase: 10
+Plan: Not started
+Status: Executing Phase 09.1
 Last activity: 2026-04-15
 
 Progress: [██████████] 100%
@@ -36,7 +36,7 @@ Progress: [██████████] 100%
 
 **Velocity:**
 
-- Total plans completed: 35 (v1.0)
+- Total plans completed: 40 (v1.0)
 - Average duration: ~10min
 - Total execution time: ~3 hours
 
@@ -50,6 +50,7 @@ Progress: [██████████] 100%
 | 4. Booking + Payment | 3 | ~16min | ~5min |
 | 5. Polish + Launch | 5 | N/A | N/A |
 | 07 | 5 | - | - |
+| 09.1 | 5 | - | - |
 
 **Recent Trend:**
 
