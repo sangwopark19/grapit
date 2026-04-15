@@ -48,12 +48,12 @@ export async function loginAsTestUser(page: Page): Promise<void> {
   });
   if (!res.ok()) {
     const body = await res.text().catch(() => '<unable to read body>');
-    const reqHeaders = await res.request().allHeaders().catch(() => ({}));
+    const resHeaders = res.headers();
     throw new Error(
       `[loginAsTestUser] Login failed: ${res.status()} ${res.statusText()}.\n` +
         `  URL: ${loginURL}\n` +
         `  Response body: ${body}\n` +
-        `  Request headers: ${JSON.stringify(reqHeaders)}\n` +
+        `  Response headers: ${JSON.stringify(resHeaders)}\n` +
         `  Hint: Run 'pnpm --filter @grapit/api seed' and ensure TEST_USER_* env matches seed.mjs:39-50.`,
     );
   }
