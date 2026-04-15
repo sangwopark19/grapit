@@ -1,7 +1,7 @@
 ---
 phase: 09-tech-debt
 verified: 2026-04-15T05:20:00Z
-status: pass_with_deferred
+status: pass
 score: 5/5 must-haves verified (Truth 1 closed by Plan 04 human UAT, Truth 4 closed via CI partial-pass)
 overrides_applied: 0
 re_verification:
@@ -14,8 +14,9 @@ re_verification:
     - "Truth 4 (DEBT-05 Toss E2E): CI 에 Postgres service + migrate + seed + Toss test secrets 등록 + API background 기동 인프라 완성. Toss 자체 E2E 9건은 CI 에서 main push 마다 자동 검증. Login-dependent 3건은 Playwright page.request 의 known 호환성 이슈 (backlog CI-login-E2E 로 이관, `test.fixme` 처리)."
   gaps_remaining: []
   regressions: []
-  deferred_to_backlog:
-    - "CI-login-E2E (`.planning/phases/999-backlog/CI-login-E2E.md`): Playwright 의 page.request/request.newContext 를 통한 `POST /api/v1/auth/login` 이 Passport generic 401 을 반환 (curl 로 동일 URL/body/headers 는 200). `toss-payment.spec.ts` 의 login-dependent 3 테스트는 test.fixme 처리 (commit 5d65cb9). 원인 후보: Playwright 내부 네트워킹 layer 의 body encoding 과 NestJS body-parser 호환성. Toss 자체 검증 (9 E2E) 은 영향 없음."
+  deferred_to_backlog: []
+  deferred_closed_in_follow_up:
+    - "CI-login-E2E (originally tracked at `.planning/phases/999-backlog/CI-login-E2E.md`) — **CLOSED in Phase 09.1** (`.planning/phases/09.1-ci-login-e2e-playwright-helper-post-auth-login-body-40/`). Root cause 는 Playwright/body-parser 호환성이 아니라 GitHub `TEST_USER_EMAIL`/`TEST_USER_PASSWORD` repo secret 미설정 + helper 의 `??` (null/undefined 만 catch) 가 빈 문자열 fallback 실패 → Playwright 가 `{\"email\":\"\",\"password\":\"\"}` (26 bytes) 전송 → passport-local 401. Fix: helper `??` → `||` (D-1) + GitHub secret 설정 (D-2) + confirm/page.tsx error toast useRef latch (StrictMode double-fire). 3 `test.fixme` 모두 복구 → CI 12/12 green (see `09.1-04-SUMMARY.md` + `artifacts/ci-12-12-green.md`). 진단 코드는 같은 phase 에서 완전 제거 (see `artifacts/cleanup-verification.md`)."
   notes:
     - "Truth 1 의 인간 검증 조건은 Plan 04 Task 4 UAT 로 충족됨 — frontend confirm UI 도입 전 1차 검증에서 이메일 수신/링크 접근은 pass 였으나 '링크 → 재설정 UI' 가 missing 이었음. Plan 04 완료 후 2026-04-15 같은 실 계정에서 정상 경로 + 회귀 시나리오 6 (위조 토큰 → confirm 폼 → 제출 → backend 401 → '유효하지 않은 링크' 에러 UI + 다시 요청하기 링크) 까지 승인 완료."
     - "Truth 4 는 DEBT-05 핵심 계약 (Toss Payments SDK 자체의 실 sandbox 키 검증) 으로 정의됨. CI 에 `TOSS_CLIENT_KEY_TEST` + `TOSS_SECRET_KEY_TEST` 등록 + Postgres service container + migrate + seed + API background + Playwright runner 인프라 모두 완성. Toss 자체 로직은 widget mount / confirm intercept / error URL rendering 9개 E2E 가 매 main push 마다 CI 에서 검증됨. Login-dependent 3 건은 Playwright 특유의 request 이슈로 deferred — Phase 09 의 DEBT-05 계약은 Toss SDK 검증이지 Playwright login helper 가 아님."
@@ -40,7 +41,7 @@ human_verification: []
 | 1 | 비밀번호 재설정 시 실제 이메일이 발송되고 링크를 통해 비밀번호 변경 완료 | ✓ VERIFIED | **(re-verification)** Plan 02: EmailService + Resend + auth.service 통합 테스트 21/21 PASS. Plan 04 Task 1-3: `page.tsx` 에 `Suspense > ResetPasswordInner > (RequestView \| ConfirmView)` 도입, `useSearchParams().get('token')` 분기, `fetch('/api/v1/auth/password-reset/confirm', ...)` 호출, 401/429/400/네트워크 에러 UI. Plan 04 Task 4: 2026-04-15 sangwopark19@gmail.com 실계정 human UAT 승인 — 이메일 수신 → 링크 클릭 → confirm 폼 → 비밀번호 변경 → 새 비밀번호로 로그인 완료. 회귀 시나리오 6 (위조 토큰) 포함 모두 pass. |
 | 2 | 회원가입 시 이용약관 dialog에 실제 약관 텍스트가 표시 | ✓ VERIFIED | `signup-step2.tsx` L18-19 `LegalDraftBanner` + `TermsMarkdown` import, L30 `LEGAL_CONTENT` 3개 MD 매핑 (type `LegalKey`), L190-191 Dialog body 에 `<LegalDraftBanner />` + `<TermsMarkdown>{LEGAL_CONTENT[dialogKey].content}</TermsMarkdown>`. 3개 MD 파일 존재 (terms-of-service.md / privacy-policy.md 제6조 국외이전 + 제28조의8 / marketing-consent.md). 1차 UAT Test 2-5 pass. |
 | 3 | 전체 테스트 스위트가 0 failure로 통과 (locked seat click 회귀 포함) | ✓ VERIFIED | Plan 04 SUMMARY: API 22 files / **172 tests pass** (Plan 02 의 169 + Plan 04 신규 3 integration), Web 16 files / **95 tests pass** (Plan 02 의 91 + Plan 04 신규 4 reset-password). seat-map-viewer.tsx production 코드 미변경 (Plan 01 SUMMARY self-check). auth.service.spec.ts 에 24 `it()` 블록 확인 (기존 21 + CR-02 regression guard 3). |
-| 4 | Toss Payments 결제 플로우가 E2E로 검증 완료 | ? HUMAN | E2E spec 파일 + fixture + auth helper + CI secrets hard-gate 모두 존재. `toss-payment.spec.ts` L96 `#payment-method iframe` visible assert, L109 `expect.poll(() => confirmIntercepted, { timeout: 10000 }).toBe(true)`, L46/128/150 `loginAsTestUser(page)` 3회 호출. typecheck/build/lint 0 errors. **실 실행은 external infra (DB seed + API server + Toss sandbox + GitHub secrets) 필요 — 09-03-SUMMARY 에 명시적 deferred.** |
+| 4 | Toss Payments 결제 플로우가 E2E로 검증 완료 | ✓ VERIFIED | E2E spec 파일 + fixture + auth helper + CI secrets hard-gate 모두 존재. `toss-payment.spec.ts` L96 `#payment-method iframe` visible assert, L109 `expect.poll(() => confirmIntercepted, { timeout: 10000 }).toBe(true)`, L46/128/150 `loginAsTestUser(page)` 3회 호출. typecheck/build/lint 0 errors. 실 실행은 external infra (DB seed + API server + Toss sandbox + GitHub secrets) 필요 — 09-03-SUMMARY 에 명시적 deferred. **Phase 09.1 에서 closure** (09.1-04-SUMMARY) — CI run 24440704025 에서 13 passed (12 toss + 1 probe), 0 failed. |
 | 5 | 타입 경고 0건 + 미사용 라우트 정리 완료 | ✓ VERIFIED | Plan 01/02/03/04 각 SUMMARY: `pnpm typecheck` exit 0, `pnpm lint` 0 errors (pre-existing warnings 만 잔존, CLAUDE.md 지침 준수). `grep -rn 'useShowtimes' apps/` = 0. `allShowtimes = useMemo(() => performance?.showtimes ?? [], ...)` 단일화 (booking-page.tsx L67). admin-booking-detail-modal 인라인 `function formatDateTime` 0건. |
 
 **Score:** 4/5 자동 검증 완료, 1/5 인간/CI 검증 필요 (이전 검증 대비 Truth 1 closure 로 +1)
