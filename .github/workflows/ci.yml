@@ -102,16 +102,7 @@ jobs:
       # returns 503 when falling back to InMemoryRedis (CI has no Redis),
       # but the API process itself is fully bootstrapped at that point.
       # HTTP code "000" = connection refused = API not up yet.
-      - name: Record runtime versions (Phase 09.1 diagnostic)
-        run: |
-          echo "node: $(node -v)"
-          echo "pnpm: $(pnpm -v)"
-          echo "os: $(uname -a)"
-
       - name: Start API server (background)
-        env:
-          # Phase 09.1 diagnostic — CI-only, removed in plan 05.
-          DEBUG_AUTH_REQ: "1"
         run: |
           # Detach fully so GitHub Actions runner doesn't SIGHUP the process when
           # this step ends: nohup (ignore SIGHUP) + < /dev/null (detach stdin) +
@@ -144,25 +135,6 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"email":"admin@grapit.test","password":"TestAdmin2026!"}' \
             -w "\nHTTP %{http_code}\n" || true
-
-      - name: Dump AUTH_LOGIN_DEBUG after curl baseline (Phase 09.1 diagnostic)
-        if: always()
-        run: |
-          echo "=== AUTH_LOGIN_DEBUG entries (expected: 1 after curl) ==="
-          grep AUTH_LOGIN_DEBUG api.log || echo "(none yet — expected at least 1 from curl)"
-
-      - name: E2E diagnostic probe (Phase 09.1 — observe server-side AUTH_LOGIN_DEBUG)
-        env:
-          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
-          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
-        run: |
-          pnpm --filter @grapit/web exec playwright test e2e/diagnostic/auth-login-probe.spec.ts --reporter=list || true
-          echo "=== AUTH_LOGIN_DEBUG entries after probe (expected: 2 = curl + playwright) ==="
-          grep AUTH_LOGIN_DEBUG api.log | wc -l
-          echo "=== curl baseline (1st) ==="
-          grep AUTH_LOGIN_DEBUG api.log | sed -n '1p'
-          echo "=== Playwright probe (2nd) ==="
-          grep AUTH_LOGIN_DEBUG api.log | sed -n '2p'
 
       - name: E2E tests (Toss Payments)
         env:
