@@ -9,6 +9,7 @@ import { TossPaymentExceptionFilter } from './common/filters/toss-payment-except
 import { ZodValidationPipe } from './common/pipes/zod-validation.pipe.js';
 import { RedisIoAdapter } from './modules/booking/providers/redis-io.adapter.js';
 import { REDIS_CLIENT } from './modules/booking/providers/redis.provider.js';
+import { createAuthReqDebugMiddleware } from './modules/auth/debug/req-debug.middleware.js';
 
 async function bootstrap() {
   // REVIEWS.md MED: FRONTEND_URL production hard-fail.
@@ -43,7 +44,8 @@ async function bootstrap() {
     }
   }
 
-  const app = await NestFactory.create(AppModule);
+  // Phase 09.1 diagnostic: expose req.rawBody to AUTH_LOGIN_DEBUG middleware. Remove in plan 05.
+  const app = await NestFactory.create(AppModule, { rawBody: true });
 
   // Wire Socket.IO to the shared ioredis REDIS_CLIENT so seat-update events
   // broadcast across Cloud Run instances via Valkey pub/sub (VALK-04).
@@ -67,6 +69,8 @@ async function bootstrap() {
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   }));
   app.use(cookieParser());
+  // Phase 09.1 diagnostic — gated by DEBUG_AUTH_REQ=1, removed in plan 05.
+  app.use(createAuthReqDebugMiddleware());
 
   app.useGlobalFilters(new HttpExceptionFilter(), new TossPaymentExceptionFilter());
   app.useGlobalPipes(new ZodValidationPipe());
