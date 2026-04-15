@@ -31,8 +31,16 @@ export async function loginAsTestUser(page: Page): Promise<void> {
   const email = process.env['TEST_USER_EMAIL'] ?? 'admin@grapit.test';
   const password = process.env['TEST_USER_PASSWORD'] ?? 'TestAdmin2026!';
 
+  // Hit the API directly (bypass Next.js rewrites). Next.js 16 dev-mode
+  // rewrites do not reliably forward POST bodies, causing passport-local
+  // to receive empty credentials and return 401 even when the user exists.
+  // Cookies with domain=localhost are port-agnostic in the Playwright
+  // browser context, so the refreshToken set by :8080 is still visible to
+  // :3000 pages (verified via context().cookies() check below).
+  const apiURL = process.env['E2E_API_URL'] ?? 'http://localhost:8080';
+
   // 1. Hit the real login endpoint via the shared request fixture.
-  const res = await page.request.post('/api/v1/auth/login', {
+  const res = await page.request.post(`${apiURL}/api/v1/auth/login`, {
     data: { email, password },
     headers: { 'Content-Type': 'application/json' },
   });
