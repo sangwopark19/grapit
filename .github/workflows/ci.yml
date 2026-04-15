@@ -82,6 +82,25 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm --filter @grapit/web exec playwright install --with-deps chromium
 
+      # API dev server in background — separate step (not Playwright webServer)
+      # so logs land in api.log for post-mortem + env propagation is trivial.
+      # Health check: /api/v1/health returns 200 when Nest is fully bootstrapped.
+      - name: Start API server (background)
+        run: |
+          pnpm --filter @grapit/api dev > api.log 2>&1 &
+          echo $! > api.pid
+          echo "API started with PID $(cat api.pid), waiting for /api/v1/health..."
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/api/v1/health > /dev/null 2>&1; then
+              echo "API ready after ${i} attempts (~${i}s)"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "API did not become ready within 60s. Last 100 lines of api.log:"
+          tail -n 100 api.log
+          exit 1
+
       - name: E2E tests (Toss Payments)
         env:
           TOSS_CLIENT_KEY_TEST: ${{ secrets.TOSS_CLIENT_KEY_TEST }}
@@ -92,3 +111,16 @@ jobs:
           TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
           TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
         run: pnpm --filter @grapit/web test:e2e
+
+      - name: Dump API log (on failure)
+        if: failure()
+        run: |
+          echo "=== api.log (last 200 lines) ==="
+          tail -n 200 api.log || echo "api.log not found"
+
+      - name: Stop API server
+        if: always()
+        run: |
+          if [ -f api.pid ]; then
+            kill "$(cat api.pid)" 2>/dev/null || true
+          fi
