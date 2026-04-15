@@ -64,6 +64,10 @@ Progress: [██████████] 100%
 
 ## Accumulated Context
 
+### Roadmap Evolution
+
+- Phase 09.1 inserted after Phase 09: CI-login-E2E — Playwright login helper 의 POST /auth/login 401 이슈 조사 (URGENT)
+
 ### Decisions
 
 Full decision log in PROJECT.md Key Decisions table (10 decisions, all Good).

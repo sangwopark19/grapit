@@ -96,6 +96,16 @@ Plans:
 - [x] 09-02-PLAN.md -- Terms + Email (DEBT-02 MD 약관 + DEBT-01 Resend EmailService)
 - [x] 09-03-PLAN.md -- Toss E2E (DEBT-05 Playwright + CI secrets + D-13 격리)
 
+### Phase 09.1: CI-login-E2E — Playwright login helper 가 POST /auth/login 에 body 를 전달하지 못해 401 을 받는 이슈 조사 및 해결 (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 9
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 09.1 to break down)
+
 ### Phase 10: SMS 인증 실연동
 **Goal**: 회원가입 시 실제 SMS OTP�� 발송되고 인증번호 검증으로 본인 확인이 완료된다
 **Depends on**: Phase 9
