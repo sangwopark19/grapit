@@ -90,20 +90,25 @@ jobs:
 
       # API server in background — separate step (not Playwright webServer) so
       # logs land in api.log for post-mortem + env propagation is trivial.
-      # Health check: /api/v1/health returns 200 when Nest is fully bootstrapped.
+      # Readiness check: any HTTP response from /api/v1/health means Nest is
+      # listening. We accept 200 AND 5xx because the RedisHealthIndicator
+      # returns 503 when falling back to InMemoryRedis (CI has no Redis),
+      # but the API process itself is fully bootstrapped at that point.
+      # HTTP code "000" = connection refused = API not up yet.
       - name: Start API server (background)
         run: |
           node apps/api/dist/main.js > api.log 2>&1 &
           echo $! > api.pid
-          echo "API started with PID $(cat api.pid), waiting for /api/v1/health..."
+          echo "API started with PID $(cat api.pid), waiting for HTTP response on :8080..."
           for i in $(seq 1 60); do
-            if curl -fsS http://localhost:8080/api/v1/health > /dev/null 2>&1; then
-              echo "API ready after ${i} attempts (~${i}s)"
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/v1/health || echo "000")
+            if [ "$code" != "000" ]; then
+              echo "API ready after ${i} attempts (~${i}s) — HTTP $code"
               exit 0
             fi
             sleep 1
           done
-          echo "API did not become ready within 60s. Full api.log:"
+          echo "API did not respond on port 8080 within 60s. Full api.log:"
           cat api.log
           exit 1
 
