@@ -40,14 +40,21 @@ export async function loginAsTestUser(page: Page): Promise<void> {
   const apiURL = process.env['E2E_API_URL'] ?? 'http://localhost:8080';
 
   // 1. Hit the real login endpoint via the shared request fixture.
-  const res = await page.request.post(`${apiURL}/api/v1/auth/login`, {
+  const loginURL = `${apiURL}/api/v1/auth/login`;
+  console.log(`[loginAsTestUser] POST ${loginURL} email=${email}`);
+  const res = await page.request.post(loginURL, {
     data: { email, password },
     headers: { 'Content-Type': 'application/json' },
   });
   if (!res.ok()) {
+    const body = await res.text().catch(() => '<unable to read body>');
+    const reqHeaders = await res.request().allHeaders().catch(() => ({}));
     throw new Error(
-      `[loginAsTestUser] Login failed: ${res.status()} ${res.statusText()}. ` +
-        `Run 'pnpm --filter @grapit/api seed' and ensure TEST_USER_* env matches seed.mjs:39-50.`,
+      `[loginAsTestUser] Login failed: ${res.status()} ${res.statusText()}.\n` +
+        `  URL: ${loginURL}\n` +
+        `  Response body: ${body}\n` +
+        `  Request headers: ${JSON.stringify(reqHeaders)}\n` +
+        `  Hint: Run 'pnpm --filter @grapit/api seed' and ensure TEST_USER_* env matches seed.mjs:39-50.`,
     );
   }
   // Touch the body once to make sure the response is fully consumed before we
