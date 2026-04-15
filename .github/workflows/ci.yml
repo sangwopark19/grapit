@@ -104,9 +104,15 @@ jobs:
       # HTTP code "000" = connection refused = API not up yet.
       - name: Start API server (background)
         run: |
-          node apps/api/dist/main.js > api.log 2>&1 &
-          echo $! > api.pid
-          echo "API started with PID $(cat api.pid), waiting for HTTP response on :8080..."
+          # Detach fully so GitHub Actions runner doesn't SIGHUP the process when
+          # this step ends: nohup (ignore SIGHUP) + < /dev/null (detach stdin) +
+          # setsid (new process group) + disown (remove from shell job table).
+          # Without this, the API dies between steps even though `&` seems to work.
+          setsid nohup node apps/api/dist/main.js > api.log 2>&1 < /dev/null &
+          API_PID=$!
+          echo $API_PID > api.pid
+          disown || true
+          echo "API started with PID $API_PID, waiting for HTTP response on :8080..."
           for i in $(seq 1 60); do
             code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/v1/health || echo "000")
             if [ "$code" != "000" ]; then
