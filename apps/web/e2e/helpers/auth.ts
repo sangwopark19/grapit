@@ -42,9 +42,14 @@ export async function loginAsTestUser(page: Page): Promise<void> {
   // 1. Hit the real login endpoint via the shared request fixture.
   const loginURL = `${apiURL}/api/v1/auth/login`;
   console.log(`[loginAsTestUser] POST ${loginURL} email=${email}`);
+  // Use explicit JSON.stringify for `data` to avoid Playwright's automatic
+  // Content-Type handling conflicting with passport-local's body reader.
+  // The previous `data: { email, password }` path ended in Passport's generic
+  // 401 "Unauthorized" (not our validateUser 401), meaning the body never
+  // reached req.body in a shape passport-local could parse.
   const res = await page.request.post(loginURL, {
-    data: { email, password },
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    data: JSON.stringify({ email, password }),
   });
   if (!res.ok()) {
     const body = await res.text().catch(() => '<unable to read body>');
