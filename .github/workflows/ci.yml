@@ -151,6 +151,19 @@ jobs:
           echo "=== AUTH_LOGIN_DEBUG entries (expected: 1 after curl) ==="
           grep AUTH_LOGIN_DEBUG api.log || echo "(none yet — expected at least 1 from curl)"
 
+      - name: E2E diagnostic probe (Phase 09.1 — observe server-side AUTH_LOGIN_DEBUG)
+        env:
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+        run: |
+          pnpm --filter @grapit/web exec playwright test e2e/diagnostic/auth-login-probe.spec.ts --reporter=list || true
+          echo "=== AUTH_LOGIN_DEBUG entries after probe (expected: 2 = curl + playwright) ==="
+          grep AUTH_LOGIN_DEBUG api.log | wc -l
+          echo "=== curl baseline (1st) ==="
+          grep AUTH_LOGIN_DEBUG api.log | sed -n '1p'
+          echo "=== Playwright probe (2nd) ==="
+          grep AUTH_LOGIN_DEBUG api.log | sed -n '2p'
+
       - name: E2E tests (Toss Payments)
         env:
           TOSS_CLIENT_KEY_TEST: ${{ secrets.TOSS_CLIENT_KEY_TEST }}
