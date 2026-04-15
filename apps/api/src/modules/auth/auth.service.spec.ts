@@ -770,3 +770,127 @@ describe('AuthService', () => {
     });
   });
 });
+
+// CR-02 regression guard (Plan 09-04 Task 5):
+// 기존 unit 테스트는 `mockJwtService.verifyAsync.mockImplementation(... opts.secret ...)` 로
+// 서명 검증을 시뮬했는데, 실제 @nestjs/jwt `JwtService` 는 preliminary 호출
+// `verifyAsync(token, { secret: jwtSecret, ignoreExpiration: true })` 에서 **서명을 실제로 검증**한다.
+// 토큰은 `jwtSecret + user.passwordHash` 로 서명되어 있어 preliminary 단계에서 서명 key 가 일치하지 않아
+// 합법 토큰도 항상 401 이 된다 (`bc3b434 fix(09): CR-01` regression).
+//
+// 아래 describe 는 실제 `JwtService` 를 주입해 integration 수준에서 regression 을 재현한다.
+describe('resetPassword (integration — real JwtService — CR-02 regression guard)', () => {
+  const jwtSecret = 'test-jwt-secret-for-reset-integration';
+  let realJwtService: JwtService;
+  let authServiceLocal: AuthService;
+  let integUserRepo: {
+    findByEmail: ReturnType<typeof vi.fn>;
+    findById: ReturnType<typeof vi.fn>;
+    create: ReturnType<typeof vi.fn>;
+    updatePassword: ReturnType<typeof vi.fn>;
+  };
+  let integConfig: { get: ReturnType<typeof vi.fn> };
+  let integDb: {
+    insert: ReturnType<typeof vi.fn>;
+    select: ReturnType<typeof vi.fn>;
+    update: ReturnType<typeof vi.fn>;
+  };
+  let integSms: {
+    sendVerification: ReturnType<typeof vi.fn>;
+    verifyCode: ReturnType<typeof vi.fn>;
+  };
+  let integEmail: { sendPasswordResetEmail: ReturnType<typeof vi.fn> };
+
+  beforeAll(async () => {
+    // argon2 hash is expensive; `preHashedPassword` is shared from outer beforeAll.
+    // If this integration block is executed before the outer one (it isn't under
+    // current Vitest semantics, but defensive), re-hash here.
+    if (!preHashedPassword) {
+      preHashedPassword = await argon2.hash('Test1234!', {
+        type: argon2.argon2id,
+        memoryCost: 19456,
+        timeCost: 2,
+        parallelism: 1,
+      });
+    }
+  }, 30000);
+
+  beforeEach(() => {
+    realJwtService = new JwtService({ secret: jwtSecret });
+
+    integUserRepo = {
+      findByEmail: vi.fn(),
+      findById: vi.fn(),
+      create: vi.fn(),
+      updatePassword: vi.fn(),
+    };
+    integConfig = {
+      get: vi.fn((key: string) => {
+        if (key === 'auth.jwtSecret') return jwtSecret;
+        if (key === 'FRONTEND_URL') return 'http://localhost:3000';
+        return undefined;
+      }),
+    };
+    integDb = {
+      insert: vi.fn(),
+      select: vi.fn(),
+      update: vi.fn().mockReturnValue({
+        set: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }),
+      }),
+    };
+    integSms = { sendVerification: vi.fn(), verifyCode: vi.fn() };
+    integEmail = { sendPasswordResetEmail: vi.fn() };
+
+    // Real constructor order: (jwtService, configService, userRepository, smsService, emailService, db)
+    authServiceLocal = new AuthService(
+      realJwtService,
+      integConfig as unknown as ConfigService,
+      integUserRepo as any,
+      integSms as any,
+      integEmail as any,
+      integDb as any,
+    );
+  });
+
+  it('정상 token (secret = jwtSecret + passwordHash) 은 preliminary 를 통과하고 resetPassword 를 성공적으로 완료한다', async () => {
+    const userId = randomUUID();
+    const user = { ...createMockUser(), id: userId, passwordHash: preHashedPassword };
+    integUserRepo.findById.mockResolvedValue(user);
+
+    const token = await realJwtService.signAsync(
+      { sub: userId, purpose: 'password-reset' },
+      { secret: jwtSecret + user.passwordHash, expiresIn: '1h' },
+    );
+
+    await expect(
+      authServiceLocal.resetPassword(token, 'NewPass123!'),
+    ).resolves.toBeUndefined();
+    expect(integUserRepo.updatePassword).toHaveBeenCalledWith(userId, expect.any(String));
+  }, 15000);
+
+  it('sub 이 UUID 형식이 아니면 401 (DoS 가드 유지)', async () => {
+    const token = await realJwtService.signAsync(
+      { sub: 'not-a-uuid', purpose: 'password-reset' },
+      { secret: jwtSecret + preHashedPassword, expiresIn: '1h' },
+    );
+
+    await expect(
+      authServiceLocal.resetPassword(token, 'NewPass123!'),
+    ).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('passwordHash 누락된 secret 으로 서명된 token 은 final verify 에서 401 (회귀 가드)', async () => {
+    const userId = randomUUID();
+    const user = { ...createMockUser(), id: userId, passwordHash: preHashedPassword };
+    integUserRepo.findById.mockResolvedValue(user);
+
+    const tokenWithoutHash = await realJwtService.signAsync(
+      { sub: userId, purpose: 'password-reset' },
+      { secret: jwtSecret, expiresIn: '1h' }, // passwordHash 누락
+    );
+
+    await expect(
+      authServiceLocal.resetPassword(tokenWithoutHash, 'NewPass123!'),
+    ).rejects.toThrow(UnauthorizedException);
+  });
+});
