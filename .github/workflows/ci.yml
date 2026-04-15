@@ -9,6 +9,34 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # Postgres service container for E2E runs (Phase 09-tech-debt DEBT-05).
+    # Unit tests (pnpm test) do not hit the DB — they mock it — but migrate/seed
+    # + Playwright E2E do, and the API server launched by Playwright webServer
+    # expects DATABASE_URL to resolve.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: grapit_test
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    env:
+      # Wired at job level so migrate/seed/api-dev-server all resolve identically.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/grapit_test
+      # Test-only secrets — never use in production. NestJS main.ts only hard-fails
+      # FRONTEND_URL https when NODE_ENV=production, so NODE_ENV=test keeps CORS
+      # origin as http://localhost:3000 for Playwright.
+      NODE_ENV: test
+      JWT_SECRET: ci-test-jwt-secret-not-for-production-usage-only
+      JWT_REFRESH_SECRET: ci-test-jwt-refresh-secret-not-for-production-usage-only
+      FRONTEND_URL: http://localhost:3000
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v5
@@ -20,6 +48,15 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+
+      # DB readiness + schema + seed data for E2E runs.
+      # drizzle-kit migrate reads DATABASE_URL from env (CLAUDE.md convention:
+      # DOTENV_CONFIG_PATH only needed when .env is the source; CI injects via env).
+      - name: Run DB migrations
+        run: pnpm --filter @grapit/api exec drizzle-kit migrate
+
+      - name: Seed test data (admin@grapit.test)
+        run: pnpm --filter @grapit/api run seed
 
       # REVIEWS.md HIGH-02: Hard-gate on non-fork events.
       # main push / schedule / workflow_dispatch / same-repo PR MUST have Toss test secrets.
