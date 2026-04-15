@@ -70,7 +70,7 @@ Source: `apps/web/app/globals.css` lines 48-55 (CSS custom properties 기존 정
 | Heading | 20px (`--text-heading`) | 600 (semibold) | 1.2 | 호출부 유지 — 본 컴포넌트는 heading 렌더링 없음 |
 | Display | 28px (`--text-display`) | 600 (semibold) | 1.2 | (해당 없음) |
 
-Weights used: **400 (regular), 600 (semibold)** — 2 weights total. Phase 10에서 신규 weight 도입 없음.
+Weights used: **400 (regular), 600 (semibold)** — 2 weights total. Phase 10에서 신규 weight 도입 없음. 버튼 텍스트는 shadcn 기본 `font-medium`(500) 계승(`apps/web/components/ui/button.tsx:8` base class) — Phase 10 신규 도입이 아니므로 Typography 선언 외 계승 값으로 취급.
 
 **타이머 숫자 표기 규칙:**
 - 만료 타이머(3분): `text-caption` (14px) + 400, 포맷 `MM:SS` (예: `02:59`, `00:28`) — 기존 `formatTime` 유지
