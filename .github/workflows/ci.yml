@@ -82,12 +82,18 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm --filter @grapit/web exec playwright install --with-deps chromium
 
-      # API dev server in background — separate step (not Playwright webServer)
-      # so logs land in api.log for post-mortem + env propagation is trivial.
+      # Build the API (nest build → dist/main.js) so startup is fast + deterministic.
+      # `nest start --watch` (the dev script) takes too long in CI due to TSC init
+      # and didn't finish listening within 60s in the previous run.
+      - name: Build API
+        run: pnpm --filter @grapit/api build
+
+      # API server in background — separate step (not Playwright webServer) so
+      # logs land in api.log for post-mortem + env propagation is trivial.
       # Health check: /api/v1/health returns 200 when Nest is fully bootstrapped.
       - name: Start API server (background)
         run: |
-          pnpm --filter @grapit/api dev > api.log 2>&1 &
+          node apps/api/dist/main.js > api.log 2>&1 &
           echo $! > api.pid
           echo "API started with PID $(cat api.pid), waiting for /api/v1/health..."
           for i in $(seq 1 60); do
@@ -97,8 +103,8 @@ jobs:
             fi
             sleep 1
           done
-          echo "API did not become ready within 60s. Last 100 lines of api.log:"
-          tail -n 100 api.log
+          echo "API did not become ready within 60s. Full api.log:"
+          cat api.log
           exit 1
 
       - name: E2E tests (Toss Payments)
