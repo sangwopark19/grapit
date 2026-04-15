@@ -114,8 +114,11 @@ jobs:
           disown || true
           echo "API started with PID $API_PID, waiting for HTTP response on :8080..."
           for i in $(seq 1 60); do
-            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/v1/health || echo "000")
-            if [ "$code" != "000" ]; then
+            # curl -w "%{http_code}" prints "000" on connection refused and the
+            # exit code is non-zero. Use `|| true` to avoid set -e abort, but
+            # DO NOT chain another echo "000" — that would duplicate the token.
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/v1/health 2>/dev/null || true)
+            if [ -n "$code" ] && [ "$code" != "000" ]; then
               echo "API ready after ${i} attempts (~${i}s) — HTTP $code"
               exit 0
             fi
