@@ -1,14 +1,14 @@
 ---
-status: complete
+status: diagnosed
 phase: 09-tech-debt
 source: [09-01-SUMMARY.md, 09-02-SUMMARY.md, 09-03-SUMMARY.md]
 started: 2026-04-15T00:00:00Z
-updated: 2026-04-15T00:50:00Z
+updated: 2026-04-15T01:00:00Z
 ---
 
 ## Current Test
 
-[testing complete]
+[diagnosis complete — 1 root cause identified, awaiting gap closure plan]
 
 ## Tests
 
@@ -52,15 +52,39 @@ result: pass
 expected: 회원가입 2단계에서 "전체 동의" 체크 시 3개 항목(이용약관/개인정보처리방침/마케팅) 모두 체크됨. 개별 체크 해제 시 "전체 동의"도 자동 해제. 필수 2개(이용약관+개인정보처리방침)에 체크되어야 "다음" 버튼 활성화. Dialog 닫은 후에도 체크 상태 유지.
 result: pass
 
+### 11. 비밀번호 재설정 이메일 링크 → 비밀번호 변경 페이지 진입
+expected: Resend로 수신한 "[Grapit] 비밀번호 재설정" 메일의 "비밀번호 재설정" 버튼 클릭 → 비밀번호 재설정 확인 페이지(/auth/password-reset/confirm?token=...)로 이동하여 새 비밀번호 입력 UI가 표시됨.
+result: issue
+reported: "resend로 비밀번호 재설정 안내 메일이 왔는데 재설정 버튼을 눌러 링크를 타고 들어가도 재설정이 아니라 다시 재설정 이메일 보내기로 가버려"
+severity: major
+
 ## Summary
 
-total: 10
+total: 11
 passed: 10
-issues: 0
+issues: 1
 pending: 0
 skipped: 0
 blocked: 0
 
 ## Gaps
 
-[none yet]
+- truth: "비밀번호 재설정 이메일 링크 클릭 시 /auth/reset-password?token=... 페이지에서 새 비밀번호 입력 UI가 표시되어야 한다"
+  status: diagnosed
+  reason: "User reported: resend로 비밀번호 재설정 안내 메일이 왔는데 재설정 버튼을 눌러 링크를 타고 들어가도 재설정이 아니라 다시 재설정 이메일 보내기로 가버려"
+  severity: major
+  test: 11
+  root_cause: "apps/web/app/auth/reset-password/page.tsx가 '이메일 입력 → 재설정 요청' 단일 용도로만 구현되어 ?token= query 분기가 없음. backend POST /auth/password-reset/confirm + auth.service.resetPassword는 정상, 이메일 링크 URL도 정상. 누락된 것은 오직 frontend의 토큰 입력/제출 UI."
+  artifacts:
+    - path: "apps/web/app/auth/reset-password/page.tsx"
+      issue: "useSearchParams()로 token 읽고 분기하는 로직 부재. 모든 입력이 항상 /api/v1/auth/password-reset/request 로 감 (line 39)."
+    - path: "apps/web/app/auth/"
+      issue: "reset-password/confirm/ 또는 password-reset/confirm/ 라우트 파일 자체가 존재하지 않음."
+    - path: "apps/api/src/modules/auth/auth.service.ts:247-248"
+      issue: "resetLink path = `${frontendUrl}/auth/reset-password?token=...`. 옵션 B 선택 시 이 path만 confirm 라우트로 변경."
+  missing:
+    - "apps/web/app/auth/reset-password/page.tsx에 useSearchParams()로 token 읽어 분기하고, token 존재 시 '새 비밀번호 + 확인' 폼 렌더 + POST /api/v1/auth/password-reset/confirm 호출 (옵션 A, 최소 변경)"
+    - "또는 apps/web/app/auth/reset-password/confirm/page.tsx 신규 라우트 생성 + auth.service.ts:248 path 변경 (옵션 B, 라우트 분리)"
+    - "shared 패키지의 resetPasswordSchema를 zod resolver로 재사용 (newPassword + passwordConfirm 확인 로직 포함)"
+    - "token 누락/만료 시 명시적 에러 UI (옵션 B 권장)"
+  debug_session: .planning/debug/password-reset-link-redirects-to-request.md
