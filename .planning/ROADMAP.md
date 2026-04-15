@@ -101,14 +101,14 @@ Plans:
 **Goal:** CI 환경에서만 발생하는 Playwright loginAsTestUser helper → POST /api/v1/auth/login 401 이슈의 근본 원인을 규명·해결하여 `toss-payment.spec.ts` 의 3개 test.fixme 를 복구하고 CI 에서 12/12 green 을 달성한다
 **Requirements**: none (urgent tech-debt, no REQ-ID mapping)
 **Depends on:** Phase 9
-**Plans:** 5 plans
+**Plans:** 5/5 plans complete
 
 Plans:
-- [ ] 09.1-01-PLAN.md — Wave 0 진단 인프라: env-gated debug middleware + main.ts rawBody + CI DEBUG_AUTH_REQ env 주입
-- [ ] 09.1-02-PLAN.md — Wave 1 증거 수집: CI 에서 curl + Playwright probe 양쪽 AUTH_LOGIN_DEBUG 로그 캡처 + 원인 범주(A/B/C) checkpoint 결정
-- [ ] 09.1-03-PLAN.md — Wave 2 조건부 fix: 확정된 분기(A=native fetch / B=headers 교정 / C=server-side) 중 단일 적용
-- [ ] 09.1-04-PLAN.md — Wave 3 복구: toss-payment.spec.ts 의 3 test.fixme → test 복구 + CI 12/12 green 증거 (S4)
-- [ ] 09.1-05-PLAN.md — Wave 4 정리: 진단 미들웨어/env/probe 완전 제거 + Phase 09 VERIFICATION deferred closure
+- [x] 09.1-01-PLAN.md — Wave 0 진단 인프라: env-gated debug middleware + main.ts rawBody + CI DEBUG_AUTH_REQ env 주입
+- [x] 09.1-02-PLAN.md — Wave 1 증거 수집: CI 에서 curl + Playwright probe 양쪽 AUTH_LOGIN_DEBUG 로그 캡처 + 원인 범주(A/B/C) checkpoint 결정
+- [x] 09.1-03-PLAN.md — Wave 2 조건부 fix: 확정된 분기(A=native fetch / B=headers 교정 / C=server-side) 중 단일 적용
+- [x] 09.1-04-PLAN.md — Wave 3 복구: toss-payment.spec.ts 의 3 test.fixme → test 복구 + CI 12/12 green 증거 (S4)
+- [x] 09.1-05-PLAN.md — Wave 4 정리: 진단 미들웨어/env/probe 완전 제거 + Phase 09 VERIFICATION deferred closure
 
 ### Phase 10: SMS 인증 실연동
 **Goal**: 회원가입 시 실제 SMS OTP�� 발송되고 인증번호 검증으로 본인 확인이 완료된다
