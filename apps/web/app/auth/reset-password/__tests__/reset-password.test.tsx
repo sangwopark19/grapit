@@ -127,9 +127,8 @@ describe('ResetPasswordPage', () => {
       );
 
       await vi.waitFor(() => {
-        expect(
-          screen.queryByText(/유효하지 않은|만료|다시 요청/),
-        ).not.toBeNull();
+        const matches = screen.queryAllByText(/유효하지 않은|만료|다시 요청/);
+        expect(matches.length).toBeGreaterThan(0);
       });
       const retryLink = Array.from(document.querySelectorAll('a')).find(
         (a) => a.getAttribute('href') === '/auth/reset-password',
