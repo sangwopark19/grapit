@@ -1,3 +1,4 @@
+import { request as playwrightRequest } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
 interface LoginResponse {
@@ -39,17 +40,17 @@ export async function loginAsTestUser(page: Page): Promise<void> {
   // :3000 pages (verified via context().cookies() check below).
   const apiURL = process.env['E2E_API_URL'] ?? 'http://localhost:8080';
 
-  // 1. Hit the real login endpoint via the shared request fixture.
+  // 1. Hit the real login endpoint via an INDEPENDENT request context.
+  // Using `page.request` (which shares state with the browser context)
+  // produced a Passport-level "Unauthorized" — body wasn't reaching
+  // req.body.email/password. A fresh request.newContext() bypasses any
+  // browser-origin-bound header mangling and matches the shape curl uses.
   const loginURL = `${apiURL}/api/v1/auth/login`;
   console.log(`[loginAsTestUser] POST ${loginURL} email=${email}`);
-  // Use explicit JSON.stringify for `data` to avoid Playwright's automatic
-  // Content-Type handling conflicting with passport-local's body reader.
-  // The previous `data: { email, password }` path ended in Passport's generic
-  // 401 "Unauthorized" (not our validateUser 401), meaning the body never
-  // reached req.body in a shape passport-local could parse.
-  const res = await page.request.post(loginURL, {
+  const requestCtx = await playwrightRequest.newContext();
+  const res = await requestCtx.post(loginURL, {
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    data: JSON.stringify({ email, password }),
+    data: { email, password },
   });
   if (!res.ok()) {
     const body = await res.text().catch(() => '<unable to read body>');
@@ -62,22 +63,38 @@ export async function loginAsTestUser(page: Page): Promise<void> {
         `  Hint: Run 'pnpm --filter @grapit/api seed' and ensure TEST_USER_* env matches seed.mjs:39-50.`,
     );
   }
-  // Touch the body once to make sure the response is fully consumed before we
-  // inspect cookies (otherwise the Set-Cookie header may not have landed in
-  // storage state yet on some platforms).
   (await res.json()) as LoginResponse;
 
-  // 2. Verify refreshToken cookie landed in the shared browser context. If it
-  //    did not, AuthGuard will redirect /booking/.../complete to /auth and the
-  //    confirm API intercept will never fire.
-  const cookies = await page.context().cookies();
-  const refresh = cookies.find((c) => c.name === 'refreshToken');
-  if (!refresh) {
+  // 2. Copy refreshToken from the isolated requestCtx storage into the
+  //    browser context that the page uses. Since the login was made with
+  //    a fresh context, its Set-Cookie landed only there; we must replay
+  //    it on page.context() so AuthInitializer can exchange it on mount.
+  const rawStorage = await requestCtx.storageState();
+  const refreshFromApi = rawStorage.cookies.find(
+    (c) => c.name === 'refreshToken',
+  );
+  await requestCtx.dispose();
+
+  if (!refreshFromApi) {
     throw new Error(
       '[loginAsTestUser] refreshToken cookie missing after login — check auth.controller.ts setRefreshTokenCookie.',
     );
   }
+
+  // Replay onto the browser context with domain=localhost (port-agnostic)
+  // so it's visible to both :3000 (web) and :8080 (api) page navigations.
+  await page.context().addCookies([
+    {
+      name: refreshFromApi.name,
+      value: refreshFromApi.value,
+      domain: 'localhost',
+      path: '/',
+      httpOnly: refreshFromApi.httpOnly,
+      secure: refreshFromApi.secure,
+      sameSite: refreshFromApi.sameSite,
+      expires: refreshFromApi.expires,
+    },
+  ]);
   // AuthInitializer will now POST /api/v1/auth/refresh on first page render,
   // exchange the refreshToken cookie for a fresh accessToken, and call setAuth.
-  // AuthGuard then allows the protected page to mount.
 }
