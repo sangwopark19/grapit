@@ -111,7 +111,7 @@ Plans:
 - [x] 09.1-05-PLAN.md — Wave 4 정리: 진단 미들웨어/env/probe 완전 제거 + Phase 09 VERIFICATION deferred closure
 
 ### Phase 10: SMS 인증 실연동
-**Goal**: 회원가입 시 실제 SMS OTP�� 발송되고 인증번호 검증으로 본인 확인이 완료된다
+**Goal**: 회원가입 시 실제 SMS OTP가 발송되고 인증번호 검증으로 본인 확인이 완료된다
 **Depends on**: Phase 9
 **Requirements**: SMS-01, SMS-02, SMS-03, SMS-04
 **Success Criteria** (what must be TRUE):
@@ -119,7 +119,17 @@ Plans:
   2. 동일 번호/IP에서 과도한 SMS 요청 시 rate limiting 적용
   3. OTP 입력 실패 횟수 초과 또는 만료 시 재발송 필요
   4. 개발 환경에서는 SMS mock 모드가 자동 적용되어 실제 발송 없이 테스트 가능
-**Plans**: TBD
+**Plans:** 9 plans
+Plans:
+- [ ] 10-01-wave0-test-scaffolding-PLAN.md — Wave 0 테스트 스캐폴딩 7파일 + Infobip fixture 2종 (RED 스캐폴딩)
+- [ ] 10-02-deps-env-cleanup-PLAN.md — twilio 제거 + @nest-lab/throttler-storage-redis + libphonenumber-js + .env.example + DEPLOY-CHECKLIST
+- [ ] 10-03-phone-util-PLAN.md — parseE164 + isChinaMainland (libphonenumber-js/min)
+- [ ] 10-04-infobip-client-PLAN.md — Infobip 2FA native fetch wrapper + InfobipApiError
+- [ ] 10-05-sms-service-rewrite-PLAN.md — SmsService Infobip 재작성 + Valkey 쿨다운 + hard-fail 생성자 + dev mock + CN 차단
+- [ ] 10-06-sms-controller-throttle-PLAN.md — @Throttle 데코레이터 적용 (IP 20/h send, 10/15min verify) + zod 국제 번호 수용
+- [ ] 10-07-throttler-valkey-storage-PLAN.md — ThrottlerModule forRootAsync + Valkey storage + password-reset 자동 이전 (D-09)
+- [ ] 10-08-phone-verification-ui-PLAN.md — phone-verification 컴포넌트 4-state + 30s 쿨다운 + HTTP 에러 카피 + 국제 번호
+- [ ] 10-09-e2e-verification-PLAN.md — Playwright signup-sms + testcontainers throttle integration + staging 수동 smoke (D-25)
 
 ### Phase 11: 어드민 대시보드
 **Goal**: 관리자가 대시보드에서 예매/매출/장르 통계를 한눈에 파악하고 운영 의사결정을 내릴 수 있다

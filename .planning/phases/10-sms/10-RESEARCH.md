@@ -723,32 +723,38 @@ async verifyCode(/* ... */) { /* ... */ }
 | A7 | Cloud Run에서 Infobip API 호출 latency는 5초 budget 내 | Pattern 3 (`AbortSignal.timeout(5000)`) | Low — Infobip Korea 직결 인프라 + 지역 routing이면 일반적으로 200-800ms. 5s 여유는 이상치 대응 |
 | A8 | 응답에 pinId를 노출하지 않고 phone→pinId를 Valkey에 저장하면 클라이언트 영향 0 | 설계 결정 | Low — `auth.service.ts:71` destructure는 `verified`만 사용. send-code 응답은 `{ success, message }` 그대로 |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Phone-based throttling tracker 구현 방식**
    - What we know: `@nestjs/throttler` 기본 trackId는 IP. phone-based는 custom ThrottlerGuard 확장 필요
    - What's unclear: D-06 "phone 5/h" 정확 구현 — (a) custom getTracker로 phone 추출 named throttler, (b) send-code 핸들러 내부 Valkey INCR로 직접 카운트
    - Recommendation: (b) 채택. 데코레이터로는 IP 20/h만, phone 5/h는 cooldown 키와 같은 위치(SmsService)에서 Valkey INCR + EXPIRE. 단순성 + visibility 우위. Planner 결정.
+   - **RESOLVED:** (b) Valkey INCR in SmsService — Plan 05 T-phone-axis-counters에 구현 (send 5/3600s via `sms:send_count:{e164}`, verify 10/900s via `sms:verify_count:{e164}`). 컨트롤러 `@Throttle`은 IP axis(send 20/3600s)만 담당 — phone axis는 서비스 레이어에서 Infobip 호출 전에 차단.
 
 2. **password-reset throttler Valkey 이전을 SMS commit과 묶을지 분리할지**
    - What we know: D-09에서 함께 이전 결정. `auth.controller.ts:120,133` 두 곳
    - What's unclear: ThrottlerModule.forRoot → forRootAsync 변경은 모든 throttler에 영향 (전역). 별도 commit으로 분리하면 review 단순, 묶으면 atomic
    - Recommendation: 단일 commit `refactor(10-sms-XX): migrate ThrottlerModule to Valkey storage` — storage 변경 + password-reset 데코레이터 그대로 유지(코드 변경 없음). SMS 데코레이터 추가는 별도 commit. ThrottlerModule 변경은 password-reset 동작에 영향 없으므로 안전.
+   - **RESOLVED:** (a) 단일 commit — Plan 07에서 `ThrottlerModule.forRootAsync` storage 전환만 수행. password-reset `@Throttle` 데코레이터는 코드 변경 없이 자동 이전 (D-09). SMS `@Throttle` 데코레이터 추가는 Plan 06의 별도 commit.
 
 3. **Infobip Application 응답 필드명 정확 검증**
    - What we know: 검색 결과로 `verified`, `attemptsRemaining`, `pinError`, `msisdn` 추정
    - What's unclear: Infobip 공식 OpenAPI spec 또는 첫 staging 응답 캡쳐 전까지 100% 확정 불가
    - Recommendation: Wave 0에서 Infobip staging 계정으로 1회 send + verify (성공/실패 케이스) 호출 → 응답 JSON을 fixture로 저장 → zod schema lock. 코드 작성은 fixture 기반 진행.
+   - **RESOLVED:** Wave 5 (Plan 09) staging smoke checkpoint에서 실 응답 캡쳐 → fixture 업데이트. Wave 0 fixture는 RESEARCH A1/A2 추정 기반으로 먼저 진행하고, staging smoke 결과 diff에 따라 fixture + SmsService mapping 조정 (필드명 불일치 시 DEPLOY-CHECKLIST §9 절차 따름).
 
 4. **Cloud Run min-instances=0 + Infobip cold start 영향**
    - What we know: Cloud Run min-instances=0이면 첫 요청에서 NestJS 부팅 + Infobip DNS 초기화. 일반적 부팅 ~2-3s
    - What's unclear: Infobip 5s timeout이 cold start + DNS + TLS handshake + API call을 포함하는지
    - Recommendation: 문제 발생 시 min-instances=1로 변경 (월 ~$5 추가). Phase 10 초기 모니터링 이슈로만 우선 기록.
+   - **RESOLVED:** `AbortSignal.timeout(5000)` 유지, Cloud Run cold start 관측은 Phase 10 이후 운영 대시보드 모니터링 항목으로 이관. cold start + Infobip 호출 합산 5s 초과 발생 시 min-instances=1로 스위치(월 ~$5 추가 비용 수용).
 
 5. **CN(+86) 차단 메시지 노출 시점**
    - What we know: D-03 메시지는 백엔드 400 응답. UI-SPEC §"국가 감지 안내"에서 클릭 전 차단 미표시 결정
    - What's unclear: UX적으로 발송 시도 후 400을 받는 게 더 거친 경험인지, 입력 즉시 안내가 더 좋은지
    - Recommendation: UI-SPEC 결정대로 발송 시도 후 400 응답 표시. 이유: D-19 정신과 정합(UI에서 미리 차별 시그널 노출 안 함), libphonenumber-js 프론트 의존 회피 가능.
+   - **RESOLVED:** D-19 정신 유지 — CN은 발송 시도 후 400 반환(UI는 에러 메시지 표시). 프론트는 libphonenumber-js로 국가 감지는 하되(국가명 안내용), CN 입력을 사전 차단하지 않음(서버 400 응답으로만 표시).
+
 
 ## Environment Availability
 
