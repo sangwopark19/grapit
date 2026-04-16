@@ -119,17 +119,17 @@ Plans:
   2. 동일 번호/IP에서 과도한 SMS 요청 시 rate limiting 적용
   3. OTP 입력 실패 횟수 초과 또는 만료 시 재발송 필요
   4. 개발 환경에서는 SMS mock 모드가 자동 적용되어 실제 발송 없이 테스트 가능
-**Plans:** 9 plans
+**Plans:** 7/9 plans executed
 Plans:
-- [ ] 10-01-PLAN.md — Wave 0 테스트 스캐폴딩 + Infobip fixture (RED)
-- [ ] 10-02-PLAN.md — twilio 제거 + Infobip deps + .env.example + DEPLOY-CHECKLIST
-- [ ] 10-03-PLAN.md — parseE164 + isChinaMainland (libphonenumber-js/min, CN edge cases)
-- [ ] 10-04-PLAN.md — Infobip 2FA native fetch wrapper + InfobipApiError
-- [ ] 10-05-PLAN.md — SmsService Infobip 재작성 + Lua atomic counter + cooldown rollback + hard-fail
-- [ ] 10-06-PLAN.md — @Throttle IP axis + zod 국제 번호 + 429 response 통일
-- [ ] 10-07-PLAN.md — ThrottlerModule forRootAsync + Valkey storage + password-reset D-09
-- [ ] 10-08-PLAN.md — phone-verification 4-state + 30s 쿨다운 + HTTP 에러 카피 + 국제 번호
-- [ ] 10-09-PLAN.md — E2E + testcontainers integration + staging smoke (체크리스트)
+- [x] 10-01-PLAN.md — Wave 0 테스트 스캐폴딩 + Infobip fixture (RED)
+- [x] 10-02-PLAN.md — twilio 제거 + Infobip deps + .env.example + DEPLOY-CHECKLIST
+- [x] 10-03-PLAN.md — parseE164 + isChinaMainland (libphonenumber-js/min, CN edge cases)
+- [x] 10-04-PLAN.md — Infobip 2FA native fetch wrapper + InfobipApiError
+- [x] 10-05-PLAN.md — SmsService Infobip 재작성 + Lua atomic counter + cooldown rollback + hard-fail
+- [x] 10-06-PLAN.md — @Throttle IP axis + zod 국제 번호 + 429 response 통일
+- [x] 10-07-PLAN.md — ThrottlerModule forRootAsync + Valkey storage + password-reset D-09
+- [x] 10-08-PLAN.md — phone-verification 4-state + 30s 쿨다운 + HTTP 에러 카피 + 국제 번호
+- [x] 10-09-PLAN.md — E2E + testcontainers integration + staging smoke (체크리스트)
 
 ### Phase 11: 어드민 대시보드
 **Goal**: 관리자가 대시보드에서 예매/매출/장르 통계를 한눈에 파악하고 운영 의사결정을 내릴 수 있다
@@ -173,6 +173,6 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
 | 7. Valkey 마이그레이션 | v1.1 | 3/5 | Executing | - |
 | 8. R2 프로덕션 연동 | v1.1 | 0/3 | Planning | - |
 | 9. 기술부채 청산 | v1.1 | 0/0 | Not started | - |
-| 10. SMS 인증 실연동 | v1.1 | 0/9 | Planning | - |
+| 10. SMS 인증 실연동 | v1.1 | 7/9 | In Progress|  |
 | 11. 어드민 대시보드 | v1.1 | 0/0 | Not started | - |
 | 12. UX 현대화 | v1.1 | 0/0 | Not started | - |
