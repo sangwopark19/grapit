@@ -8,28 +8,24 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
  */
 
 // ---- 1. Decorator metadata tests ----
+// @nestjs/throttler v6 stores metadata per-name: 'THROTTLER:LIMIT' + name -> value
+// For @Throttle({ default: { limit: 20, ttl: 3_600_000 } }):
+//   'THROTTLER:LIMITdefault' -> 20, 'THROTTLER:TTLdefault' -> 3_600_000
 describe('SmsController @Throttle decorators', () => {
   it('sendCode has @Throttle with limit:20, ttl:3600000', async () => {
     const { SmsController } = await import('./sms.controller.js');
-    const metadata = Reflect.getMetadata('THROTTLER:LIMIT', SmsController.prototype.sendCode);
-    // @Throttle({ default: { limit: 20, ttl: 3_600_000 } }) sets metadata
-    expect(metadata).toBeDefined();
-    expect(metadata).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ limit: 20, ttl: 3_600_000 }),
-      ]),
-    );
+    const limit = Reflect.getMetadata('THROTTLER:LIMITdefault', SmsController.prototype.sendCode);
+    const ttl = Reflect.getMetadata('THROTTLER:TTLdefault', SmsController.prototype.sendCode);
+    expect(limit).toBe(20);
+    expect(ttl).toBe(3_600_000);
   });
 
   it('verifyCode has @Throttle with limit:10, ttl:900000', async () => {
     const { SmsController } = await import('./sms.controller.js');
-    const metadata = Reflect.getMetadata('THROTTLER:LIMIT', SmsController.prototype.verifyCode);
-    expect(metadata).toBeDefined();
-    expect(metadata).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ limit: 10, ttl: 900_000 }),
-      ]),
-    );
+    const limit = Reflect.getMetadata('THROTTLER:LIMITdefault', SmsController.prototype.verifyCode);
+    const ttl = Reflect.getMetadata('THROTTLER:TTLdefault', SmsController.prototype.verifyCode);
+    expect(limit).toBe(10);
+    expect(ttl).toBe(900_000);
   });
 });
 
