@@ -1,0 +1,183 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+/**
+ * Unit tests for sms.controller.ts Plan 10-06 changes:
+ * 1. @Throttle decorators on sendCode (20/3600000ms) and verifyCode (10/900000ms)
+ * 2. sendCodeSchema accepts both Korean local and E.164 international numbers
+ * 3. sms.service.ts phone axis 429 uses HttpException (not BadRequestException)
+ */
+
+// ---- 1. Decorator metadata tests ----
+describe('SmsController @Throttle decorators', () => {
+  it('sendCode has @Throttle with limit:20, ttl:3600000', async () => {
+    const { SmsController } = await import('./sms.controller.js');
+    const metadata = Reflect.getMetadata('THROTTLER:LIMIT', SmsController.prototype.sendCode);
+    // @Throttle({ default: { limit: 20, ttl: 3_600_000 } }) sets metadata
+    expect(metadata).toBeDefined();
+    expect(metadata).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ limit: 20, ttl: 3_600_000 }),
+      ]),
+    );
+  });
+
+  it('verifyCode has @Throttle with limit:10, ttl:900000', async () => {
+    const { SmsController } = await import('./sms.controller.js');
+    const metadata = Reflect.getMetadata('THROTTLER:LIMIT', SmsController.prototype.verifyCode);
+    expect(metadata).toBeDefined();
+    expect(metadata).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ limit: 10, ttl: 900_000 }),
+      ]),
+    );
+  });
+});
+
+// ---- 2. sendCodeSchema international phone tests ----
+describe('sendCodeSchema phone validation', () => {
+  it('accepts Korean local number 01012345678', async () => {
+    const { sendCodeSchema } = await import('./sms.controller.js');
+    const result = sendCodeSchema.safeParse({ phone: '01012345678' });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts Korean local number 01112345678', async () => {
+    const { sendCodeSchema } = await import('./sms.controller.js');
+    const result = sendCodeSchema.safeParse({ phone: '01112345678' });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts E.164 international number +821012345678', async () => {
+    const { sendCodeSchema } = await import('./sms.controller.js');
+    const result = sendCodeSchema.safeParse({ phone: '+821012345678' });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts E.164 international number +14155551234', async () => {
+    const { sendCodeSchema } = await import('./sms.controller.js');
+    const result = sendCodeSchema.safeParse({ phone: '+14155551234' });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects invalid phone number', async () => {
+    const { sendCodeSchema } = await import('./sms.controller.js');
+    const result = sendCodeSchema.safeParse({ phone: '12345' });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects empty string', async () => {
+    const { sendCodeSchema } = await import('./sms.controller.js');
+    const result = sendCodeSchema.safeParse({ phone: '' });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects + without country code', async () => {
+    const { sendCodeSchema } = await import('./sms.controller.js');
+    const result = sendCodeSchema.safeParse({ phone: '+0123456789' });
+    expect(result.success).toBe(false);
+  });
+});
+
+// ---- 3. sms.service.ts 429 HttpException tests ----
+describe('SmsService phone axis 429 uses HttpException', () => {
+  it('sendVerificationCode phone axis limit throws HTTP 429 (not 400)', async () => {
+    // We need to verify the thrown exception has HTTP status 429
+    const { HttpException } = await import('@nestjs/common');
+
+    // Mock Redis that returns count > 5 for send phone axis
+    const mockRedis = {
+      set: vi.fn().mockResolvedValue('OK'), // cooldown passes
+      eval: vi.fn().mockResolvedValue(6), // count=6 > limit=5
+      pttl: vi.fn().mockResolvedValue(3000),
+    };
+
+    const { SmsService } = await import('./sms.service.js');
+    const mockConfigService = {
+      get: vi.fn().mockImplementation((key: string) => {
+        const env: Record<string, string> = {
+          INFOBIP_API_KEY: 'test-key',
+          INFOBIP_BASE_URL: 'https://test.api.infobip.com',
+          INFOBIP_APPLICATION_ID: 'test-app-id',
+          INFOBIP_MESSAGE_ID: 'test-msg-id',
+        };
+        return env[key];
+      }),
+    };
+
+    // @ts-expect-error partial mock
+    const service = new SmsService(mockConfigService, mockRedis);
+    try {
+      await service.sendVerificationCode('+821012345678');
+      expect.fail('Should have thrown');
+    } catch (err) {
+      expect(err).toBeInstanceOf(HttpException);
+      // HTTP status should be 429, not 400
+      expect((err as HttpException).getStatus()).toBe(429);
+    }
+  });
+
+  it('verifyCode phone axis limit throws HTTP 429 (not 400)', async () => {
+    const { HttpException } = await import('@nestjs/common');
+
+    // Mock Redis that returns count > 10 for verify phone axis
+    const mockRedis = {
+      eval: vi.fn().mockResolvedValue(11), // count=11 > limit=10
+    };
+
+    const { SmsService } = await import('./sms.service.js');
+    const mockConfigService = {
+      get: vi.fn().mockImplementation((key: string) => {
+        const env: Record<string, string> = {
+          INFOBIP_API_KEY: 'test-key',
+          INFOBIP_BASE_URL: 'https://test.api.infobip.com',
+          INFOBIP_APPLICATION_ID: 'test-app-id',
+          INFOBIP_MESSAGE_ID: 'test-msg-id',
+        };
+        return env[key];
+      }),
+    };
+
+    // @ts-expect-error partial mock
+    const service = new SmsService(mockConfigService, mockRedis);
+    try {
+      await service.verifyCode('+821012345678', '123456');
+      expect.fail('Should have thrown');
+    } catch (err) {
+      expect(err).toBeInstanceOf(HttpException);
+      expect((err as HttpException).getStatus()).toBe(429);
+    }
+  });
+
+  it('sendVerificationCode resend cooldown throws HTTP 429 (not 400)', async () => {
+    const { HttpException } = await import('@nestjs/common');
+
+    // Mock Redis: cooldown SET NX returns null (already exists)
+    const mockRedis = {
+      set: vi.fn().mockResolvedValue(null), // cooldown blocked
+      pttl: vi.fn().mockResolvedValue(25000),
+    };
+
+    const { SmsService } = await import('./sms.service.js');
+    const mockConfigService = {
+      get: vi.fn().mockImplementation((key: string) => {
+        const env: Record<string, string> = {
+          INFOBIP_API_KEY: 'test-key',
+          INFOBIP_BASE_URL: 'https://test.api.infobip.com',
+          INFOBIP_APPLICATION_ID: 'test-app-id',
+          INFOBIP_MESSAGE_ID: 'test-msg-id',
+        };
+        return env[key];
+      }),
+    };
+
+    // @ts-expect-error partial mock
+    const service = new SmsService(mockConfigService, mockRedis);
+    try {
+      await service.sendVerificationCode('+821012345678');
+      expect.fail('Should have thrown');
+    } catch (err) {
+      expect(err).toBeInstanceOf(HttpException);
+      expect((err as HttpException).getStatus()).toBe(429);
+    }
+  });
+});
