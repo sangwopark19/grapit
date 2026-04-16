@@ -2,8 +2,12 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Loader2, CheckCircle2 } from 'lucide-react';
-import { SMS_CODE_EXPIRY_SECONDS } from '@grapit/shared';
-import { apiClient } from '@/lib/api-client';
+import {
+  SMS_CODE_EXPIRY_SECONDS,
+  SMS_RESEND_COOLDOWN_SECONDS,
+} from '@grapit/shared';
+import { apiClient, ApiClientError } from '@/lib/api-client';
+import { detectPhoneLocale } from '@/lib/phone';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -13,6 +17,21 @@ interface PhoneVerificationProps {
   onVerified: (code: string) => void;
   isVerified: boolean;
   error?: string;
+}
+
+function mapErrorToCopy(err: unknown): string {
+  if (err instanceof ApiClientError) {
+    if (err.statusCode === 429) return '잠시 후 다시 시도해주세요';
+    if (err.statusCode === 410 || err.statusCode === 422)
+      return '인증번호가 만료되었습니다. 재발송해주세요';
+    if (err.statusCode === 400) {
+      if (err.message.includes('중국 본토')) return err.message;
+      return '인증번호가 일치하지 않습니다';
+    }
+    if (err.statusCode >= 500)
+      return '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+  }
+  return '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
 }
 
 export function PhoneVerification({
@@ -27,8 +46,10 @@ export function PhoneVerification({
   const [isSending, setIsSending] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const cooldownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
@@ -41,6 +62,7 @@ export function PhoneVerification({
     return clearTimer;
   }, [clearTimer]);
 
+  // Expiry timer (3 min)
   useEffect(() => {
     if (timeLeft <= 0) {
       clearTimer();
@@ -60,7 +82,30 @@ export function PhoneVerification({
     return clearTimer;
   }, [timeLeft, clearTimer]);
 
+  // Resend cooldown timer (30s, independent)
+  useEffect(() => {
+    if (resendCooldown <= 0) {
+      if (cooldownTimerRef.current) {
+        clearInterval(cooldownTimerRef.current);
+        cooldownTimerRef.current = null;
+      }
+      return;
+    }
+    cooldownTimerRef.current = setInterval(() => {
+      setResendCooldown((prev) => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => {
+      if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current);
+    };
+  }, [resendCooldown]);
+
   const isExpired = codeSent && timeLeft === 0 && !isVerified;
+  const locale = detectPhoneLocale(phone);
+  const showCountryHint =
+    !locale.isKorean &&
+    locale.countryName !== null &&
+    locale.country !== 'CN' &&
+    !codeSent;
 
   function formatTime(seconds: number): string {
     const m = Math.floor(seconds / 60);
@@ -71,17 +116,30 @@ export function PhoneVerification({
   function formatPhoneInput(value: string): string {
     const numbers = value.replace(/[^0-9]/g, '');
     if (numbers.length <= 3) return numbers;
-    if (numbers.length <= 7) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+    if (numbers.length <= 7)
+      return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
     return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
   }
 
   function handlePhoneInput(value: string) {
-    const formatted = formatPhoneInput(value);
-    onPhoneChange(formatted.replace(/-/g, ''));
+    // Korean numbers: format with mask, international: raw passthrough
+    if (value.startsWith('+') || value.startsWith('00')) {
+      const cleaned = value.replace(/\s+/g, '');
+      onPhoneChange(cleaned);
+    } else {
+      const formatted = formatPhoneInput(value);
+      onPhoneChange(formatted.replace(/-/g, ''));
+    }
   }
 
   async function handleSendCode() {
-    if (!phone || phone.length < 10) return;
+    const phoneLocale = detectPhoneLocale(phone);
+    if (
+      !phone ||
+      (phoneLocale.isKorean && phone.length < 10) ||
+      (!phoneLocale.isKorean && !phoneLocale.country && phone.length < 5)
+    )
+      return;
 
     setIsSending(true);
     setVerifyError(null);
@@ -90,10 +148,9 @@ export function PhoneVerification({
       setCodeSent(true);
       setCode('');
       setTimeLeft(SMS_CODE_EXPIRY_SECONDS);
+      setResendCooldown(SMS_RESEND_COOLDOWN_SECONDS);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : '인증번호 발송에 실패했습니다.';
-      setVerifyError(message);
+      setVerifyError(mapErrorToCopy(err));
     } finally {
       setIsSending(false);
     }
@@ -115,21 +172,46 @@ export function PhoneVerification({
       } else {
         setVerifyError('인증번호가 일치하지 않습니다');
       }
-    } catch {
-      setVerifyError('인증번호가 일치하지 않습니다');
+    } catch (err) {
+      const copy = mapErrorToCopy(err);
+      setVerifyError(copy);
+      // 410/422 expired -> force expired state
+      if (
+        err instanceof ApiClientError &&
+        (err.statusCode === 410 || err.statusCode === 422)
+      ) {
+        setTimeLeft(0);
+      }
     } finally {
       setIsVerifying(false);
     }
   }
 
-  const displayPhone = formatPhoneInput(phone);
+  // Display phone: Korean with mask, international raw
+  const isInternational = phone.startsWith('+') || phone.startsWith('00');
+  const displayPhone = isInternational ? phone : formatPhoneInput(phone);
+
+  // Button disabled logic
+  const sendButtonDisabled =
+    isVerified ||
+    isSending ||
+    (codeSent && resendCooldown > 0) ||
+    (!codeSent && !isInternational && phone.length < 10) ||
+    (!codeSent && isInternational && !locale.country && phone.length < 5);
+
+  // Button aria-label for cooldown
+  const sendButtonAriaLabel =
+    codeSent && resendCooldown > 0
+      ? `재발송 대기 중, ${resendCooldown}초 남음`
+      : undefined;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Phone input + send button */}
       <div className="flex gap-2">
         <Input
           type="tel"
+          autoComplete="tel"
           placeholder="010-0000-0000"
           value={displayPhone}
           onChange={(e) => handlePhoneInput(e.target.value)}
@@ -138,10 +220,11 @@ export function PhoneVerification({
         />
         <Button
           type="button"
-          variant={codeSent && !isExpired ? 'outline' : 'default'}
-          size="default"
+          variant={codeSent ? 'outline' : 'default'}
+          size="lg"
           onClick={handleSendCode}
-          disabled={isSending || phone.length < 10 || isVerified}
+          disabled={sendButtonDisabled}
+          aria-label={sendButtonAriaLabel}
           className="shrink-0"
         >
           {isSending ? (
@@ -149,8 +232,8 @@ export function PhoneVerification({
               <Loader2 className="h-4 w-4 animate-spin" />
               발송 중...
             </>
-          ) : isExpired ? (
-            '재발송'
+          ) : codeSent && resendCooldown > 0 ? (
+            `재발송 (${resendCooldown}s)`
           ) : codeSent ? (
             '재발송'
           ) : (
@@ -158,6 +241,13 @@ export function PhoneVerification({
           )}
         </Button>
       </div>
+
+      {/* Country detection hint */}
+      {showCountryHint && locale.countryName && (
+        <span className="text-caption text-gray-500" aria-live="polite">
+          {locale.countryName} 번호로 SMS를 발송합니다
+        </span>
+      )}
 
       {/* Error from phone field */}
       {error && !verifyError && (
@@ -171,6 +261,7 @@ export function PhoneVerification({
             <Input
               type="text"
               inputMode="numeric"
+              autoComplete="one-time-code"
               maxLength={6}
               placeholder="인증번호 6자리"
               value={code}
@@ -183,7 +274,7 @@ export function PhoneVerification({
             />
             <Button
               type="button"
-              size="default"
+              size="lg"
               onClick={handleVerifyCode}
               disabled={code.length !== 6 || isVerifying || isExpired}
               className="shrink-0"
@@ -198,11 +289,11 @@ export function PhoneVerification({
 
           <div className="flex items-center gap-2">
             {timeLeft > 0 ? (
-              <span className="text-sm text-error">
+              <span className="text-caption text-error">
                 {formatTime(timeLeft)}
               </span>
             ) : (
-              <span className="text-sm text-error">시간 만료</span>
+              <span className="text-caption text-error">시간 만료</span>
             )}
           </div>
         </div>
@@ -210,14 +301,17 @@ export function PhoneVerification({
 
       {/* Verify error */}
       {verifyError && (
-        <p className="text-caption text-error animate-in fade-in duration-150">
+        <p
+          role="alert"
+          className="text-caption text-error animate-in fade-in duration-150"
+        >
           {verifyError}
         </p>
       )}
 
       {/* Verified state */}
       {isVerified && (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" role="status">
           <CheckCircle2 className="h-5 w-5 text-success" />
           <span className="text-sm text-success">인증 완료</span>
         </div>
