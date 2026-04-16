@@ -114,14 +114,17 @@ describe('InfobipClient', () => {
       );
 
       await expect(client.sendPin('+821012345678')).rejects.toThrow(InfobipApiError);
-      await expect(client.sendPin('+821012345678')).rejects.toThrow(InfobipApiError);
+    });
 
-      // Verify status and body are captured
+    it('should capture status and body in InfobipApiError on 400', async () => {
+      const errorBody = '{"requestError":{"serviceException":{"text":"Bad request"}}}';
       fetchSpy.mockResolvedValueOnce(
         new Response(errorBody, { status: 400 }),
       );
+
       try {
         await client.sendPin('+821012345678');
+        expect.fail('Expected InfobipApiError to be thrown');
       } catch (err) {
         const apiErr = err as InfobipApiError;
         expect(apiErr.status).toBe(400);
