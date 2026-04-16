@@ -121,15 +121,15 @@ Plans:
   4. 개발 환경에서는 SMS mock 모드가 자동 적용되어 실제 발송 없이 테스트 가능
 **Plans:** 9 plans
 Plans:
-- [ ] 10-01-wave0-test-scaffolding-PLAN.md — Wave 0 테스트 스캐폴딩 7파일 + Infobip fixture 2종 (RED 스캐폴딩)
-- [ ] 10-02-deps-env-cleanup-PLAN.md — twilio 제거 + @nest-lab/throttler-storage-redis + libphonenumber-js + .env.example + DEPLOY-CHECKLIST
-- [ ] 10-03-phone-util-PLAN.md — parseE164 + isChinaMainland (libphonenumber-js/min)
-- [ ] 10-04-infobip-client-PLAN.md — Infobip 2FA native fetch wrapper + InfobipApiError
-- [ ] 10-05-sms-service-rewrite-PLAN.md — SmsService Infobip 재작성 + Valkey 쿨다운 + hard-fail 생성자 + dev mock + CN 차단
-- [ ] 10-06-sms-controller-throttle-PLAN.md — @Throttle 데코레이터 적용 (IP 20/h send, 10/15min verify) + zod 국제 번호 수용
-- [ ] 10-07-throttler-valkey-storage-PLAN.md — ThrottlerModule forRootAsync + Valkey storage + password-reset 자동 이전 (D-09)
-- [ ] 10-08-phone-verification-ui-PLAN.md — phone-verification 컴포넌트 4-state + 30s 쿨다운 + HTTP 에러 카피 + 국제 번호
-- [ ] 10-09-e2e-verification-PLAN.md — Playwright signup-sms + testcontainers throttle integration + staging 수동 smoke (D-25)
+- [ ] 10-01-PLAN.md — Wave 0 테스트 스캐폴딩 + Infobip fixture (RED)
+- [ ] 10-02-PLAN.md — twilio 제거 + Infobip deps + .env.example + DEPLOY-CHECKLIST
+- [ ] 10-03-PLAN.md — parseE164 + isChinaMainland (libphonenumber-js/min, CN edge cases)
+- [ ] 10-04-PLAN.md — Infobip 2FA native fetch wrapper + InfobipApiError
+- [ ] 10-05-PLAN.md — SmsService Infobip 재작성 + Lua atomic counter + cooldown rollback + hard-fail
+- [ ] 10-06-PLAN.md — @Throttle IP axis + zod 국제 번호 + 429 response 통일
+- [ ] 10-07-PLAN.md — ThrottlerModule forRootAsync + Valkey storage + password-reset D-09
+- [ ] 10-08-PLAN.md — phone-verification 4-state + 30s 쿨다운 + HTTP 에러 카피 + 국제 번호
+- [ ] 10-09-PLAN.md — E2E + testcontainers integration + staging smoke (체크리스트)
 
 ### Phase 11: 어드민 대시보드
 **Goal**: 관리자가 대시보드에서 예매/매출/장르 통계를 한눈에 파악하고 운영 의사결정을 내릴 수 있다
@@ -173,6 +173,6 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
 | 7. Valkey 마이그레이션 | v1.1 | 3/5 | Executing | - |
 | 8. R2 프로덕션 연동 | v1.1 | 0/3 | Planning | - |
 | 9. 기술부채 청산 | v1.1 | 0/0 | Not started | - |
-| 10. SMS 인증 실연동 | v1.1 | 0/0 | Not started | - |
+| 10. SMS 인증 실연동 | v1.1 | 0/9 | Planning | - |
 | 11. 어드민 대시보드 | v1.1 | 0/0 | Not started | - |
 | 12. UX 현대화 | v1.1 | 0/0 | Not started | - |
