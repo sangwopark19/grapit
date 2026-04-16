@@ -1,6 +1,5 @@
 import {
-  Inject, Injectable, BadRequestException, GoneException, HttpException,
-  HttpStatus, Logger,
+  Inject, Injectable, BadRequestException, GoneException, Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as Sentry from '@sentry/nestjs';
@@ -106,11 +105,11 @@ export class SmsService {
     if (acquired === null) {
       const ttl = await this.redis.pttl(cooldownKey);
       this.logger.warn({ event: 'sms.rate_limited', phone: e164, layer: 'resend_cooldown' });
-      // [Review #7] HTTP 429 통일: BadRequestException(400) -> HttpException(429)
-      throw new HttpException(
-        { statusCode: 429, message: '잠시 후 다시 시도해주세요', retryAfterMs: Math.max(ttl, 0) },
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
+      throw new BadRequestException({
+        statusCode: 429,
+        message: '잠시 후 다시 시도해주세요',
+        retryAfterMs: Math.max(ttl, 0),
+      });
     }
 
     // D-06: phone axis send 5/3600s -- [Review #3] Lua atomic INCR+EXPIRE
@@ -119,11 +118,11 @@ export class SmsService {
     );
     if (sendCount > SEND_PHONE_LIMIT) {
       this.logger.warn({ event: 'sms.rate_limited', phone: e164, layer: 'phone_axis_send', count: sendCount });
-      // [Review #7] HTTP 429 통일: BadRequestException(400) -> HttpException(429)
-      throw new HttpException(
-        { statusCode: 429, message: '잠시 후 다시 시도해주세요', retryAfterMs: SEND_PHONE_WINDOW_SEC * 1000 },
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
+      throw new BadRequestException({
+        statusCode: 429,
+        message: '잠시 후 다시 시도해주세요',
+        retryAfterMs: SEND_PHONE_WINDOW_SEC * 1000,
+      });
     }
 
     // Production: call Infobip
@@ -175,11 +174,11 @@ export class SmsService {
     );
     if (verifyCount > VERIFY_PHONE_LIMIT) {
       this.logger.warn({ event: 'sms.rate_limited', phone: e164, layer: 'phone_axis_verify', count: verifyCount });
-      // [Review #7] HTTP 429 통일: BadRequestException(400) -> HttpException(429)
-      throw new HttpException(
-        { statusCode: 429, message: '잠시 후 다시 시도해주세요', retryAfterMs: VERIFY_PHONE_WINDOW_SEC * 1000 },
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
+      throw new BadRequestException({
+        statusCode: 429,
+        message: '잠시 후 다시 시도해주세요',
+        retryAfterMs: VERIFY_PHONE_WINDOW_SEC * 1000,
+      });
     }
 
     // Lookup phone -> pinId

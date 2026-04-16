@@ -1,37 +1,13 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, act } from '@testing-library/react';
-import '@testing-library/jest-dom/vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+// Plan 08에서 GREEN 전환 예정 (phone-verification 컴포넌트 재작성)
 import { PhoneVerification } from '../phone-verification';
 
 // API client mock
 vi.mock('@/lib/api-client', () => ({
   apiClient: {
     post: vi.fn(),
-  },
-  ApiClientError: class ApiClientError extends Error {
-    statusCode: number;
-    constructor(message: string, statusCode: number) {
-      super(message);
-      this.name = 'ApiClientError';
-      this.statusCode = statusCode;
-    }
-  },
-}));
-
-// Mock detectPhoneLocale to avoid libphonenumber-js dependency in tests
-vi.mock('@/lib/phone', () => ({
-  detectPhoneLocale: (input: string) => {
-    if (input.startsWith('+66')) {
-      return { isKorean: false, country: 'TH', countryName: '태국', e164: input };
-    }
-    if (input.startsWith('+86')) {
-      return { isKorean: false, country: 'CN', countryName: '중국', e164: input };
-    }
-    if (/^01[016789]/.test(input.replace(/\D/g, ''))) {
-      return { isKorean: true, country: 'KR', countryName: '한국', e164: null };
-    }
-    return { isKorean: false, country: null, countryName: null, e164: null };
   },
 }));
 
@@ -45,11 +21,7 @@ describe('PhoneVerification', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
+    vi.useFakeTimers();
   });
 
   // ---------- 초기 상태 ----------
@@ -119,8 +91,9 @@ describe('PhoneVerification', () => {
   // ---------- 에러 카피 ----------
   describe('에러 카피', () => {
     it('429 에러 시 "잠시 후 다시 시도해주세요"', async () => {
-      const { apiClient, ApiClientError } = await import('@/lib/api-client');
-      const error429 = new ApiClientError('잠시 후 다시 시도해주세요', 429);
+      const { apiClient } = await import('@/lib/api-client');
+      const error429 = new Error('잠시 후 다시 시도해주세요');
+      (error429 as { status?: number }).status = 429;
       (apiClient.post as ReturnType<typeof vi.fn>).mockRejectedValueOnce(error429);
 
       render(<PhoneVerification {...defaultProps} />);
@@ -133,7 +106,7 @@ describe('PhoneVerification', () => {
     });
 
     it('410 에러 시 "인증번호가 만료되었습니다. 재발송해주세요"', async () => {
-      const { apiClient, ApiClientError } = await import('@/lib/api-client');
+      const { apiClient } = await import('@/lib/api-client');
       // 발송 먼저 성공
       (apiClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ success: true });
 
@@ -142,7 +115,8 @@ describe('PhoneVerification', () => {
       await user.click(screen.getByRole('button', { name: /인증번호 발송/ }));
 
       // verify에서 410 에러
-      const error410 = new ApiClientError('인증번호가 만료되었습니다. 재발송해주세요', 410);
+      const error410 = new Error('인증번호가 만료되었습니다. 재발송해주세요');
+      (error410 as { status?: number }).status = 410;
       (apiClient.post as ReturnType<typeof vi.fn>).mockRejectedValueOnce(error410);
 
       await waitFor(() => {
@@ -234,8 +208,8 @@ describe('PhoneVerification', () => {
     });
 
     it('에러 메시지에 role="alert" 존재', async () => {
-      const { apiClient, ApiClientError } = await import('@/lib/api-client');
-      const err = new ApiClientError('잠시 후 다시 시도해주세요', 429);
+      const { apiClient } = await import('@/lib/api-client');
+      const err = new Error('잠시 후 다시 시도해주세요');
       (apiClient.post as ReturnType<typeof vi.fn>).mockRejectedValueOnce(err);
 
       render(<PhoneVerification {...defaultProps} />);

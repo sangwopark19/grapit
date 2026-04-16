@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { BadRequestException, GoneException, HttpException } from '@nestjs/common';
+import { BadRequestException, GoneException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 // Plan 05에서 GREEN 전환 예정 (Infobip 기반 재작성)
 import { SmsService } from './sms.service.js';
@@ -113,9 +113,8 @@ describe('SmsService', () => {
       mockRedis.set.mockResolvedValueOnce(null); // NX fail = cooldown active
       mockRedis.pttl.mockResolvedValueOnce(25000);
 
-      // [Review #7] HTTP 429 통일: HttpException(429), not BadRequestException
       await expect(service.sendVerificationCode('+821012345678')).rejects.toThrow(
-        HttpException,
+        BadRequestException,
       );
     });
 
@@ -189,9 +188,8 @@ describe('SmsService', () => {
       // Lua EVAL이 6 반환 -- limit 5 초과
       mockRedis.eval.mockResolvedValueOnce(6);
 
-      // [Review #7] HTTP 429 통일: HttpException(429), not BadRequestException
       await expect(service.sendVerificationCode('+821012345678')).rejects.toThrow(
-        HttpException,
+        BadRequestException,
       );
     });
 
@@ -319,9 +317,8 @@ describe('SmsService', () => {
       // Lua EVAL이 11 반환 -- limit 10 초과
       mockRedis.eval.mockResolvedValueOnce(11);
 
-      // [Review #7] HTTP 429 통일: HttpException(429), not BadRequestException
       await expect(service.verifyCode('+821012345678', '123456')).rejects.toThrow(
-        HttpException,
+        BadRequestException,
       );
     });
   });

@@ -1,116 +1,67 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * SMS Mock 모드 E2E 테스트 -- Plan 09 GREEN 전환
+ * SMS Mock 모드 E2E 테스트 (Plan 09에서 GREEN 전환 예정)
  *
  * CI 환경에서 INFOBIP_API_KEY 미설정 -> dev mock 자동 진입
- * 000000 유니버설 코드로 회원가입 step3 전화번호 인증 플로우 완주
- *
- * 전제 조건:
- * - web(3000) + api(8080) 모두 실행 중
- * - API는 INFOBIP_API_KEY 미설정 상태 -> dev mock 모드
+ * 000000 유니버설 코드로 회원가입 플로우 완주
  */
 
 test.describe('회원가입 SMS 인증 (mock 모드)', () => {
-  /**
-   * 회원가입 step1(이메일/비밀번호) + step2(약관) 진행 헬퍼.
-   * step3 전화번호 인증 화면까지 도달합니다.
-   */
-  async function navigateToStep3(page: import('@playwright/test').Page) {
-    await page.goto('/auth');
+  test('회원가입 step3까지 진행 -> 전화번호 입력 -> 발송 -> 000000 입력 -> 인증 완료', async ({
+    page,
+  }) => {
+    // Step 1: 회원가입 페이지 접근
+    await page.goto('/auth/signup');
 
-    // 회원가입 탭 클릭
-    await page.getByRole('tab', { name: '회원가입' }).click();
+    // Step 2: 이메일/비밀번호 입력 (step 1-2)
+    // Plan 09에서 구현: 기존 signup form step 1-2 진행
 
-    // Step 1: 이메일/비밀번호
-    const timestamp = Date.now();
-    await page.getByPlaceholder('이메일을 입력해주세요').fill(`test${timestamp}@e2e.grapit.dev`);
-    await page.getByPlaceholder('비밀번호를 입력해주세요').fill('TestPass1!');
-    await page.getByPlaceholder('비밀번호를 다시 입력해주세요').fill('TestPass1!');
-    await page.getByRole('button', { name: '다음' }).click();
-
-    // Step 2: 약관 동의
-    await expect(page.getByText('전체 동의')).toBeVisible({ timeout: 10_000 });
-    await page.getByLabel('전체 동의').check();
-    await page.getByRole('button', { name: '다음' }).click();
-
-    // Step 3: 개인정보 + 전화번호 인증 화면
-    await expect(page.getByPlaceholder('010-0000-0000')).toBeVisible({ timeout: 10_000 });
-  }
-
-  test('전화번호 인증 mock(000000)으로 회원가입 step3 인증 완료', async ({ page }) => {
-    await navigateToStep3(page);
-
-    // 이름 입력
-    await page.getByPlaceholder('이름을 입력해주세요').fill('테스트유저');
-
-    // 성별 선택
-    await page.getByRole('button', { name: '선택안함' }).click();
-
-    // 생년월일 입력
-    await page.getByPlaceholder('YYYY').fill('1990');
-    await page.getByPlaceholder('MM').fill('01');
-    await page.getByPlaceholder('DD').fill('15');
-
-    // 전화번호 입력
+    // Step 3: 전화번호 입력
     const phoneInput = page.getByPlaceholder('010-0000-0000');
     await phoneInput.fill('01012345678');
 
     // 인증번호 발송
-    await page.getByRole('button', { name: '인증번호 발송' }).click();
-
-    // 쿨다운 라벨 확인: "재발송 (30s)" or similar
-    await expect(page.getByText(/재발송.*\d+s/)).toBeVisible({ timeout: 10_000 });
-
-    // 만료 타이머 확인 (00:00 ~ 03:00 형식)
-    await expect(page.locator('text=/^0[0-3]:\\d{2}$/')).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: /인증번호 발송/ }).click();
 
     // 인증번호 6자리 입력 (mock 모드: 000000)
     const codeInput = page.getByPlaceholder('인증번호 6자리');
-    await expect(codeInput).toBeVisible({ timeout: 10_000 });
+    await expect(codeInput).toBeVisible();
     await codeInput.fill('000000');
 
     // 확인 버튼 클릭
     await page.getByRole('button', { name: '확인' }).click();
 
     // 인증 완료 확인
-    await expect(page.getByText('인증 완료')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('인증 완료')).toBeVisible();
   });
 
-  test('잘못된 인증번호 -> "인증번호가 일치하지 않습니다"', async ({ page }) => {
-    await navigateToStep3(page);
+  test('잘못된 코드 입력 시 "인증번호가 일치하지 않습니다"', async ({ page }) => {
+    await page.goto('/auth/signup');
 
-    // 이름/성별/생년월일 입력
-    await page.getByPlaceholder('이름을 입력해주세요').fill('테스트유저');
-    await page.getByRole('button', { name: '선택안함' }).click();
-    await page.getByPlaceholder('YYYY').fill('1990');
-    await page.getByPlaceholder('MM').fill('01');
-    await page.getByPlaceholder('DD').fill('15');
+    const phoneInput = page.getByPlaceholder('010-0000-0000');
+    await phoneInput.fill('01012345678');
 
-    // 전화번호 입력 + 발송
-    await page.getByPlaceholder('010-0000-0000').fill('01012345678');
-    await page.getByRole('button', { name: '인증번호 발송' }).click();
+    await page.getByRole('button', { name: /인증번호 발송/ }).click();
 
-    // 잘못된 인증번호 입력
     const codeInput = page.getByPlaceholder('인증번호 6자리');
-    await expect(codeInput).toBeVisible({ timeout: 10_000 });
-    await codeInput.fill('111111');
+    await expect(codeInput).toBeVisible();
+    await codeInput.fill('999999');
+
     await page.getByRole('button', { name: '확인' }).click();
 
-    // 에러 메시지 확인
-    await expect(page.getByText('인증번호가 일치하지 않습니다')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('인증번호가 일치하지 않습니다')).toBeVisible();
   });
 
   test('30초 쿨다운 "재발송 (Ns)" 라벨 존재 확인', async ({ page }) => {
-    await navigateToStep3(page);
+    await page.goto('/auth/signup');
 
-    // 전화번호 입력
-    await page.getByPlaceholder('010-0000-0000').fill('01012345678');
+    const phoneInput = page.getByPlaceholder('010-0000-0000');
+    await phoneInput.fill('01012345678');
 
-    // 인증번호 발송
-    await page.getByRole('button', { name: '인증번호 발송' }).click();
+    await page.getByRole('button', { name: /인증번호 발송/ }).click();
 
-    // 쿨다운 라벨 확인: "재발송 (30s)" or similar countdown
-    await expect(page.getByText(/재발송.*\d+s/)).toBeVisible({ timeout: 10_000 });
+    // 쿨다운 라벨 확인: "재발송 (30s)" or similar
+    await expect(page.getByText(/재발송.*\d+s/)).toBeVisible();
   });
 });
