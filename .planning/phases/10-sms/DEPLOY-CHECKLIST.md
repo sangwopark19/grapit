@@ -115,6 +115,12 @@ gcloud run services update grapit-api \
 ## 9. Staging Smoke Test (D-25)
 
 > 실 발송 스모크 테스트는 staging 환경에서 개발자 본인 번호로 수동 수행
+> [Review #10] 이 smoke는 **체크리스트 기록**이며 **merge blocker가 아님**.
+> CI 자동 테스트가 mock 모드로 기능 검증을 완료하므로, 실 SMS smoke는 배포 전 체크리스트 항목.
+
+**상태:** staging 미가용 -- 배포 전 수행 예정 (2026-04-16 기록)
+
+staging 환경이 가용해지면 아래 항목을 수행:
 
 - [ ] Staging 환경에 INFOBIP_* 4종 환경변수 설정 완료
 - [ ] 본인 번호로 `POST /api/v1/sms/send-code` 호출
@@ -126,9 +132,22 @@ gcloud run services update grapit-api \
 - [ ] 재발송 쿨다운(30초) 동작 확인
 - [ ] Sentry에 에러 이벤트가 없는지 확인
 
-## 10. Production 배포
+## 10. Pre-Deploy Mandatory Checks (Phase 10 완료 후 배포 전)
 
-- [ ] Staging smoke test 전체 통과 확인
+> [Checker Warning #5] 배포 전 아래 항목이 모두 완료되지 않으면 production deploy를 진행하지 않는다.
+> [MANDATORY PRE-DEPLOY] 실 SMS 수신 확인이 반드시 포함되어야 한다.
+
+- [ ] Infobip portal에서 Application 설정 확인: pinLength=6, pinType=NUMERIC, pinAttempts=5, pinTimeToLive=3m
+- [ ] Infobip portal에서 Message Template 존재 및 INFOBIP_MESSAGE_ID 일치 확인
+- [ ] KISA 한국 발신번호 사전등록 상태 "Approved" 확인 (Infobip portal > Number Management)
+- [ ] 실 SMS 발송 smoke: 개발자 본인 번호로 send-code > 수신 확인 > verify-code > verified: true
+- [ ] fixture diff: 실 응답 JSON vs __fixtures__/infobip-*-response.json shape 일치 확인
+- [ ] Cloud Run INFOBIP_* 4종 Secret Manager 바인딩 확인
+- [ ] TWILIO_* 4종 Secret Manager에서 제거 확인
+
+## 11. Production 배포
+
+- [ ] 10번 Pre-Deploy Mandatory Checks 전체 완료 확인
 - [ ] GitHub Actions를 통해 production 배포 트리거
 - [ ] 배포 완료 후 Cloud Run 새 리비전이 `serving` 상태인지 확인
 - [ ] Cold-start 후 `/health` 엔드포인트 정상 응답 확인
@@ -142,5 +161,6 @@ gcloud run services update grapit-api \
 ---
 
 **작성일:** 2026-04-16
+**최종 수정:** 2026-04-16 (Plan 09 -- staging smoke 기록 + Pre-Deploy Mandatory Checks 추가)
 **관련 Phase:** 10-sms (SMS 인증 실연동)
 **참조 Decisions:** D-04, D-06, D-10, D-12, D-13, D-14, D-16, D-17, D-25
