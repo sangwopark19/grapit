@@ -131,6 +131,22 @@ Plans:
 - [x] 10-08-PLAN.md — phone-verification 4-state + 30s 쿨다운 + HTTP 에러 카피 + 국제 번호
 - [x] 10-09-PLAN.md — E2E + testcontainers integration + staging smoke (체크리스트)
 
+### Phase 10.1: SMS API v3 전환 (INSERTED)
+
+**Goal:** Infobip `/2fa/2/pin` 레거시 경로에서 `/sms/3/messages` v3로 SMS 발송을 전환하여 `INFOBIP_APPLICATION_ID` / `INFOBIP_MESSAGE_ID` 의존을 제거하고, OTP 생성·검증을 Valkey 기반 자체 구현으로 단순화한다
+**Requirements**: SMS-01, SMS-02, SMS-03, SMS-04 (재검증)
+**Depends on:** Phase 10
+**Success Criteria** (what must be TRUE):
+  1. `InfobipClient`가 `POST /sms/3/messages` 호출로 재작성되어 `applicationId`/`messageId` 필요 없이 API Key + Base URL만으로 동작
+  2. 6자리 숫자 OTP 생성 + Valkey `sms:otp:{e164}` 저장 (TTL 180s) + verify 매칭이 자체 구현됨
+  3. 환경변수는 `INFOBIP_API_KEY` + `INFOBIP_BASE_URL` + `INFOBIP_SENDER` 3개로 축소. `APPLICATION_ID`/`MESSAGE_ID` 제거
+  4. 기존 Phase 10의 rate limiting(IP + phone axis Lua counter) + 30s resend cooldown + mock 모드 분기 모두 유지
+  5. `pnpm --filter @grapit/api test`가 0 실패로 통과 (Phase 10 테스트 마이그레이션 완료)
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 10.1 to break down)
+
 ### Phase 11: 어드민 대시보드
 **Goal**: 관리자가 대시보드에서 예매/매출/장르 통계를 한눈에 파악하고 운영 의사결정을 내릴 수 있다
 **Depends on**: Phase 10

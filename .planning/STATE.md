@@ -69,6 +69,7 @@ Progress: [██████████] 100%
 ### Roadmap Evolution
 
 - Phase 09.1 inserted after Phase 09: CI-login-E2E — Playwright login helper 의 POST /auth/login 401 이슈 조사 (URGENT)
+- Phase 10.1 inserted after Phase 10: SMS API v3 전환 — 2FA PIN API(/2fa/2/pin)에서 일반 SMS API(/sms/3/messages)로 리팩토링, applicationId/messageId 의존 제거, PIN 생성·검증 자체 구현 (URGENT)
 
 ### Decisions
 
