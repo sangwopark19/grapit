@@ -36,6 +36,7 @@
     "drizzle-zod": "^0.8.3",
     "helmet": "^8.0.0",
     "ioredis": "^5.10.1",
+    "libphonenumber-js": "^1.12.41",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
