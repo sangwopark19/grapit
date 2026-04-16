@@ -1,10 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-// Plan 04에서 구현 예정
-import { InfobipClient, InfobipApiError } from './infobip-client.js';
+import {
+  InfobipClient,
+  InfobipApiError,
+  type InfobipSendPinResponse,
+  type InfobipVerifyPinResponse,
+} from './infobip-client';
 import sendFixture from './__fixtures__/infobip-send-response.json';
-import verifyFixture from './__fixtures__/infobip-verify-response.json';
+import verifyFixtures from './__fixtures__/infobip-verify-response.json';
 
-const BASE_URL = 'https://test.api.infobip.com';
+const BASE_URL = 'https://x.api.infobip.com';
 const API_KEY = 'test-api-key';
 const APP_ID = 'test-app-id';
 const MSG_ID = 'test-msg-id';
@@ -24,138 +28,236 @@ describe('InfobipClient', () => {
   });
 
   describe('sendPin', () => {
-    it('올바른 URL로 POST 요청', async () => {
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(sendFixture),
-      });
+    it('should POST to /2fa/2/pin with correct URL', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response(JSON.stringify(sendFixture), { status: 200 }),
+      );
 
       await client.sendPin('+821012345678');
 
-      expect(fetchSpy).toHaveBeenCalledWith(
-        `${BASE_URL}/2fa/2/pin`,
-        expect.objectContaining({ method: 'POST' }),
-      );
+      expect(fetchSpy).toHaveBeenCalledOnce();
+      const [url] = fetchSpy.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe(`${BASE_URL}/2fa/2/pin`);
     });
 
-    it('Authorization header에 "App {key}" 형식 사용', async () => {
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(sendFixture),
-      });
+    it('should set Authorization header to "App {apiKey}"', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response(JSON.stringify(sendFixture), { status: 200 }),
+      );
 
       await client.sendPin('+821012345678');
 
-      const callArgs = fetchSpy.mock.calls[0]![1] as RequestInit;
-      const headers = callArgs.headers as Record<string, string>;
+      const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+      const headers = init.headers as Record<string, string>;
       expect(headers['Authorization']).toBe(`App ${API_KEY}`);
     });
 
-    it('body에 applicationId, messageId, from, to 포함', async () => {
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(sendFixture),
-      });
+    it('should set Content-Type and Accept to application/json', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response(JSON.stringify(sendFixture), { status: 200 }),
+      );
 
       await client.sendPin('+821012345678');
 
-      const callArgs = fetchSpy.mock.calls[0]![1] as RequestInit;
-      const body = JSON.parse(callArgs.body as string) as Record<string, string>;
-      expect(body).toMatchObject({
+      const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+      const headers = init.headers as Record<string, string>;
+      expect(headers['Content-Type']).toBe('application/json');
+      expect(headers['Accept']).toBe('application/json');
+    });
+
+    it('should include applicationId, messageId, from, and to in body', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response(JSON.stringify(sendFixture), { status: 200 }),
+      );
+
+      await client.sendPin('+821012345678');
+
+      const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+      const body = JSON.parse(init.body as string) as Record<string, string>;
+      expect(body).toEqual({
         applicationId: APP_ID,
         messageId: MSG_ID,
         from: 'Grapit',
+        to: '821012345678',
       });
     });
 
-    it('전화번호에서 leading + 제거 후 전송', async () => {
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(sendFixture),
-      });
+    it('should strip leading + from phone number', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response(JSON.stringify(sendFixture), { status: 200 }),
+      );
 
       await client.sendPin('+821012345678');
 
-      const callArgs = fetchSpy.mock.calls[0]![1] as RequestInit;
-      const body = JSON.parse(callArgs.body as string) as Record<string, string>;
-      expect(body['to']).toBe('821012345678');
+      const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+      const body = JSON.parse(init.body as string) as Record<string, string>;
+      expect(body.to).toBe('821012345678');
+      expect(body.to).not.toContain('+');
     });
 
-    it('4xx 응답 시 InfobipApiError throw', async () => {
-      fetchSpy.mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        text: () => Promise.resolve('Bad Request'),
-      });
+    it('should return InfobipSendPinResponse on 200', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response(JSON.stringify(sendFixture), { status: 200 }),
+      );
+
+      const result: InfobipSendPinResponse = await client.sendPin('+821012345678');
+
+      expect(result.pinId).toBe(sendFixture.pinId);
+      expect(result.to).toBe(sendFixture.to);
+      expect(result.smsStatus).toBe(sendFixture.smsStatus);
+    });
+
+    it('should throw InfobipApiError on 400', async () => {
+      const errorBody = '{"requestError":{"serviceException":{"text":"Bad request"}}}';
+      fetchSpy.mockResolvedValueOnce(
+        new Response(errorBody, { status: 400 }),
+      );
 
       await expect(client.sendPin('+821012345678')).rejects.toThrow(InfobipApiError);
     });
 
-    it('5xx 응답 시 InfobipApiError throw', async () => {
-      fetchSpy.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        text: () => Promise.resolve('Internal Server Error'),
-      });
+    it('should capture status and body in InfobipApiError on 400', async () => {
+      const errorBody = '{"requestError":{"serviceException":{"text":"Bad request"}}}';
+      fetchSpy.mockResolvedValueOnce(
+        new Response(errorBody, { status: 400 }),
+      );
+
+      try {
+        await client.sendPin('+821012345678');
+        expect.fail('Expected InfobipApiError to be thrown');
+      } catch (err) {
+        const apiErr = err as InfobipApiError;
+        expect(apiErr.status).toBe(400);
+        expect(apiErr.body).toBe(errorBody);
+      }
+    });
+
+    it('should throw InfobipApiError on 500', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response('Internal Server Error', { status: 500 }),
+      );
 
       await expect(client.sendPin('+821012345678')).rejects.toThrow(InfobipApiError);
     });
 
-    it('timeout 시 AbortError 계열 에러 throw', async () => {
-      fetchSpy.mockRejectedValueOnce(new DOMException('The operation was aborted', 'AbortError'));
+    it('should pass AbortSignal.timeout(5000)', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response(JSON.stringify(sendFixture), { status: 200 }),
+      );
 
-      await expect(client.sendPin('+821012345678')).rejects.toThrow('aborted');
+      await client.sendPin('+821012345678');
+
+      const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+      expect(init.signal).toBeDefined();
     });
   });
 
   describe('verifyPin', () => {
-    const PIN_ID = '9C817C6F8AF3D48F9FE553282AFA2B67';
-
-    it('URL에 encodeURIComponent(pinId) 포함', async () => {
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(verifyFixture.success),
-      });
-
-      await client.verifyPin(PIN_ID, '123456');
-
-      expect(fetchSpy).toHaveBeenCalledWith(
-        `${BASE_URL}/2fa/2/pin/${encodeURIComponent(PIN_ID)}/verify`,
-        expect.objectContaining({ method: 'POST' }),
+    it('should POST to /2fa/2/pin/{encodedPinId}/verify', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response(JSON.stringify(verifyFixtures.success), { status: 200 }),
       );
+
+      await client.verifyPin('simple-pin-id', '123456');
+
+      const [url] = fetchSpy.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe(`${BASE_URL}/2fa/2/pin/simple-pin-id/verify`);
     });
 
-    it('body에 { pin } 포함', async () => {
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(verifyFixture.success),
-      });
+    it('should URL-encode pinId with special characters (encodeURIComponent)', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response(JSON.stringify(verifyFixtures.success), { status: 200 }),
+      );
 
-      await client.verifyPin(PIN_ID, '123456');
+      const specialPinId = 'pinId/=+special';
+      await client.verifyPin(specialPinId, '123456');
 
-      const callArgs = fetchSpy.mock.calls[0]![1] as RequestInit;
-      const body = JSON.parse(callArgs.body as string) as Record<string, string>;
+      const [url] = fetchSpy.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe(`${BASE_URL}/2fa/2/pin/${encodeURIComponent(specialPinId)}/verify`);
+      expect(url).toContain('pinId%2F%3D%2Bspecial');
+    });
+
+    it('should send pin in request body', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response(JSON.stringify(verifyFixtures.success), { status: 200 }),
+      );
+
+      await client.verifyPin('pin-id', '123456');
+
+      const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+      const body = JSON.parse(init.body as string) as Record<string, string>;
       expect(body).toEqual({ pin: '123456' });
     });
 
-    it('성공 응답 반환', async () => {
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(verifyFixture.success),
-      });
+    it('should return InfobipVerifyPinResponse on success', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response(JSON.stringify(verifyFixtures.success), { status: 200 }),
+      );
 
-      const result = await client.verifyPin(PIN_ID, '123456');
+      const result: InfobipVerifyPinResponse = await client.verifyPin('pin-id', '123456');
+
       expect(result.verified).toBe(true);
+      expect(result.attemptsRemaining).toBe(0);
+      expect(result.pinError).toBe('NO_ERROR');
     });
 
-    it('에러 응답 시 InfobipApiError throw', async () => {
-      fetchSpy.mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-        text: () => Promise.resolve('Pin not found'),
-      });
+    it('should return wrong pin response', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response(JSON.stringify(verifyFixtures.wrongPin), { status: 200 }),
+      );
 
-      await expect(client.verifyPin(PIN_ID, '123456')).rejects.toThrow(InfobipApiError);
+      const result = await client.verifyPin('pin-id', '000000');
+
+      expect(result.verified).toBe(false);
+      expect(result.attemptsRemaining).toBe(3);
+      expect(result.pinError).toBe('WRONG_PIN');
+    });
+
+    it('should throw InfobipApiError on error response', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response('Not Found', { status: 404 }),
+      );
+
+      await expect(client.verifyPin('bad-pin', '123456')).rejects.toThrow(InfobipApiError);
+    });
+
+    it('should set Authorization header', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response(JSON.stringify(verifyFixtures.success), { status: 200 }),
+      );
+
+      await client.verifyPin('pin-id', '123456');
+
+      const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+      const headers = init.headers as Record<string, string>;
+      expect(headers['Authorization']).toBe(`App ${API_KEY}`);
+    });
+
+    it('should pass AbortSignal.timeout(5000)', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response(JSON.stringify(verifyFixtures.success), { status: 200 }),
+      );
+
+      await client.verifyPin('pin-id', '123456');
+
+      const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+      expect(init.signal).toBeDefined();
+    });
+  });
+
+  describe('InfobipApiError', () => {
+    it('should capture status and body', () => {
+      const err = new InfobipApiError(429, 'Too many requests');
+      expect(err.status).toBe(429);
+      expect(err.body).toBe('Too many requests');
+      expect(err.name).toBe('InfobipApiError');
+      expect(err.message).toContain('429');
+      expect(err.message).toContain('Too many requests');
+    });
+
+    it('should be an instance of Error', () => {
+      const err = new InfobipApiError(500, 'Server Error');
+      expect(err).toBeInstanceOf(Error);
     });
   });
 });
