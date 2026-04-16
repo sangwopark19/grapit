@@ -28,7 +28,7 @@ Full details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 - [ ] **Phase 7: Valkey 마이그레이션** - Upstash Redis 제거, ioredis 단일 클라이언트로 Google Valkey 전환
 - [ ] **Phase 8: R2 프로덕션 연동** - Cloudflare R2 키 발급부터 CDN 서빙까지 프로덕션 파일 스토리지 완성
 - [ ] **Phase 9: 기술부채 청산** - v1.0에서 누적된 stub/회귀/미검증 6건 해소
-- [ ] **Phase 10: SMS 인증 실연동** - dev mock을 실제 SMS 발송/검증으로 전환
+- [x] **Phase 10: SMS 인증 실연동** - dev mock을 실제 SMS 발송/검증으로 전환 (completed 2026-04-16)
 - [ ] **Phase 11: 어드민 대시보드** - 통계 대시보드 + Valkey 캐싱으로 어드민 고도화
 - [ ] **Phase 12: UX 현대화** - 디자인 트렌드 반영 + SVG 좌석맵 UX 개선
 
@@ -119,7 +119,7 @@ Plans:
   2. 동일 번호/IP에서 과도한 SMS 요청 시 rate limiting 적용
   3. OTP 입력 실패 횟수 초과 또는 만료 시 재발송 필요
   4. 개발 환경에서는 SMS mock 모드가 자동 적용되어 실제 발송 없이 테스트 가능
-**Plans:** 7/9 plans executed
+**Plans:** 9/9 plans complete
 Plans:
 - [x] 10-01-PLAN.md — Wave 0 테스트 스캐폴딩 + Infobip fixture (RED)
 - [x] 10-02-PLAN.md — twilio 제거 + Infobip deps + .env.example + DEPLOY-CHECKLIST
@@ -173,6 +173,6 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
 | 7. Valkey 마이그레이션 | v1.1 | 3/5 | Executing | - |
 | 8. R2 프로덕션 연동 | v1.1 | 0/3 | Planning | - |
 | 9. 기술부채 청산 | v1.1 | 0/0 | Not started | - |
-| 10. SMS 인증 실연동 | v1.1 | 7/9 | In Progress|  |
+| 10. SMS 인증 실연동 | v1.1 | 9/9 | Complete    | 2026-04-16 |
 | 11. 어드민 대시보드 | v1.1 | 0/0 | Not started | - |
 | 12. UX 현대화 | v1.1 | 0/0 | Not started | - |
