@@ -28,7 +28,7 @@ Full details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 - [ ] **Phase 7: Valkey 마이그레이션** - Upstash Redis 제거, ioredis 단일 클라이언트로 Google Valkey 전환
 - [ ] **Phase 8: R2 프로덕션 연동** - Cloudflare R2 키 발급부터 CDN 서빙까지 프로덕션 파일 스토리지 완성
 - [ ] **Phase 9: 기술부채 청산** - v1.0에서 누적된 stub/회귀/미검증 6건 해소
-- [ ] **Phase 10: SMS 인증 실연동** - dev mock을 실제 SMS 발송/검증으로 전환
+- [x] **Phase 10: SMS 인증 실연동** - dev mock을 실제 SMS 발송/검증으로 전환 (completed 2026-04-16)
 - [ ] **Phase 11: 어드민 대시보드** - 통계 대시보드 + Valkey 캐싱으로 어드민 고도화
 - [ ] **Phase 12: UX 현대화** - 디자인 트렌드 반영 + SVG 좌석맵 UX 개선
 
@@ -111,7 +111,7 @@ Plans:
 - [x] 09.1-05-PLAN.md — Wave 4 정리: 진단 미들웨어/env/probe 완전 제거 + Phase 09 VERIFICATION deferred closure
 
 ### Phase 10: SMS 인증 실연동
-**Goal**: 회원가입 시 실제 SMS OTP�� 발송되고 인증번호 검증으로 본인 확인이 완료된다
+**Goal**: 회원가입 시 실제 SMS OTP가 발송되고 인증번호 검증으로 본인 확인이 완료된다
 **Depends on**: Phase 9
 **Requirements**: SMS-01, SMS-02, SMS-03, SMS-04
 **Success Criteria** (what must be TRUE):
@@ -119,7 +119,33 @@ Plans:
   2. 동일 번호/IP에서 과도한 SMS 요청 시 rate limiting 적용
   3. OTP 입력 실패 횟수 초과 또는 만료 시 재발송 필요
   4. 개발 환경에서는 SMS mock 모드가 자동 적용되어 실제 발송 없이 테스트 가능
-**Plans**: TBD
+**Plans:** 9/9 plans complete
+Plans:
+- [x] 10-01-PLAN.md — Wave 0 테스트 스캐폴딩 + Infobip fixture (RED)
+- [x] 10-02-PLAN.md — twilio 제거 + Infobip deps + .env.example + DEPLOY-CHECKLIST
+- [x] 10-03-PLAN.md — parseE164 + isChinaMainland (libphonenumber-js/min, CN edge cases)
+- [x] 10-04-PLAN.md — Infobip 2FA native fetch wrapper + InfobipApiError
+- [x] 10-05-PLAN.md — SmsService Infobip 재작성 + Lua atomic counter + cooldown rollback + hard-fail
+- [x] 10-06-PLAN.md — @Throttle IP axis + zod 국제 번호 + 429 response 통일
+- [x] 10-07-PLAN.md — ThrottlerModule forRootAsync + Valkey storage + password-reset D-09
+- [x] 10-08-PLAN.md — phone-verification 4-state + 30s 쿨다운 + HTTP 에러 카피 + 국제 번호
+- [x] 10-09-PLAN.md — E2E + testcontainers integration + staging smoke (체크리스트)
+
+### Phase 10.1: SMS API v3 전환 (INSERTED)
+
+**Goal:** Infobip `/2fa/2/pin` 레거시 경로에서 `/sms/3/messages` v3로 SMS 발송을 전환하여 `INFOBIP_APPLICATION_ID` / `INFOBIP_MESSAGE_ID` 의존을 제거하고, OTP 생성·검증을 Valkey 기반 자체 구현으로 단순화한다
+**Requirements**: SMS-01, SMS-02, SMS-03, SMS-04 (재검증)
+**Depends on:** Phase 10
+**Success Criteria** (what must be TRUE):
+  1. `InfobipClient`가 `POST /sms/3/messages` 호출로 재작성되어 `applicationId`/`messageId` 필요 없이 API Key + Base URL만으로 동작
+  2. 6자리 숫자 OTP 생성 + Valkey `sms:otp:{e164}` 저장 (TTL 180s) + verify 매칭이 자체 구현됨
+  3. 환경변수는 `INFOBIP_API_KEY` + `INFOBIP_BASE_URL` + `INFOBIP_SENDER` 3개로 축소. `APPLICATION_ID`/`MESSAGE_ID` 제거
+  4. 기존 Phase 10의 rate limiting(IP + phone axis Lua counter) + 30s resend cooldown + mock 모드 분기 모두 유지
+  5. `pnpm --filter @grapit/api test`가 0 실패로 통과 (Phase 10 테스트 마이그레이션 완료)
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 10.1 to break down)
 
 ### Phase 11: 어드민 대시보드
 **Goal**: 관리자가 대시보드에서 예매/매출/장르 통계를 한눈에 파악하고 운영 의사결정을 내릴 수 있다
@@ -163,6 +189,6 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
 | 7. Valkey 마이그레이션 | v1.1 | 3/5 | Executing | - |
 | 8. R2 프로덕션 연동 | v1.1 | 0/3 | Planning | - |
 | 9. 기술부채 청산 | v1.1 | 0/0 | Not started | - |
-| 10. SMS 인증 실연동 | v1.1 | 0/0 | Not started | - |
+| 10. SMS 인증 실연동 | v1.1 | 9/9 | Complete    | 2026-04-16 |
 | 11. 어드민 대시보드 | v1.1 | 0/0 | Not started | - |
 | 12. UX 현대화 | v1.1 | 0/0 | Not started | - |

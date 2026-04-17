@@ -1,0 +1,67 @@
+import { describe, it, expect } from 'vitest';
+import { parseE164, isChinaMainland } from './phone.util.js';
+
+describe('parseE164', () => {
+  it('한국 로컬 포맷(하이픈 포함) → E.164', () => {
+    expect(parseE164('010-1234-5678')).toBe('+821012345678');
+  });
+
+  it('한국 로컬 포맷(하이픈 없음) → E.164', () => {
+    expect(parseE164('01012345678')).toBe('+821012345678');
+  });
+
+  it('E.164 한국 번호 passthrough', () => {
+    expect(parseE164('+821012345678')).toBe('+821012345678');
+  });
+
+  it('E.164 태국 번호 passthrough', () => {
+    expect(parseE164('+66812345678')).toBe('+66812345678');
+  });
+
+  it('E.164 중국 번호 passthrough', () => {
+    expect(parseE164('+8613912345678')).toBe('+8613912345678');
+  });
+
+  it('잘못된 번호 → 에러 throw', () => {
+    expect(() => parseE164('invalid')).toThrow(
+      '올바른 휴대폰 번호를 입력해주세요',
+    );
+  });
+
+  // Review #8 CN edge cases
+  it('[Review #8] 0086 prefix → E.164 +86', () => {
+    expect(parseE164('008613912345678')).toBe('+8613912345678');
+  });
+
+  it('[Review #8] full-width digit 입력 → ASCII로 변환 후 정상 파싱', () => {
+    // U+FF0B = + (full-width), U+FF18 = 8, U+FF16 = 6, ...
+    const fullWidthInput = '\uFF0B\uFF18\uFF16\uFF11\uFF13\uFF19\uFF11\uFF12\uFF13\uFF14\uFF15\uFF16\uFF17\uFF18';
+    expect(parseE164(fullWidthInput)).toBe('+8613912345678');
+  });
+
+  it('[Review #8] 공백 포함 번호 → E.164', () => {
+    expect(parseE164('+ 86 139 1234 5678')).toBe('+8613912345678');
+  });
+});
+
+describe('isChinaMainland', () => {
+  it('중국 본토(+86) → true', () => {
+    expect(isChinaMainland('+8613912345678')).toBe(true);
+  });
+
+  it('한국(+82) → false', () => {
+    expect(isChinaMainland('+821012345678')).toBe(false);
+  });
+
+  it('홍콩(+852) → false', () => {
+    expect(isChinaMainland('+85212345678')).toBe(false);
+  });
+
+  it('마카오(+853) → false', () => {
+    expect(isChinaMainland('+85362345678')).toBe(false);
+  });
+
+  it('대만(+886) → false', () => {
+    expect(isChinaMainland('+886912345678')).toBe(false);
+  });
+});

@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
 status: executing
-stopped_at: Phase 9 UI-SPEC approved
-last_updated: "2026-04-15T07:33:53.555Z"
-last_activity: 2026-04-15
+stopped_at: Phase 10 UI-SPEC approved
+last_updated: "2026-04-17T00:40:36.528Z"
+last_activity: 2026-04-17 -- Phase 10.1 execution started
 progress:
-  total_phases: 8
-  completed_phases: 5
-  total_plans: 19
-  completed_plans: 19
-  percent: 100
+  total_phases: 9
+  completed_phases: 6
+  total_plans: 35
+  completed_plans: 28
+  percent: 80
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** 사용자가 원하는 공연을 발견하고, 좌석을 직접 선택하여, 안정적으로 예매를 완료할 수 있는 것
-**Current focus:** Phase 09.1 — ci-login-e2e-playwright-login-helper-post-auth-login-body-40
+**Current focus:** Phase 10.1 — sms-api-v3-rewrite
 
 ## Current Position
 
-Phase: 10
-Plan: Not started
-Status: Executing Phase 09.1
-Last activity: 2026-04-15
+Phase: 10.1 (sms-api-v3-rewrite) — EXECUTING
+Plan: 1 of 6
+Status: Executing Phase 10.1
+Last activity: 2026-04-17 -- Phase 10.1 execution started
 
 Progress: [██████████] 100%
 
@@ -36,7 +36,7 @@ Progress: [██████████] 100%
 
 **Velocity:**
 
-- Total plans completed: 40 (v1.0)
+- Total plans completed: 49 (v1.0)
 - Average duration: ~10min
 - Total execution time: ~3 hours
 
@@ -51,6 +51,7 @@ Progress: [██████████] 100%
 | 5. Polish + Launch | 5 | N/A | N/A |
 | 07 | 5 | - | - |
 | 09.1 | 5 | - | - |
+| 10 | 9 | - | - |
 
 **Recent Trend:**
 
@@ -68,6 +69,7 @@ Progress: [██████████] 100%
 ### Roadmap Evolution
 
 - Phase 09.1 inserted after Phase 09: CI-login-E2E — Playwright login helper 의 POST /auth/login 401 이슈 조사 (URGENT)
+- Phase 10.1 inserted after Phase 10: SMS API v3 전환 — 2FA PIN API(/2fa/2/pin)에서 일반 SMS API(/sms/3/messages)로 리팩토링, applicationId/messageId 의존 제거, PIN 생성·검증 자체 구현 (URGENT)
 
 ### Decisions
 
@@ -101,6 +103,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-14T02:03:15.755Z
-Stopped at: Phase 9 UI-SPEC approved
-Resume file: .planning/phases/09-tech-debt/09-UI-SPEC.md
+Last session: 2026-04-15T08:49:57.167Z
+Stopped at: Phase 10 UI-SPEC approved
+Resume file: .planning/phases/10-sms/10-UI-SPEC.md

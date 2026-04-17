@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
+import type IORedis from 'ioredis';
 import { APP_GUARD } from '@nestjs/core';
 import { SentryModule } from '@sentry/nestjs/setup';
 import { HealthModule } from './health/health.module.js';
@@ -15,6 +17,7 @@ import { BookingModule } from './modules/booking/booking.module.js';
 import { PaymentModule } from './modules/payment/payment.module.js';
 import { ReservationModule } from './modules/reservation/reservation.module.js';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard.js';
+import { REDIS_CLIENT } from './modules/booking/providers/redis.provider.js';
 import { authConfig } from './config/auth.config.js';
 import { redisConfig } from './config/redis.config.js';
 
@@ -26,7 +29,22 @@ import { redisConfig } from './config/redis.config.js';
       envFilePath: '../../.env',
       load: [authConfig, redisConfig],
     }),
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 60 }]),
+    ThrottlerModule.forRootAsync({
+      imports: [BookingModule],
+      inject: [REDIS_CLIENT],
+      useFactory: (redis: IORedis) => {
+        // [RESEARCH Pitfall 5] InMemoryRedis has no incr method — omit storage for dev fallback
+        // Real ioredis exposes incr() for INCR command — use ThrottlerStorageRedisService
+        const isRealRedis = typeof (redis as IORedis).incr === 'function';
+        return {
+          // [Review #6] @nestjs/throttler v6 uses ms units: 60_000ms = 1 minute global default
+          throttlers: [{ name: 'default', ttl: 60_000, limit: 60 }],
+          ...(isRealRedis
+            ? { storage: new ThrottlerStorageRedisService(redis) }
+            : {}), // dev: in-memory throttler fallback
+        };
+      },
+    }),
     DrizzleModule,
     HealthModule,
     AuthModule,
