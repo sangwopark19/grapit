@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import userEvent from '@testing-library/user-event';
 import { PhoneVerification } from '../phone-verification';
@@ -19,25 +19,14 @@ vi.mock('@/lib/api-client', () => ({
   },
 }));
 
-// Mock detectPhoneLocale to avoid libphonenumber-js dependency in tests
-vi.mock('@/lib/phone', () => ({
-  detectPhoneLocale: (input: string) => {
-    if (input.startsWith('+66')) {
-      return { isKorean: false, country: 'TH', countryName: '태국', e164: input };
-    }
-    if (input.startsWith('+86')) {
-      return { isKorean: false, country: 'CN', countryName: '중국', e164: input };
-    }
-    if (/^01[016789]/.test(input.replace(/\D/g, ''))) {
-      return { isKorean: true, country: 'KR', countryName: '한국', e164: null };
-    }
-    return { isKorean: false, country: null, countryName: null, e164: null };
-  },
-}));
+// react-phone-number-input + shadcn PhoneInput이 E.164 라이브러리와 shadcn
+// Popover/Command 블록을 소유하므로 더 이상 detectPhoneLocale mock이 필요하지 않다.
 
 describe('PhoneVerification', () => {
+  // KR 기본 상태에서 "인증번호 발송" 버튼이 활성이 되도록 E.164 포맷의 한국 번호를
+  // 초기 값으로 지정한다. react-phone-number-input은 E.164 문자열을 value로 기대한다.
   const defaultProps = {
-    phone: '01012345678',
+    phone: '+821012345678',
     onPhoneChange: vi.fn(),
     onVerified: vi.fn(),
     isVerified: false,
@@ -188,11 +177,19 @@ describe('PhoneVerification', () => {
     });
   });
 
-  // ---------- 국가 감지 안내 ----------
-  describe('국가 감지', () => {
-    it('+66 입력 시 "태국 번호로 SMS를 발송합니다" 텍스트 노출', () => {
+  // ---------- 국가 선택 드롭다운 ----------
+  describe('국가 선택 드롭다운', () => {
+    it('국가 셀렉터 버튼이 렌더링되어 "인증번호 발송" 버튼과 함께 존재', () => {
+      render(<PhoneVerification {...defaultProps} phone="" />);
+      // PhoneInput이 Popover Trigger 버튼을 포함하므로 전체 버튼 수는 2개 이상
+      expect(screen.getAllByRole('button').length).toBeGreaterThan(1);
+    });
+
+    it('자동 감지 안내 텍스트 ("...번호로 SMS를 발송합니다")는 더 이상 표시되지 않음', () => {
       render(<PhoneVerification {...defaultProps} phone="+66812345678" />);
-      expect(screen.getByText(/태국 번호로 SMS를 발송합니다/)).toBeInTheDocument();
+      expect(
+        screen.queryByText(/번호로 SMS를 발송합니다/),
+      ).not.toBeInTheDocument();
     });
   });
 

@@ -2,14 +2,15 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Loader2, CheckCircle2 } from 'lucide-react';
+import { isValidPhoneNumber } from 'react-phone-number-input';
 import {
   SMS_CODE_EXPIRY_SECONDS,
   SMS_RESEND_COOLDOWN_SECONDS,
 } from '@grapit/shared';
 import { apiClient, ApiClientError } from '@/lib/api-client';
-import { detectPhoneLocale } from '@/lib/phone';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
 
 interface PhoneVerificationProps {
   phone: string;
@@ -100,12 +101,6 @@ export function PhoneVerification({
   }, [resendCooldown]);
 
   const isExpired = codeSent && timeLeft === 0 && !isVerified;
-  const locale = detectPhoneLocale(phone);
-  const showCountryHint =
-    !locale.isKorean &&
-    locale.countryName !== null &&
-    locale.country !== 'CN' &&
-    !codeSent;
 
   function formatTime(seconds: number): string {
     const m = Math.floor(seconds / 60);
@@ -113,33 +108,8 @@ export function PhoneVerification({
     return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   }
 
-  function formatPhoneInput(value: string): string {
-    const numbers = value.replace(/[^0-9]/g, '');
-    if (numbers.length <= 3) return numbers;
-    if (numbers.length <= 7)
-      return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
-    return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
-  }
-
-  function handlePhoneInput(value: string) {
-    // Korean numbers: format with mask, international: raw passthrough
-    if (value.startsWith('+') || value.startsWith('00')) {
-      const cleaned = value.replace(/\s+/g, '');
-      onPhoneChange(cleaned);
-    } else {
-      const formatted = formatPhoneInput(value);
-      onPhoneChange(formatted.replace(/-/g, ''));
-    }
-  }
-
   async function handleSendCode() {
-    const phoneLocale = detectPhoneLocale(phone);
-    if (
-      !phone ||
-      (phoneLocale.isKorean && phone.length < 10) ||
-      (!phoneLocale.isKorean && !phoneLocale.country && phone.length < 5)
-    )
-      return;
+    if (!phone || !isValidPhoneNumber(phone)) return;
 
     setIsSending(true);
     setVerifyError(null);
@@ -187,17 +157,12 @@ export function PhoneVerification({
     }
   }
 
-  // Display phone: Korean with mask, international raw
-  const isInternational = phone.startsWith('+') || phone.startsWith('00');
-  const displayPhone = isInternational ? phone : formatPhoneInput(phone);
-
   // Button disabled logic
   const sendButtonDisabled =
     isVerified ||
     isSending ||
     (codeSent && resendCooldown > 0) ||
-    (!codeSent && !isInternational && phone.length < 10) ||
-    (!codeSent && isInternational && !locale.country && phone.length < 5);
+    (!codeSent && !isValidPhoneNumber(phone));
 
   // Button aria-label for cooldown
   const sendButtonAriaLabel =
@@ -209,12 +174,11 @@ export function PhoneVerification({
     <div className="space-y-4">
       {/* Phone input + send button */}
       <div className="flex gap-2">
-        <Input
-          type="tel"
-          autoComplete="tel"
+        <PhoneInput
+          value={phone}
+          onChange={onPhoneChange}
           placeholder="010-0000-0000"
-          value={displayPhone}
-          onChange={(e) => handlePhoneInput(e.target.value)}
+          autoComplete="tel"
           disabled={isVerified}
           className="flex-1"
         />
@@ -241,13 +205,6 @@ export function PhoneVerification({
           )}
         </Button>
       </div>
-
-      {/* Country detection hint */}
-      {showCountryHint && locale.countryName && (
-        <span className="text-caption text-gray-500" aria-live="polite">
-          {locale.countryName} 번호로 SMS를 발송합니다
-        </span>
-      )}
 
       {/* Error from phone field */}
       {error && !verifyError && (
