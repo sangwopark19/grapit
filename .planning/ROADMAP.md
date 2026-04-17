@@ -142,10 +142,10 @@ Plans:
   3. 환경변수는 `INFOBIP_API_KEY` + `INFOBIP_BASE_URL` + `INFOBIP_SENDER` 3개로 축소. `APPLICATION_ID`/`MESSAGE_ID` 제거
   4. 기존 Phase 10의 rate limiting(IP + phone axis Lua counter) + 30s resend cooldown + mock 모드 분기 모두 유지
   5. `pnpm --filter @grapit/api test`가 0 실패로 통과 (Phase 10 테스트 마이그레이션 완료)
-**Plans:** 0 plans
+**Plans:** 6/7 plans complete
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 10.1 to break down)
+- [x] TBD (run /gsd-plan-phase 10.1 to break down) (completed 2026-04-17)
 
 ### Phase 11: 어드민 대시보드
 **Goal**: 관리자가 대시보드에서 예매/매출/장르 통계를 한눈에 파악하고 운영 의사결정을 내릴 수 있다
