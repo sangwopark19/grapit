@@ -1,7 +1,7 @@
 /**
  * Phase 10.1: Infobip /sms/3/messages v3 전환
  * - sendSms 전용 (verifyPin 블록 완전 제거)
- * - Request: { messages: [{ from, destinations: [{ to }], text }] }
+ * - Request: { messages: [{ sender, destinations: [{ to }], content: { text } }] }
  * - Response: { messages: [{ messageId, status, destination }], bulkId }
  * - RED 상태: Plan 03 실행 전까지 sendSms/SendSmsResult 미존재
  */
@@ -68,7 +68,7 @@ describe('InfobipClient', () => {
       expect(headers['Content-Type']).toBe('application/json');
     });
 
-    it('body는 { messages: [{ from, destinations: [{ to }], text }] } 구조', async () => {
+    it('body는 { messages: [{ sender, destinations: [{ to }], content: { text } }] } 구조', async () => {
       fetchSpy.mockResolvedValueOnce(
         new Response(JSON.stringify(sendFixture), { status: 200 }),
       );
@@ -79,10 +79,11 @@ describe('InfobipClient', () => {
       const body = JSON.parse(init.body as string) as Record<string, unknown>;
       const messages = body.messages as Array<Record<string, unknown>>;
       expect(messages).toHaveLength(1);
-      expect(messages[0].from).toBe(SENDER);
+      expect(messages[0].sender).toBe(SENDER);
       const destinations = messages[0].destinations as Array<Record<string, string>>;
       expect(destinations[0].to).toBe('821012345678');
-      expect(messages[0].text).toBe('test text');
+      const content = messages[0].content as Record<string, string>;
+      expect(content.text).toBe('test text');
     });
 
     it('200 응답 시 SendSmsResult 반환', async () => {

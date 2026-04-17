@@ -39,9 +39,9 @@ export class InfobipClient {
       body: JSON.stringify({
         messages: [
           {
-            from: this.sender,
+            sender: this.sender,
             destinations: [{ to }],
-            text,
+            content: { text },
           },
         ],
       }),
