@@ -1,26 +1,3 @@
 {
-  "success": {
-    "msisdn": "821012345678",
-    "verified": true,
-    "attemptsRemaining": 0,
-    "pinError": "NO_ERROR"
-  },
-  "wrongPin": {
-    "msisdn": "821012345678",
-    "verified": false,
-    "attemptsRemaining": 3,
-    "pinError": "WRONG_PIN"
-  },
-  "expired": {
-    "msisdn": "821012345678",
-    "verified": false,
-    "attemptsRemaining": 0,
-    "pinError": "PIN_EXPIRED"
-  },
-  "noMoreAttempts": {
-    "msisdn": "821012345678",
-    "verified": false,
-    "attemptsRemaining": 0,
-    "pinError": "NO_MORE_PIN_ATTEMPTS"
-  }
+  "_deprecated": "Phase 10.1: Infobip verify endpoint is no longer used. Verification happens locally via Valkey Lua VERIFY_AND_INCREMENT script. File retained to avoid broken imports during transition; remove after all spec imports are cleaned."
 }

@@ -1,6 +1,16 @@
 {
-  "pinId": "9C817C6F8AF3D48F9FE553282AFA2B67",
-  "to": "821012345678",
-  "ncStatus": "NC_DESTINATION_REACHABLE",
-  "smsStatus": "MESSAGE_SENT"
+  "messages": [
+    {
+      "messageId": "2250be2d4219-3af1-78856-aabe-1362af1edfd2",
+      "status": {
+        "groupId": 1,
+        "groupName": "PENDING",
+        "id": 26,
+        "name": "MESSAGE_ACCEPTED",
+        "description": "Message sent to next instance"
+      },
+      "destination": "821012345678"
+    }
+  ],
+  "bulkId": "2034072219640523072"
 }
