@@ -1,20 +1,7 @@
-export interface InfobipSendPinResponse {
-  pinId: string;
-  to: string;
-  ncStatus?: string;
-  smsStatus?: string;
-}
-
-export interface InfobipVerifyPinResponse {
-  msisdn: string;
-  verified: boolean;
-  attemptsRemaining: number;
-  pinError?:
-    | 'NO_ERROR'
-    | 'WRONG_PIN'
-    | 'PIN_EXPIRED'
-    | 'NO_MORE_PIN_ATTEMPTS'
-    | string;
+export interface SendSmsResult {
+  messageId: string;
+  status: string;
+  groupId: number;
 }
 
 export class InfobipApiError extends Error {
@@ -27,16 +14,22 @@ export class InfobipApiError extends Error {
   }
 }
 
+/**
+ * Infobip SMS API v3 client — POST /sms/3/messages (2024-12 release).
+ * Only requires baseUrl, apiKey, sender. PIN logic lives in SmsService + Valkey.
+ * Production (KR): sender must be KISA-registered numeric; alphanumeric is rewritten by MNOs.
+ */
 export class InfobipClient {
   constructor(
     private readonly baseUrl: string,
     private readonly apiKey: string,
-    private readonly applicationId: string,
-    private readonly messageId: string,
+    private readonly sender: string,
   ) {}
 
-  async sendPin(toE164: string): Promise<InfobipSendPinResponse> {
-    const res = await fetch(`${this.baseUrl}/2fa/2/pin`, {
+  async sendSms(e164: string, text: string): Promise<SendSmsResult> {
+    const to = e164.replace(/^\+/, '');
+
+    const res = await fetch(`${this.baseUrl}/sms/3/messages`, {
       method: 'POST',
       headers: {
         Authorization: `App ${this.apiKey}`,
@@ -44,10 +37,13 @@ export class InfobipClient {
         Accept: 'application/json',
       },
       body: JSON.stringify({
-        applicationId: this.applicationId,
-        messageId: this.messageId,
-        from: 'Grapit',
-        to: toE164.replace(/^\+/, ''),
+        messages: [
+          {
+            from: this.sender,
+            destinations: [{ to }],
+            text,
+          },
+        ],
       }),
       signal: AbortSignal.timeout(5000),
     });
@@ -57,32 +53,24 @@ export class InfobipClient {
       throw new InfobipApiError(res.status, body);
     }
 
-    return (await res.json()) as InfobipSendPinResponse;
-  }
-
-  async verifyPin(
-    pinId: string,
-    pin: string,
-  ): Promise<InfobipVerifyPinResponse> {
-    const res = await fetch(
-      `${this.baseUrl}/2fa/2/pin/${encodeURIComponent(pinId)}/verify`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `App ${this.apiKey}`,
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({ pin }),
-        signal: AbortSignal.timeout(5000),
-      },
-    );
-
-    if (!res.ok) {
-      const body = await res.text().catch(() => '');
-      throw new InfobipApiError(res.status, body);
+    const data = (await res.json()) as {
+      messages?: Array<{
+        messageId?: string;
+        status?: { name?: string; groupId?: number };
+      }>;
+    };
+    const msg = data.messages?.[0];
+    if (!msg || !msg.messageId) {
+      throw new InfobipApiError(
+        500,
+        'Infobip response missing messages[0].messageId',
+      );
     }
 
-    return (await res.json()) as InfobipVerifyPinResponse;
+    return {
+      messageId: msg.messageId,
+      status: msg.status?.name ?? 'UNKNOWN',
+      groupId: msg.status?.groupId ?? 0,
+    };
   }
 }
