@@ -1,17 +1,19 @@
+/**
+ * Phase 10.1: Infobip /sms/3/messages v3 전환
+ * - OTP 생성: crypto.randomInt (Math.random 금지, OWASP A02)
+ * - 저장: Valkey `sms:otp:{e164}` TTL 180s
+ * - Verify: Valkey Lua VERIFY_AND_INCREMENT_LUA atomic script
+ * - Infobip verify API 사용 안 함 (자체 구현)
+ *
+ * RED 상태: Plan 04 실행 전까지 SmsService에 OTP/Lua verify 로직 미존재
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BadRequestException, GoneException, HttpException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-// Plan 05에서 GREEN 전환 예정 (Infobip 기반 재작성)
 import { SmsService } from './sms.service.js';
-// Plan 04에서 구현 예정
 import { InfobipClient, InfobipApiError } from './infobip-client.js';
 
-/**
- * [Review #2 OTP max attempts]
- * OTP max 5 attempts는 Infobip Application pinAttempts=5 위임.
- * 앱 레벨 카운터 불필요 -- Infobip가 서버 사이드에서 강제.
- * DEPLOY-CHECKLIST.md ss3 'pinAttempts: 5' 참조.
- */
+import * as nodeCrypto from 'node:crypto';
 
 // ---------- Mocks ----------
 const mockRedis = {
@@ -26,8 +28,7 @@ function createConfigService(overrides: Record<string, string | undefined> = {})
   const config: Record<string, string | undefined> = {
     INFOBIP_API_KEY: 'test-key',
     INFOBIP_BASE_URL: 'https://test.api.infobip.com',
-    INFOBIP_APPLICATION_ID: 'test-app-id',
-    INFOBIP_MESSAGE_ID: 'test-msg-id',
+    INFOBIP_SENDER: '0212345678',
     NODE_ENV: 'test',
     ...overrides,
   };
@@ -39,12 +40,13 @@ function createConfigService(overrides: Record<string, string | undefined> = {})
 describe('SmsService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.restoreAllMocks();
     process.env['NODE_ENV'] = 'test';
   });
 
   // ---------- constructor ----------
   describe('constructor', () => {
-    it('production에서 4 env 중 1개라도 비면 throw (D-14, D-16)', () => {
+    it('production에서 INFOBIP_API_KEY 미설정 시 throw', () => {
       process.env['NODE_ENV'] = 'production';
       const configService = createConfigService({
         INFOBIP_API_KEY: undefined,
@@ -68,24 +70,44 @@ describe('SmsService', () => {
       );
     });
 
-    it('dev mock: 4 env 전부 미설정 + non-production이면 isDevMock=true (D-15)', () => {
+    it('production에서 INFOBIP_SENDER 누락 시 throw', () => {
+      process.env['NODE_ENV'] = 'production';
+      const configService = createConfigService({
+        INFOBIP_SENDER: undefined,
+        NODE_ENV: 'production',
+      });
+
+      expect(() => new SmsService(configService, mockRedis as never)).toThrow(
+        /INFOBIP_SENDER.*required in production/,
+      );
+    });
+
+    it('non-production에서 3종 전부 미설정이면 isDevMock=true', () => {
       const configService = createConfigService({
         INFOBIP_API_KEY: undefined,
         INFOBIP_BASE_URL: undefined,
-        INFOBIP_APPLICATION_ID: undefined,
-        INFOBIP_MESSAGE_ID: undefined,
+        INFOBIP_SENDER: undefined,
         NODE_ENV: 'test',
       });
 
-      // Should not throw
       const service = new SmsService(configService, mockRedis as never);
       expect(service).toBeDefined();
+    });
+
+    it('non-production이어도 legacy env(APPLICATION_ID, MESSAGE_ID)를 참조하지 않는다', () => {
+      const configService = createConfigService();
+      new SmsService(configService, mockRedis as never);
+
+      const getCalls = (configService.get as ReturnType<typeof vi.fn>).mock.calls;
+      const requestedKeys = getCalls.map((call: unknown[]) => call[0]);
+      expect(requestedKeys).not.toContain('INFOBIP_APPLICATION_ID');
+      expect(requestedKeys).not.toContain('INFOBIP_MESSAGE_ID');
     });
   });
 
   // ---------- sendVerificationCode ----------
   describe('sendVerificationCode', () => {
-    it('중국 본토(+86) 번호 reject -- BadRequestException (D-03)', async () => {
+    it('중국 본토(+86) 번호 reject -- BadRequestException', async () => {
       const configService = createConfigService();
       const service = new SmsService(configService, mockRedis as never);
 
@@ -94,128 +116,159 @@ describe('SmsService', () => {
       );
     });
 
-    it('dev mock에서 성공 반환 (000000)', async () => {
+    it('dev mock에서 성공 반환 (Infobip 호출 없음)', async () => {
       const configService = createConfigService({
         INFOBIP_API_KEY: undefined,
         INFOBIP_BASE_URL: undefined,
-        INFOBIP_APPLICATION_ID: undefined,
-        INFOBIP_MESSAGE_ID: undefined,
+        INFOBIP_SENDER: undefined,
       });
       const service = new SmsService(configService, mockRedis as never);
+      const sendSmsSpy = vi.spyOn(InfobipClient.prototype, 'sendSms');
 
       const result = await service.sendVerificationCode('01012345678');
       expect(result.success).toBe(true);
+      expect(sendSmsSpy).not.toHaveBeenCalled();
     });
 
-    it('resend cooldown SET NX fail시 429 반환', async () => {
+    it('resend cooldown SET NX fail 시 HttpException(429)', async () => {
       const configService = createConfigService();
       const service = new SmsService(configService, mockRedis as never);
       mockRedis.set.mockResolvedValueOnce(null); // NX fail = cooldown active
       mockRedis.pttl.mockResolvedValueOnce(25000);
 
-      // [Review #7] HTTP 429 통일: HttpException(429), not BadRequestException
       await expect(service.sendVerificationCode('+821012345678')).rejects.toThrow(
         HttpException,
       );
     });
 
-    it('Infobip sendPin 성공 시 redis SET pinId', async () => {
+    it('Infobip sendSms 성공 시 Valkey에 OTP 6자리 저장 (sms:otp:{e164}, TTL 180s)', async () => {
       const configService = createConfigService();
       const service = new SmsService(configService, mockRedis as never);
       mockRedis.set.mockResolvedValueOnce('OK'); // cooldown NX pass
       mockRedis.eval.mockResolvedValueOnce(1); // phone counter = 1 (within limit)
 
-      vi.spyOn(InfobipClient.prototype, 'sendPin').mockResolvedValueOnce({
-        pinId: 'test-pin-id',
-        to: '821012345678',
-        ncStatus: 'NC_DESTINATION_REACHABLE',
-        smsStatus: 'MESSAGE_SENT',
+      vi.spyOn(nodeCrypto, 'randomInt').mockReturnValueOnce(654321);
+      vi.spyOn(InfobipClient.prototype, 'sendSms').mockResolvedValueOnce({
+        messageId: 'mid-123',
+        status: 'MESSAGE_ACCEPTED',
+        groupId: 1,
       });
-      mockRedis.set.mockResolvedValueOnce('OK'); // pinId redis set
+      mockRedis.set.mockResolvedValueOnce('OK'); // OTP redis set
 
       const result = await service.sendVerificationCode('+821012345678');
       expect(result.success).toBe(true);
       expect(mockRedis.set).toHaveBeenCalledWith(
-        expect.stringContaining('sms:pin:'),
-        'test-pin-id',
+        expect.stringContaining('sms:otp:'),
+        '654321',
         'PX',
-        expect.any(Number),
+        180000,
       );
     });
 
-    // [Review #1 cooldown rollback]
-    it('Infobip sendPin 5xx/timeout 시 cooldown key 삭제(DEL) -- rollback', async () => {
+    it('메시지 본문이 [Grapit] 인증번호 XXXXXX (3분 이내 입력) 포맷으로 전송됨', async () => {
       const configService = createConfigService();
       const service = new SmsService(configService, mockRedis as never);
       mockRedis.set.mockResolvedValueOnce('OK'); // cooldown NX pass
       mockRedis.eval.mockResolvedValueOnce(1); // phone counter OK
 
-      vi.spyOn(InfobipClient.prototype, 'sendPin').mockRejectedValueOnce(
+      vi.spyOn(nodeCrypto, 'randomInt').mockReturnValueOnce(654321);
+      const sendSmsSpy = vi.spyOn(InfobipClient.prototype, 'sendSms').mockResolvedValueOnce({
+        messageId: 'mid-456',
+        status: 'MESSAGE_ACCEPTED',
+        groupId: 1,
+      });
+      mockRedis.set.mockResolvedValueOnce('OK'); // OTP redis set
+
+      await service.sendVerificationCode('+821012345678');
+      expect(sendSmsSpy).toHaveBeenCalledWith(
+        '+821012345678',
+        '[Grapit] 인증번호 654321 (3분 이내 입력)',
+      );
+    });
+
+    it('OTP 생성 시 Math.random 대신 crypto.randomInt 사용', async () => {
+      const configService = createConfigService();
+      const service = new SmsService(configService, mockRedis as never);
+      mockRedis.set.mockResolvedValueOnce('OK'); // cooldown NX pass
+      mockRedis.eval.mockResolvedValueOnce(1); // phone counter OK
+
+      const randomIntSpy = vi.spyOn(nodeCrypto, 'randomInt').mockReturnValueOnce(123456);
+      vi.spyOn(InfobipClient.prototype, 'sendSms').mockResolvedValueOnce({
+        messageId: 'mid-789',
+        status: 'MESSAGE_ACCEPTED',
+        groupId: 1,
+      });
+      mockRedis.set.mockResolvedValueOnce('OK'); // OTP redis set
+
+      await service.sendVerificationCode('+821012345678');
+      expect(randomIntSpy).toHaveBeenCalledWith(100000, 1000000);
+    });
+
+    it('Infobip sendSms 5xx 시 cooldown key DEL rollback', async () => {
+      const configService = createConfigService();
+      const service = new SmsService(configService, mockRedis as never);
+      mockRedis.set.mockResolvedValueOnce('OK'); // cooldown NX pass
+      mockRedis.eval.mockResolvedValueOnce(1); // phone counter OK
+
+      vi.spyOn(InfobipClient.prototype, 'sendSms').mockRejectedValueOnce(
         new InfobipApiError(500, 'Internal Server Error'),
       );
 
       await expect(service.sendVerificationCode('+821012345678')).rejects.toThrow();
 
-      // cooldown key rollback -- DEL 호출 확인
       expect(mockRedis.del).toHaveBeenCalledWith(
         expect.stringContaining('sms:resend:'),
       );
     });
 
-    it('Infobip sendPin 4xx 시 cooldown key 유지 (DEL 미호출)', async () => {
+    it('Infobip sendSms 4xx 시 cooldown key 유지 (DEL 미호출)', async () => {
       const configService = createConfigService();
       const service = new SmsService(configService, mockRedis as never);
       mockRedis.set.mockResolvedValueOnce('OK'); // cooldown NX pass
       mockRedis.eval.mockResolvedValueOnce(1); // phone counter OK
 
-      vi.spyOn(InfobipClient.prototype, 'sendPin').mockRejectedValueOnce(
+      vi.spyOn(InfobipClient.prototype, 'sendSms').mockRejectedValueOnce(
         new InfobipApiError(400, 'Bad Request'),
       );
 
       await expect(service.sendVerificationCode('+821012345678')).rejects.toThrow();
 
-      // 4xx에서는 cooldown key를 유지해야 함 (사용자 입력 오류)
       expect(mockRedis.del).not.toHaveBeenCalledWith(
         expect.stringContaining('sms:resend:'),
       );
     });
 
-    // [Review #3 Valkey atomicity] phone axis counter Lua script
-    it('phone axis counter: 6번째 호출에서 429 (D-06)', async () => {
+    it('phone axis send counter Lua INCR: 6번째 호출 429', async () => {
       const configService = createConfigService();
       const service = new SmsService(configService, mockRedis as never);
       mockRedis.set.mockResolvedValueOnce('OK'); // cooldown NX pass
 
-      // Lua EVAL이 6 반환 -- limit 5 초과
-      mockRedis.eval.mockResolvedValueOnce(6);
+      mockRedis.eval.mockResolvedValueOnce(6); // limit 5 초과
 
-      // [Review #7] HTTP 429 통일: HttpException(429), not BadRequestException
       await expect(service.sendVerificationCode('+821012345678')).rejects.toThrow(
         HttpException,
       );
     });
 
-    // [Review #3 Valkey atomicity]
-    it('phone axis counter Lua script가 INCR + conditional EXPIRE를 원자적으로 실행', async () => {
+    it('phone axis send counter Lua에 sms:phone:send: prefix 키 전달', async () => {
       const configService = createConfigService();
       const service = new SmsService(configService, mockRedis as never);
       mockRedis.set.mockResolvedValue('OK'); // cooldown NX pass
-      mockRedis.eval.mockResolvedValueOnce(1); // first call, counter = 1
+      mockRedis.eval.mockResolvedValueOnce(1); // phone counter = 1
 
-      vi.spyOn(InfobipClient.prototype, 'sendPin').mockResolvedValueOnce({
-        pinId: 'pin-1',
-        to: '821012345678',
-        ncStatus: 'NC_DESTINATION_REACHABLE',
-        smsStatus: 'MESSAGE_SENT',
+      vi.spyOn(nodeCrypto, 'randomInt').mockReturnValueOnce(999999);
+      vi.spyOn(InfobipClient.prototype, 'sendSms').mockResolvedValueOnce({
+        messageId: 'mid-000',
+        status: 'MESSAGE_ACCEPTED',
+        groupId: 1,
       });
 
       await service.sendVerificationCode('+821012345678');
 
-      // Lua eval이 atomic INCR + EXPIRE 스크립트로 호출되었는지 확인
       expect(mockRedis.eval).toHaveBeenCalledWith(
         expect.stringContaining('INCR'),
         expect.any(Number),
-        expect.stringContaining('sms:phone:'),
+        expect.stringContaining('sms:phone:send:'),
         expect.any(Number),
       );
     });
@@ -227,8 +280,7 @@ describe('SmsService', () => {
       const configService = createConfigService({
         INFOBIP_API_KEY: undefined,
         INFOBIP_BASE_URL: undefined,
-        INFOBIP_APPLICATION_ID: undefined,
-        INFOBIP_MESSAGE_ID: undefined,
+        INFOBIP_SENDER: undefined,
       });
       const service = new SmsService(configService, mockRedis as never);
 
@@ -240,8 +292,7 @@ describe('SmsService', () => {
       const configService = createConfigService({
         INFOBIP_API_KEY: undefined,
         INFOBIP_BASE_URL: undefined,
-        INFOBIP_APPLICATION_ID: undefined,
-        INFOBIP_MESSAGE_ID: undefined,
+        INFOBIP_SENDER: undefined,
       });
       const service = new SmsService(configService, mockRedis as never);
 
@@ -249,80 +300,80 @@ describe('SmsService', () => {
       expect(result.verified).toBe(false);
     });
 
-    it('pinId 없음(만료) 시 GoneException', async () => {
+    it('phone axis verify counter: 11번째 호출에서 429 (D-07)', async () => {
       const configService = createConfigService();
       const service = new SmsService(configService, mockRedis as never);
-      mockRedis.get.mockResolvedValueOnce(null);
+
+      mockRedis.eval.mockResolvedValueOnce(11); // limit 10 초과
+
+      await expect(service.verifyCode('+821012345678', '123456')).rejects.toThrow(
+        HttpException,
+      );
+    });
+
+    it('Lua VERIFY_AND_INCREMENT 결과 ["VERIFIED", attempts] 시 verified: true + sms:verified:{e164} TTL 600s 저장', async () => {
+      const configService = createConfigService();
+      const service = new SmsService(configService, mockRedis as never);
+
+      mockRedis.eval.mockResolvedValueOnce(1); // phone axis verify counter OK
+      mockRedis.eval.mockResolvedValueOnce(['VERIFIED', 1]); // VERIFY_AND_INCREMENT result
+
+      const result = await service.verifyCode('+821012345678', '123456');
+      expect(result.verified).toBe(true);
+
+      // Lua script includes SETEX for sms:verified internally,
+      // or service calls redis.set for sms:verified key
+      // Either way, the verify script must reference sms:verified pattern
+      expect(mockRedis.eval).toHaveBeenCalledWith(
+        expect.stringContaining('KEYS'),
+        expect.any(Number),
+        expect.stringContaining('sms:otp:'),
+        expect.stringContaining('sms:attempts:'),
+        expect.stringContaining('sms:verified:'),
+        expect.any(String), // user code
+        expect.any(String), // max attempts
+        expect.any(String), // verified TTL
+      );
+    });
+
+    it('Lua 결과 ["WRONG", remaining] 시 verified: false 반환', async () => {
+      const configService = createConfigService();
+      const service = new SmsService(configService, mockRedis as never);
+
+      mockRedis.eval.mockResolvedValueOnce(1); // phone axis verify counter OK
+      mockRedis.eval.mockResolvedValueOnce(['WRONG', 3]); // VERIFY_AND_INCREMENT result
+
+      const result = await service.verifyCode('+821012345678', '000000');
+      expect(result.verified).toBe(false);
+      expect(result.message).toContain('인증번호가 일치하지 않습니다');
+    });
+
+    it('Lua 결과 ["EXPIRED", 0] 시 GoneException', async () => {
+      const configService = createConfigService();
+      const service = new SmsService(configService, mockRedis as never);
+
+      mockRedis.eval.mockResolvedValueOnce(1); // phone axis verify counter OK
+      mockRedis.eval.mockResolvedValueOnce(['EXPIRED', 0]); // VERIFY_AND_INCREMENT result
 
       await expect(service.verifyCode('+821012345678', '123456')).rejects.toThrow(
         GoneException,
       );
     });
 
-    it('Infobip verified=true 시 redis.del', async () => {
+    it('Lua 결과 ["NO_MORE_ATTEMPTS", 0] 시 GoneException', async () => {
       const configService = createConfigService();
       const service = new SmsService(configService, mockRedis as never);
-      mockRedis.get.mockResolvedValueOnce('test-pin-id');
-      mockRedis.eval.mockResolvedValueOnce(1); // verify counter OK
 
-      vi.spyOn(InfobipClient.prototype, 'verifyPin').mockResolvedValueOnce({
-        msisdn: '821012345678',
-        verified: true,
-        attemptsRemaining: 0,
-        pinError: 'NO_ERROR',
-      });
-
-      const result = await service.verifyCode('+821012345678', '123456');
-      expect(result.verified).toBe(true);
-      expect(mockRedis.del).toHaveBeenCalledWith(expect.stringContaining('sms:pin:'));
-    });
-
-    it('attemptsRemaining=0 / NO_MORE_PIN_ATTEMPTS 시 GoneException', async () => {
-      const configService = createConfigService();
-      const service = new SmsService(configService, mockRedis as never);
-      mockRedis.get.mockResolvedValueOnce('test-pin-id');
-      mockRedis.eval.mockResolvedValueOnce(1); // verify counter OK
-
-      vi.spyOn(InfobipClient.prototype, 'verifyPin').mockResolvedValueOnce({
-        msisdn: '821012345678',
-        verified: false,
-        attemptsRemaining: 0,
-        pinError: 'NO_MORE_PIN_ATTEMPTS',
-      });
+      mockRedis.eval.mockResolvedValueOnce(1); // phone axis verify counter OK
+      mockRedis.eval.mockResolvedValueOnce(['NO_MORE_ATTEMPTS', 0]); // VERIFY_AND_INCREMENT result
 
       await expect(service.verifyCode('+821012345678', '999999')).rejects.toThrow(
         GoneException,
       );
     });
 
-    it('WRONG_PIN 시 verified false 반환', async () => {
-      const configService = createConfigService();
-      const service = new SmsService(configService, mockRedis as never);
-      mockRedis.get.mockResolvedValueOnce('test-pin-id');
-      mockRedis.eval.mockResolvedValueOnce(1); // verify counter OK
-
-      vi.spyOn(InfobipClient.prototype, 'verifyPin').mockResolvedValueOnce({
-        msisdn: '821012345678',
-        verified: false,
-        attemptsRemaining: 3,
-        pinError: 'WRONG_PIN',
-      });
-
-      const result = await service.verifyCode('+821012345678', '999999');
-      expect(result.verified).toBe(false);
-    });
-
-    it('phone axis verify counter: 11번째 호출에서 429 (D-07)', async () => {
-      const configService = createConfigService();
-      const service = new SmsService(configService, mockRedis as never);
-
-      // Lua EVAL이 11 반환 -- limit 10 초과
-      mockRedis.eval.mockResolvedValueOnce(11);
-
-      // [Review #7] HTTP 429 통일: HttpException(429), not BadRequestException
-      await expect(service.verifyCode('+821012345678', '123456')).rejects.toThrow(
-        HttpException,
-      );
+    it('Infobip verifyPin을 호출하지 않는다 (Valkey Lua 자체 검증)', () => {
+      expect(InfobipClient.prototype).not.toHaveProperty('verifyPin');
     });
   });
 });
