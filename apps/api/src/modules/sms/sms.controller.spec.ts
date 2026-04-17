@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+// Phase 10.1: Infobip env 3종(API_KEY/BASE_URL/SENDER)으로 mock 마이그레이션.
+// APPLICATION_ID/MESSAGE_ID는 더 이상 사용되지 않음.
+
 /**
  * Unit tests for sms.controller.ts Plan 10-06 changes:
  * 1. @Throttle decorators on sendCode (20/3600000ms) and verifyCode (10/900000ms)
@@ -93,8 +96,7 @@ describe('SmsService phone axis 429 uses HttpException', () => {
         const env: Record<string, string> = {
           INFOBIP_API_KEY: 'test-key',
           INFOBIP_BASE_URL: 'https://test.api.infobip.com',
-          INFOBIP_APPLICATION_ID: 'test-app-id',
-          INFOBIP_MESSAGE_ID: 'test-msg-id',
+          INFOBIP_SENDER: '0212345678',
         };
         return env[key];
       }),
@@ -126,8 +128,7 @@ describe('SmsService phone axis 429 uses HttpException', () => {
         const env: Record<string, string> = {
           INFOBIP_API_KEY: 'test-key',
           INFOBIP_BASE_URL: 'https://test.api.infobip.com',
-          INFOBIP_APPLICATION_ID: 'test-app-id',
-          INFOBIP_MESSAGE_ID: 'test-msg-id',
+          INFOBIP_SENDER: '0212345678',
         };
         return env[key];
       }),
@@ -159,8 +160,7 @@ describe('SmsService phone axis 429 uses HttpException', () => {
         const env: Record<string, string> = {
           INFOBIP_API_KEY: 'test-key',
           INFOBIP_BASE_URL: 'https://test.api.infobip.com',
-          INFOBIP_APPLICATION_ID: 'test-app-id',
-          INFOBIP_MESSAGE_ID: 'test-msg-id',
+          INFOBIP_SENDER: '0212345678',
         };
         return env[key];
       }),
