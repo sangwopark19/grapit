@@ -14,10 +14,10 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
-    root: '.',
+    root: './src',
     hookTimeout: 120000, // testcontainers pull + startup can take ~60s on cold cache
     testTimeout: 60000,
-    include: ['test/**/*.integration.spec.ts', 'src/**/*.integration.spec.ts'],
+    include: ['**/*.integration.spec.ts'],
   },
   resolve: {
     alias: {
