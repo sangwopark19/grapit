@@ -119,6 +119,7 @@ describe('SmsService phone axis 429 uses HttpException', () => {
 
     // Mock Redis that returns count > 10 for verify phone axis
     const mockRedis = {
+      get: vi.fn().mockResolvedValue(null), // no prior verified flag
       eval: vi.fn().mockResolvedValue(11), // count=11 > limit=10
     };
 

@@ -225,6 +225,12 @@ export class SmsService {
       return { verified: false, message: '인증번호가 일치하지 않습니다' };
     }
 
+    // Idempotent re-verify: registration calls verifyCode again after initial verify
+    const alreadyVerified = await this.redis.get(`sms:verified:${e164}`);
+    if (alreadyVerified === '1') {
+      return { verified: true };
+    }
+
     // D-07: phone axis verify 10/900s -- Lua atomic INCR+EXPIRE
     const verifyCount = await this.atomicIncr(
       `sms:phone:verify:${e164}`, VERIFY_PHONE_WINDOW_SEC,
