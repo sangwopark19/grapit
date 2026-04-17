@@ -4,23 +4,29 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as Sentry from '@sentry/nestjs';
+import { randomInt } from 'node:crypto';
 import type IORedis from 'ioredis';
 import { REDIS_CLIENT } from '../booking/providers/redis.provider.js';
 import { InfobipClient, InfobipApiError } from './infobip-client.js';
 import { parseE164, isChinaMainland } from './phone.util.js';
 
+// Phase 10 constants (retained)
 const RESEND_COOLDOWN_MS = 30_000;           // D-11: 30s resend cooldown
-const PIN_MAPPING_TTL_MS = 200_000;          // PIN 180s + 20s clock skew
 const SEND_PHONE_LIMIT = 5;                  // D-06: phone 5/3600s
 const SEND_PHONE_WINDOW_SEC = 3600;          // D-06: 1h window
 const VERIFY_PHONE_LIMIT = 10;               // D-07: phone 10/900s
 const VERIFY_PHONE_WINDOW_SEC = 900;         // D-07: 15min window
 
+// Phase 10.1 new constants
+const OTP_TTL_MS = 180_000;                  // 3min -- matches message copy
+const OTP_MAX_ATTEMPTS = 5;                  // replaces Infobip pinAttempts
+const VERIFIED_FLAG_TTL_SEC = 600;           // verified flag 10min for signup re-check
+
 /**
- * [Review #3 HIGH] Lua script: atomic INCR + conditional EXPIRE
- * 첫 INCR(결과=1)이면 EXPIRE 설정. 이미 존재하면 INCR만.
- * 프로세스 crash 시 TTL 없는 좀비 key 방지.
- * Returns: current count (number)
+ * [Phase 10] Lua atomic INCR + conditional EXPIRE for phone axis rate-limit counters.
+ * First INCR (result==1) sets TTL. Already-existing keys are incremented only.
+ * Prevents zombie keys on process crash.
+ * Returns: current count (number).
  */
 const ATOMIC_INCR_LUA = `
 local count = redis.call('INCR', KEYS[1])
@@ -28,6 +34,48 @@ if count == 1 then
   redis.call('EXPIRE', KEYS[1], tonumber(ARGV[1]))
 end
 return count
+`;
+
+/**
+ * [Phase 10.1 NEW] Atomic OTP verify + attempt counter + verified flag.
+ * KEYS:
+ *   [1] sms:otp:{e164}
+ *   [2] sms:attempts:{e164}
+ *   [3] sms:verified:{e164}
+ * ARGV:
+ *   [1] user-provided code (6 digits)
+ *   [2] max attempts (e.g. '5')
+ *   [3] verified flag TTL seconds (e.g. '600')
+ * Returns: [result_string, number]
+ *   {'VERIFIED', attempts}        -- correct. otp/attempts DEL, verified SETEX.
+ *   {'WRONG', remaining}          -- wrong. attempts INCR(+EXPIRE if first).
+ *   {'EXPIRED', 0}                -- otp expired/missing.
+ *   {'NO_MORE_ATTEMPTS', 0}       -- exceeded. otp/attempts DEL.
+ */
+const VERIFY_AND_INCREMENT_LUA = `
+local stored = redis.call('GET', KEYS[1])
+if stored == false then
+  return {'EXPIRED', 0}
+end
+
+local attempts = redis.call('INCR', KEYS[2])
+if attempts == 1 then
+  redis.call('EXPIRE', KEYS[2], 900)
+end
+
+local max = tonumber(ARGV[2])
+if attempts > max then
+  redis.call('DEL', KEYS[1], KEYS[2])
+  return {'NO_MORE_ATTEMPTS', 0}
+end
+
+if stored == ARGV[1] then
+  redis.call('DEL', KEYS[1], KEYS[2])
+  redis.call('SETEX', KEYS[3], tonumber(ARGV[3]), '1')
+  return {'VERIFIED', attempts}
+end
+
+return {'WRONG', max - attempts}
 `;
 
 export interface SendResult { success: boolean; message: string }
@@ -43,18 +91,16 @@ export class SmsService {
     configService: ConfigService,
     @Inject(REDIS_CLIENT) private readonly redis: IORedis,
   ) {
-    // D-14, D-16: 4 env 전부 검증. Pitfall 2: ?.trim() 빈 문자열도 falsy
-    const apiKey = configService.get<string>('INFOBIP_API_KEY')?.trim() ?? '';
+    // Phase 10.1: env 3 vars (APPLICATION_ID/MESSAGE_ID removed, SENDER added)
+    const apiKey  = configService.get<string>('INFOBIP_API_KEY')?.trim()  ?? '';
     const baseUrl = configService.get<string>('INFOBIP_BASE_URL')?.trim() ?? '';
-    const applicationId = configService.get<string>('INFOBIP_APPLICATION_ID')?.trim() ?? '';
-    const messageId = configService.get<string>('INFOBIP_MESSAGE_ID')?.trim() ?? '';
+    const sender  = configService.get<string>('INFOBIP_SENDER')?.trim()   ?? '';
     const isProduction = process.env['NODE_ENV'] === 'production';
 
     const missing = [
-      !apiKey && 'INFOBIP_API_KEY',
+      !apiKey  && 'INFOBIP_API_KEY',
       !baseUrl && 'INFOBIP_BASE_URL',
-      !applicationId && 'INFOBIP_APPLICATION_ID',
-      !messageId && 'INFOBIP_MESSAGE_ID',
+      !sender  && 'INFOBIP_SENDER',
     ].filter(Boolean) as string[];
 
     if (isProduction && missing.length > 0) {
@@ -64,9 +110,7 @@ export class SmsService {
     }
 
     this.isDevMock = !isProduction && missing.length > 0;
-    this.client = this.isDevMock
-      ? null
-      : new InfobipClient(baseUrl, apiKey, applicationId, messageId);
+    this.client = this.isDevMock ? null : new InfobipClient(baseUrl, apiKey, sender);
 
     if (this.isDevMock) {
       this.logger.warn({ event: 'sms.credential_missing', mode: 'dev_mock' });
@@ -74,14 +118,20 @@ export class SmsService {
   }
 
   /**
-   * [Review #3] Atomic INCR + conditional EXPIRE via Lua.
+   * [Phase 10] Atomic INCR + conditional EXPIRE via Lua.
    * Returns current count.
    */
   private async atomicIncr(key: string, windowSec: number): Promise<number> {
-    const result = await this.redis.eval(
+    return (await this.redis.eval(
       ATOMIC_INCR_LUA, 1, key, windowSec,
-    ) as number;
-    return result;
+    )) as number;
+  }
+
+  /**
+   * [Phase 10.1] 6-digit OTP. node:crypto.randomInt (OWASP A02 -- CSPRNG).
+   */
+  private generateOtp(): string {
+    return String(randomInt(100000, 1000000));
   }
 
   async sendVerificationCode(phone: string): Promise<SendResult> {
@@ -94,7 +144,7 @@ export class SmsService {
       );
     }
 
-    // Dev mock -- cooldown/counter skip
+    // Dev mock -- cooldown/counter/Infobip all skipped
     if (this.isDevMock) {
       this.logger.log({ event: 'sms.sent', mode: 'dev_mock', phone: e164 });
       return { success: true, message: '인증번호가 발송되었습니다' };
@@ -106,40 +156,46 @@ export class SmsService {
     if (acquired === null) {
       const ttl = await this.redis.pttl(cooldownKey);
       this.logger.warn({ event: 'sms.rate_limited', phone: e164, layer: 'resend_cooldown' });
-      // [Review #7] HTTP 429 통일: BadRequestException(400) -> HttpException(429)
       throw new HttpException(
         { statusCode: 429, message: '잠시 후 다시 시도해주세요', retryAfterMs: Math.max(ttl, 0) },
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }
 
-    // D-06: phone axis send 5/3600s -- [Review #3] Lua atomic INCR+EXPIRE
+    // D-06: phone axis send 5/3600s -- Lua atomic INCR+EXPIRE
     const sendCount = await this.atomicIncr(
       `sms:phone:send:${e164}`, SEND_PHONE_WINDOW_SEC,
     );
     if (sendCount > SEND_PHONE_LIMIT) {
-      this.logger.warn({ event: 'sms.rate_limited', phone: e164, layer: 'phone_axis_send', count: sendCount });
-      // [Review #7] HTTP 429 통일: BadRequestException(400) -> HttpException(429)
+      this.logger.warn({
+        event: 'sms.rate_limited', phone: e164, layer: 'phone_axis_send', count: sendCount,
+      });
       throw new HttpException(
         { statusCode: 429, message: '잠시 후 다시 시도해주세요', retryAfterMs: SEND_PHONE_WINDOW_SEC * 1000 },
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }
 
-    // Production: call Infobip
+    // [Phase 10.1] Self-managed OTP generation + Valkey storage
+    const otp = this.generateOtp();
+    const text = `[Grapit] 인증번호 ${otp} (3분 이내 입력)`;
+
     try {
-      const res = await this.client!.sendPin(e164);
-      await this.redis.set(`sms:pin:${e164}`, res.pinId, 'PX', PIN_MAPPING_TTL_MS);
-      this.logger.log({ event: 'sms.sent', phone: e164, pinId: res.pinId });
+      // Store OTP first -- SMS delivery only matters after user receives it.
+      // On sendSms failure, OTP naturally expires via TTL 180s. Next send overwrites.
+      await this.redis.set(`sms:otp:${e164}`, otp, 'PX', OTP_TTL_MS);
+
+      await this.client!.sendSms(e164, text);
+      this.logger.log({ event: 'sms.sent', phone: e164 });
       return { success: true, message: '인증번호가 발송되었습니다' };
     } catch (err) {
-      // [Review #1 HIGH] Cooldown key rollback on failure
-      // 5xx/timeout/network -> 사용자가 SMS 미수신인데 30s 차단 방지 -> cooldown DEL
-      // 4xx(Infobip bad request) -> 사용자 실수/abuse 의심 -> cooldown 유지
+      // [Phase 10 review] Cooldown rollback policy
+      // 5xx/timeout/network -> user didn't receive SMS but blocked 30s -> DEL
+      // 4xx(Infobip bad request) -> user error/abuse -> keep cooldown
       const shouldRollbackCooldown =
         !(err instanceof InfobipApiError) || err.status >= 500;
       if (shouldRollbackCooldown) {
-        await this.redis.del(cooldownKey).catch(() => {/* best effort */});
+        await this.redis.del(cooldownKey).catch(() => { /* best effort */ });
       }
 
       const country = e164.startsWith('+82') ? 'KR' : 'unknown';
@@ -160,7 +216,7 @@ export class SmsService {
   async verifyCode(phone: string, code: string): Promise<VerifyResult> {
     const e164 = parseE164(phone);
 
-    // Dev mock: 000000 universal (D-15, D-24)
+    // Dev mock: 000000 universal
     if (this.isDevMock) {
       if (code === '000000') {
         this.logger.log({ event: 'sms.verified', mode: 'dev_mock', phone: e164 });
@@ -169,50 +225,57 @@ export class SmsService {
       return { verified: false, message: '인증번호가 일치하지 않습니다' };
     }
 
-    // D-07: phone axis verify 10/900s -- [Review #3] Lua atomic INCR+EXPIRE
+    // D-07: phone axis verify 10/900s -- Lua atomic INCR+EXPIRE
     const verifyCount = await this.atomicIncr(
       `sms:phone:verify:${e164}`, VERIFY_PHONE_WINDOW_SEC,
     );
     if (verifyCount > VERIFY_PHONE_LIMIT) {
-      this.logger.warn({ event: 'sms.rate_limited', phone: e164, layer: 'phone_axis_verify', count: verifyCount });
-      // [Review #7] HTTP 429 통일: BadRequestException(400) -> HttpException(429)
+      this.logger.warn({
+        event: 'sms.rate_limited', phone: e164, layer: 'phone_axis_verify', count: verifyCount,
+      });
       throw new HttpException(
         { statusCode: 429, message: '잠시 후 다시 시도해주세요', retryAfterMs: VERIFY_PHONE_WINDOW_SEC * 1000 },
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }
 
-    // Lookup phone -> pinId
-    const pinId = await this.redis.get(`sms:pin:${e164}`);
-    if (!pinId) {
-      throw new GoneException('인증번호가 만료되었습니다. 재발송해주세요');
-    }
-
+    // [Phase 10.1] Valkey Lua atomic OTP verify
     try {
-      const res = await this.client!.verifyPin(pinId, code);
-      if (res.verified) {
-        await this.redis.del(`sms:pin:${e164}`);
-        this.logger.log({ event: 'sms.verified', phone: e164 });
-        return { verified: true };
+      const result = (await this.redis.eval(
+        VERIFY_AND_INCREMENT_LUA,
+        3,
+        `sms:otp:${e164}`,
+        `sms:attempts:${e164}`,
+        `sms:verified:${e164}`,
+        code,
+        String(OTP_MAX_ATTEMPTS),
+        String(VERIFIED_FLAG_TTL_SEC),
+      )) as [string, number];
+
+      const [status] = result;
+      switch (status) {
+        case 'VERIFIED':
+          this.logger.log({ event: 'sms.verified', phone: e164, attempts: result[1] });
+          return { verified: true };
+        case 'WRONG':
+          this.logger.warn({ event: 'sms.verify_wrong', phone: e164, remaining: result[1] });
+          return { verified: false, message: '인증번호가 일치하지 않습니다' };
+        case 'EXPIRED':
+          throw new GoneException('인증번호가 만료되었습니다. 재발송해주세요');
+        case 'NO_MORE_ATTEMPTS':
+          this.logger.warn({ event: 'sms.verify_exhausted', phone: e164 });
+          throw new GoneException('인증번호가 만료되었습니다. 재발송해주세요');
+        default: {
+          // Unreachable -- Lua script returns one of the above.
+          const exhaustive: never = status as never;
+          throw new Error(`Unknown VERIFY_AND_INCREMENT result: ${exhaustive}`);
+        }
       }
-      // [Review #2] OTP max 5 attempts는 Infobip Application pinAttempts=5 위임.
-      // 앱 레벨 attempt counter 의도적 미구현.
-      // Infobip이 서버 사이드에서 5회 초과 시 PIN 즉시 무효화.
-      // DEPLOY-CHECKLIST.md ss3 'pinAttempts: 5' 참조.
-      if (
-        res.attemptsRemaining === 0 ||
-        res.pinError === 'NO_MORE_PIN_ATTEMPTS' ||
-        res.pinError === 'PIN_EXPIRED'
-      ) {
-        await this.redis.del(`sms:pin:${e164}`);
-        throw new GoneException('인증번호가 만료되었습니다. 재발송해주세요');
-      }
-      return { verified: false, message: '인증번호가 일치하지 않습니다' };
     } catch (err) {
       if (err instanceof GoneException) throw err;
+      // Valkey eval failure etc. -- log + propagate as user-facing generic message
       Sentry.withScope((scope) => {
-        scope.setTag('provider', 'infobip');
-        if (err instanceof InfobipApiError) scope.setTag('http_status', String(err.status));
+        scope.setTag('provider', 'valkey');
         scope.setLevel('error');
         Sentry.captureException(err);
       });

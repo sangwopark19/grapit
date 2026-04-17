@@ -13,6 +13,10 @@ import { ConfigService } from '@nestjs/config';
 import { SmsService } from './sms.service.js';
 import { InfobipClient, InfobipApiError } from './infobip-client.js';
 
+vi.mock('node:crypto', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:crypto')>();
+  return { ...actual, randomInt: actual.randomInt };
+});
 import * as nodeCrypto from 'node:crypto';
 
 // ---------- Mocks ----------
