@@ -4,8 +4,8 @@ milestone: v1.1
 milestone_name: 안정화 + 고도화
 status: executing
 stopped_at: Phase 10 UI-SPEC approved
-last_updated: "2026-04-17T02:40:04.574Z"
-last_activity: 2026-04-17
+last_updated: "2026-04-17T03:05:00.000Z"
+last_activity: 2026-04-17 - Completed quick task 260417-ghv: 국제 전화번호 입력 UX 개선 — 국가코드 선택 라이브러리 도입
 progress:
   total_phases: 9
   completed_phases: 6
@@ -101,6 +101,7 @@ None.
 | 260409-os1 | 프로덕션 소셜로그인 쿠키 SameSite 버그 수정 | 2026-04-09 | 21eb3d6 | [260409-os1-gcloud](./quick/260409-os1-gcloud/) |
 | 260413-jw1 | seed.mjs에 어드민 유저(admin@grapit.test) 추가 | 2026-04-13 | 7bd1753 | [260413-jw1-admin-grapit-test](./quick/260413-jw1-admin-grapit-test/) |
 | 260413-k99 | 프로덕션 어드민 접속 불가 수정 (proxy.ts 쿠키 체크 제거) | 2026-04-13 | 5f15b7a | [260413-k99-admin-grapit-test-cli](./quick/260413-k99-admin-grapit-test-cli/) |
+| 260417-ghv | 국제 전화번호 입력 UX 개선 — 국가코드 선택 라이브러리 도입 (react-phone-number-input + shadcn wrapper) | 2026-04-17 | 4938d74 | [260417-ghv-ux](./quick/260417-ghv-ux/) |
 
 ## Session Continuity
 
