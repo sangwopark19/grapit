@@ -191,6 +191,15 @@ describe('PhoneVerification', () => {
         screen.queryByText(/번호로 SMS를 발송합니다/),
       ).not.toBeInTheDocument();
     });
+
+    it('KR 기본 상태에서 inner input이 placeholder "010-0000-0000"을 노출 (E2E 선택자 호환성)', () => {
+      render(<PhoneVerification {...defaultProps} phone="" />);
+      // E2E: page.getByPlaceholder('010-0000-0000')와 호환되도록 placeholder
+      // prop이 react-phone-number-input inputComponent까지 spread 전달되어야 함
+      expect(
+        screen.getByPlaceholderText('010-0000-0000'),
+      ).toBeInTheDocument();
+    });
   });
 
   // ---------- 시도 횟수 미노출 (D-19) ----------
