@@ -6,13 +6,26 @@ import { AdminPerformanceController } from './admin-performance.controller.js';
 import { AdminBannerController } from './admin-banner.controller.js';
 import { AdminBookingController } from './admin-booking.controller.js';
 import { LocalUploadController } from './local-upload.controller.js';
+import { AdminDashboardController } from './admin-dashboard.controller.js';
 import { AdminService } from './admin.service.js';
 import { AdminBookingService } from './admin-booking.service.js';
 import { UploadService } from './upload.service.js';
+import { AdminDashboardService } from './admin-dashboard.service.js';
 
 @Module({
   imports: [PerformanceModule, PaymentModule, BookingModule],
-  controllers: [AdminPerformanceController, AdminBannerController, AdminBookingController, LocalUploadController],
-  providers: [AdminService, AdminBookingService, UploadService],
+  controllers: [
+    AdminPerformanceController,
+    AdminBannerController,
+    AdminBookingController,
+    LocalUploadController,
+    AdminDashboardController,
+  ],
+  providers: [
+    AdminService,
+    AdminBookingService,
+    UploadService,
+    AdminDashboardService,
+  ],
 })
 export class AdminModule {}

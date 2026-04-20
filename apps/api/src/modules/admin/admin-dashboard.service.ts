@@ -54,7 +54,7 @@ function daysForPeriod(period: DashboardPeriod): number {
 export class AdminDashboardService {
   constructor(
     @Inject(DRIZZLE) private readonly db: DrizzleDB,
-    private readonly cache: CacheService,
+    @Inject(CacheService) private readonly cache: CacheService,
   ) {}
 
   private async readThrough<T>(key: string, fetcher: () => Promise<T>): Promise<T> {

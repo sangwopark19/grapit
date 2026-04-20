@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Inject, Query, UseGuards } from '@nestjs/common';
 import { periodQuerySchema } from '@grapit/shared';
 import type { DashboardPeriod } from '@grapit/shared';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js';
@@ -7,46 +7,51 @@ import { Roles } from '../../common/decorators/roles.decorator.js';
 import { AdminDashboardService } from './admin-dashboard.service.js';
 
 /**
- * RED skeleton — Plan 02(Task 02-02)가 handler body를 실제 구현으로 교체한다.
- * RolesGuard + @Roles('admin') 데코레이터는 skeleton에서도 반드시 존재해야 한다.
- * (controller spec의 access-control 테스트가 401/403/200을 assertion failure로 검증)
+ * AdminDashboardController — 5 read-only endpoints under /admin/dashboard.
+ *
+ * 모든 라우트는 `@UseGuards(RolesGuard) + @Roles('admin')` 으로 admin 역할 요구
+ * (T-11-03 Elevation of Privilege mitigation). 비인증 → 401, 비관리자 → 403.
+ *
+ * period 쿼리는 `periodQuerySchema` (z.enum(['7d','30d','90d']).default('30d'))
+ * 로 validate — T-11-04 Tampering mitigation.
  */
 @Controller('admin/dashboard')
 @UseGuards(RolesGuard)
 @Roles('admin')
 export class AdminDashboardController {
-  constructor(private readonly service: AdminDashboardService) {
-    void this.service;
-  }
+  constructor(
+    @Inject(AdminDashboardService)
+    private readonly service: AdminDashboardService,
+  ) {}
 
   @Get('summary')
-  async getSummary(): Promise<never> {
-    throw new Error('Not implemented');
+  async getSummary() {
+    return this.service.getSummary();
   }
 
   @Get('revenue')
   async getRevenue(
-    @Query(new ZodValidationPipe(periodQuerySchema)) _query: { period: DashboardPeriod },
-  ): Promise<never> {
-    throw new Error('Not implemented');
+    @Query(new ZodValidationPipe(periodQuerySchema)) query: { period: DashboardPeriod },
+  ) {
+    return this.service.getRevenueTrend(query.period);
   }
 
   @Get('genre')
   async getGenre(
-    @Query(new ZodValidationPipe(periodQuerySchema)) _query: { period: DashboardPeriod },
-  ): Promise<never> {
-    throw new Error('Not implemented');
+    @Query(new ZodValidationPipe(periodQuerySchema)) query: { period: DashboardPeriod },
+  ) {
+    return this.service.getGenreDistribution(query.period);
   }
 
   @Get('payment')
   async getPayment(
-    @Query(new ZodValidationPipe(periodQuerySchema)) _query: { period: DashboardPeriod },
-  ): Promise<never> {
-    throw new Error('Not implemented');
+    @Query(new ZodValidationPipe(periodQuerySchema)) query: { period: DashboardPeriod },
+  ) {
+    return this.service.getPaymentDistribution(query.period);
   }
 
   @Get('top-performances')
-  async getTopPerformances(): Promise<never> {
-    throw new Error('Not implemented');
+  async getTopPerformances() {
+    return this.service.getTopPerformances();
   }
 }
