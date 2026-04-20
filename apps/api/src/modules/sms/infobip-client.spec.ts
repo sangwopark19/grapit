@@ -159,6 +159,93 @@ describe('InfobipClient', () => {
 
       await expect(client.sendSms('+821012345678', 'test')).rejects.toThrow(/messages/i);
     });
+
+    // ---------- Issue 3 (PR #16 review): groupId=5 (REJECTED) handling ----------
+    it('groupId === 5 (REJECTED) 응답 시 InfobipApiError(400) throw', async () => {
+      // Infobip /sms/3/messages may return HTTP 200 even when the message is
+      // synchronously rejected (invalid number, blocked sender, content rejected).
+      // The rejection is signalled via status.groupId === 5. Without explicit
+      // detection, the OTP would be stored even though no SMS was delivered,
+      // leaving the user permanently unable to verify.
+      const rejectedBody = {
+        ...sendFixture,
+        messages: [
+          {
+            ...sendFixture.messages[0],
+            status: {
+              groupId: 5,
+              groupName: 'REJECTED',
+              id: 6,
+              name: 'REJECTED_NETWORK',
+              description: 'Network rejected the request',
+            },
+          },
+        ],
+      };
+      fetchSpy.mockResolvedValueOnce(
+        new Response(JSON.stringify(rejectedBody), { status: 200 }),
+      );
+
+      await expect(client.sendSms('+821012345678', 'test')).rejects.toThrow(
+        InfobipApiError,
+      );
+    });
+
+    it('groupId === 5 (REJECTED) 시 status=400, body에 REJECTED 포함', async () => {
+      // Status 400 (not 5xx) so the caller treats it as a permanent rejection
+      // and keeps the cooldown / phone-axis send counter (abuse mitigation).
+      // Body contains the Infobip status name so Sentry can tag the cause.
+      const rejectedBody = {
+        ...sendFixture,
+        messages: [
+          {
+            ...sendFixture.messages[0],
+            status: {
+              groupId: 5,
+              groupName: 'REJECTED',
+              id: 6,
+              name: 'REJECTED_NETWORK',
+              description: 'Network rejected the request',
+            },
+          },
+        ],
+      };
+      fetchSpy.mockResolvedValueOnce(
+        new Response(JSON.stringify(rejectedBody), { status: 200 }),
+      );
+
+      try {
+        await client.sendSms('+821012345678', 'test');
+        expect.fail('Expected InfobipApiError');
+      } catch (err) {
+        const apiErr = err as InfobipApiError;
+        expect(apiErr).toBeInstanceOf(InfobipApiError);
+        expect(apiErr.status).toBe(400);
+        expect(apiErr.body).toContain('REJECTED');
+      }
+    });
+
+    it('groupId 누락(undefined) 응답은 통과 (overreach 방지)', async () => {
+      // Only groupId === 5 is documented as sync rejection. Future groupIds may
+      // emerge — do not eagerly reject unknowns. Missing groupId defaults to 0.
+      const unknownBody = {
+        ...sendFixture,
+        messages: [
+          {
+            messageId: 'mid-no-group',
+            // No status field at all
+          },
+        ],
+      };
+      fetchSpy.mockResolvedValueOnce(
+        new Response(JSON.stringify(unknownBody), { status: 200 }),
+      );
+
+      const result = await client.sendSms('+821012345678', 'test');
+      expect(result.messageId).toBe('mid-no-group');
+      expect(result.groupId).toBe(0);
+      expect(result.status).toBe('UNKNOWN');
+    });
   });
 
   describe('InfobipApiError', () => {

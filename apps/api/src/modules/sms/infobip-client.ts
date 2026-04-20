@@ -56,7 +56,11 @@ export class InfobipClient {
     const data = (await res.json()) as {
       messages?: Array<{
         messageId?: string;
-        status?: { name?: string; groupId?: number };
+        status?: {
+          name?: string;
+          groupId?: number;
+          description?: string;
+        };
       }>;
     };
     const msg = data.messages?.[0];
@@ -64,6 +68,25 @@ export class InfobipClient {
       throw new InfobipApiError(
         500,
         'Infobip response missing messages[0].messageId',
+      );
+    }
+
+    // [Issue 3 / PR #16 review] Infobip /sms/3/messages may return HTTP 200
+    // with status.groupId === 5 for synchronously rejected messages
+    // (invalid destination, blocked sender, content rejected). Without explicit
+    // detection, the OTP would be stored even though no SMS was delivered —
+    // the user would be permanently unable to verify.
+    //
+    // Convert to InfobipApiError(400) so the caller treats it as a permanent
+    // (4xx) error: cooldown is kept and the phone-axis send counter is NOT
+    // rolled back (abuse mitigation).
+    if (msg.status?.groupId === 5) {
+      const name = msg.status?.name ?? 'REJECTED';
+      const description =
+        msg.status?.description ?? JSON.stringify(msg.status);
+      throw new InfobipApiError(
+        400,
+        `Infobip rejected message: ${name} - ${description}`,
       );
     }
 
