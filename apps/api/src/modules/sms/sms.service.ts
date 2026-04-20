@@ -219,7 +219,15 @@ export class SmsService {
       // ioredis pipeline.exec returns Array<[Error|null, unknown]> | null.
       // Treat any op error as a failed send — flow into the catch below so the
       // SMS is NOT sent (otherwise the user would receive an unverifiable code).
-      if (!results || results.some(([opErr]) => opErr)) {
+      //
+      // [WR-01] Guard against null per-entry: older @types/ioredis and
+      // defensive codepaths in the repo elsewhere type entries as
+      // `[Error|null, unknown] | null`. If Valkey returns null for a single op
+      // (e.g. mid-pipeline connection reset), destructuring would throw a
+      // TypeError inside `.some` and skip the "pipeline failed" guard. Use
+      // index access instead of destructuring so null entries are handled
+      // uniformly.
+      if (!results || results.some((r) => !r || r[0])) {
         throw new Error('Failed to store OTP / reset attempts in Valkey');
       }
 
