@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
-status: executing
-stopped_at: Phase 9 UI-SPEC approved
-last_updated: "2026-04-15T07:33:53.555Z"
-last_activity: 2026-04-15
+status: "Phase 10.1 shipped — PR #16 updated"
+stopped_at: Phase 10 UI-SPEC approved
+last_updated: "2026-04-20T00:56:17.999Z"
+last_activity: 2026-04-20
 progress:
-  total_phases: 8
-  completed_phases: 5
-  total_plans: 19
-  completed_plans: 19
-  percent: 100
+  total_phases: 9
+  completed_phases: 6
+  total_plans: 35
+  completed_plans: 34
+  percent: 97
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** 사용자가 원하는 공연을 발견하고, 좌석을 직접 선택하여, 안정적으로 예매를 완료할 수 있는 것
-**Current focus:** Phase 09.1 — ci-login-e2e-playwright-login-helper-post-auth-login-body-40
+**Current focus:** Phase 10.1 — sms-api-v3-rewrite
 
 ## Current Position
 
-Phase: 10
+Phase: 11
 Plan: Not started
-Status: Executing Phase 09.1
-Last activity: 2026-04-15
+Status: Phase 10.1 shipped — PR #16 updated
+Last activity: 2026-04-20 - Completed quick task 260420-fi4: Phase 10 UI-REVIEW 3건 수정 (phone-verification)
 
 Progress: [██████████] 100%
 
@@ -36,7 +36,7 @@ Progress: [██████████] 100%
 
 **Velocity:**
 
-- Total plans completed: 40 (v1.0)
+- Total plans completed: 55 (v1.0)
 - Average duration: ~10min
 - Total execution time: ~3 hours
 
@@ -51,6 +51,8 @@ Progress: [██████████] 100%
 | 5. Polish + Launch | 5 | N/A | N/A |
 | 07 | 5 | - | - |
 | 09.1 | 5 | - | - |
+| 10 | 9 | - | - |
+| 10.1 | 6 | - | - |
 
 **Recent Trend:**
 
@@ -68,6 +70,7 @@ Progress: [██████████] 100%
 ### Roadmap Evolution
 
 - Phase 09.1 inserted after Phase 09: CI-login-E2E — Playwright login helper 의 POST /auth/login 401 이슈 조사 (URGENT)
+- Phase 10.1 inserted after Phase 10: SMS API v3 전환 — 2FA PIN API(/2fa/2/pin)에서 일반 SMS API(/sms/3/messages)로 리팩토링, applicationId/messageId 의존 제거, PIN 생성·검증 자체 구현 (URGENT)
 
 ### Decisions
 
@@ -98,9 +101,12 @@ None.
 | 260409-os1 | 프로덕션 소셜로그인 쿠키 SameSite 버그 수정 | 2026-04-09 | 21eb3d6 | [260409-os1-gcloud](./quick/260409-os1-gcloud/) |
 | 260413-jw1 | seed.mjs에 어드민 유저(admin@grapit.test) 추가 | 2026-04-13 | 7bd1753 | [260413-jw1-admin-grapit-test](./quick/260413-jw1-admin-grapit-test/) |
 | 260413-k99 | 프로덕션 어드민 접속 불가 수정 (proxy.ts 쿠키 체크 제거) | 2026-04-13 | 5f15b7a | [260413-k99-admin-grapit-test-cli](./quick/260413-k99-admin-grapit-test-cli/) |
+| 260417-ghv | 국제 전화번호 입력 UX 개선 — 국가코드 선택 라이브러리 도입 (react-phone-number-input + shadcn wrapper) | 2026-04-17 | 4938d74 | [260417-ghv-ux](./quick/260417-ghv-ux/) |
+| 260420-et3 | PR #16 코드리뷰 이슈 3건 수정 (sms:attempts 리셋, phone-axis send 5xx 롤백, Infobip groupId=5 검증) | 2026-04-20 | 8ad4a15 | [260420-et3-pr-16-3-sms-attempts-phone-axis-send-5xx](./quick/260420-et3-pr-16-3-sms-attempts-phone-axis-send-5xx/) |
+| 260420-fi4 | Phase 10 UI-REVIEW 3건 수정 (phone-verification: button variant, text-caption 토큰, 타이머 aria-live) | 2026-04-20 | ee910f3 | [260420-fi4-phase-10-ui-review-3-phone-verification-](./quick/260420-fi4-phase-10-ui-review-3-phone-verification-/) |
 
 ## Session Continuity
 
-Last session: 2026-04-14T02:03:15.755Z
-Stopped at: Phase 9 UI-SPEC approved
-Resume file: .planning/phases/09-tech-debt/09-UI-SPEC.md
+Last session: 2026-04-15T08:49:57.167Z
+Stopped at: Phase 10 UI-SPEC approved
+Resume file: .planning/phases/10-sms/10-UI-SPEC.md

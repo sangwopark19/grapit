@@ -82,4 +82,86 @@ describe('redisProvider factory', () => {
     // Clean up to avoid vitest hanging on open socket
     (client as IORedis).disconnect();
   });
+
+  /**
+   * Phase 10.1 review (WR-01): SmsService depends on ioredis variadic set(),
+   * decr(), pttl(), and pipeline(). The InMemoryRedis mock must cover these
+   * so local dev without REDIS_URL doesn't crash the SMS send path.
+   */
+  describe('InMemoryRedis surface parity with ioredis (Phase 10.1 WR-01)', () => {
+    type MemRedis = {
+      set: (key: string, value: string, ...args: unknown[]) => Promise<string | null>;
+      get: (key: string) => Promise<string | null>;
+      del: (...keys: string[]) => Promise<number>;
+      decr: (key: string) => Promise<number>;
+      pttl: (key: string) => Promise<number>;
+      pipeline: () => {
+        set: (key: string, value: string, ...args: unknown[]) => ReturnType<MemRedis['pipeline']>;
+        del: (...keys: string[]) => ReturnType<MemRedis['pipeline']>;
+        exec: () => Promise<Array<[Error | null, unknown]>>;
+      };
+    };
+
+    function createMock(): MemRedis {
+      process.env['NODE_ENV'] = 'test';
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const client = useFactory(createMockConfig('')) as unknown as MemRedis;
+      warnSpy.mockRestore();
+      return client;
+    }
+
+    it('set(key, value, "PX", ms, "NX") honors NX + TTL (ioredis variadic)', async () => {
+      const redis = createMock();
+      const first = await redis.set('sms:resend:+821012345678', '1', 'PX', 30_000, 'NX');
+      expect(first).toBe('OK');
+
+      // Second NX call must fail while key is live
+      const second = await redis.set('sms:resend:+821012345678', '1', 'PX', 30_000, 'NX');
+      expect(second).toBeNull();
+
+      // pttl returns remaining milliseconds for a key with TTL
+      const ttl = await redis.pttl('sms:resend:+821012345678');
+      expect(ttl).toBeGreaterThan(0);
+      expect(ttl).toBeLessThanOrEqual(30_000);
+    });
+
+    it('set(key, value, "EX", seconds) mirrors CacheService cache-set', async () => {
+      const redis = createMock();
+      const ok = await redis.set('cache:perf:123', '{"v":1}', 'EX', 300);
+      expect(ok).toBe('OK');
+      expect(await redis.get('cache:perf:123')).toBe('{"v":1}');
+    });
+
+    it('decr() decrements and can go below zero (rollback parity with real Redis)', async () => {
+      const redis = createMock();
+      await redis.set('sms:phone:send:+821012345678', '3');
+      expect(await redis.decr('sms:phone:send:+821012345678')).toBe(2);
+      expect(await redis.decr('sms:phone:send:+821012345678')).toBe(1);
+    });
+
+    it('pttl returns -2 for missing key, -1 for key without TTL', async () => {
+      const redis = createMock();
+      expect(await redis.pttl('nope')).toBe(-2);
+      await redis.set('bare', '1');
+      expect(await redis.pttl('bare')).toBe(-1);
+    });
+
+    it('pipeline().set().del().exec() returns ioredis-style [err, res] tuples', async () => {
+      const redis = createMock();
+      const pipe = redis.pipeline();
+      const results = await pipe
+        .set('sms:otp:+821012345678', '654321', 'PX', 180_000)
+        .del('sms:attempts:+821012345678')
+        .exec();
+
+      expect(results).toHaveLength(2);
+      expect(results[0]?.[0]).toBeNull();
+      expect(results[0]?.[1]).toBe('OK');
+      expect(results[1]?.[0]).toBeNull();
+      expect(typeof results[1]?.[1]).toBe('number');
+
+      // Post-pipeline state: OTP stored with TTL
+      expect(await redis.get('sms:otp:+821012345678')).toBe('654321');
+    });
+  });
 });

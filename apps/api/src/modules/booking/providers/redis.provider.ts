@@ -17,13 +17,42 @@ class InMemoryRedis {
   private ttls = new Map<string, NodeJS.Timeout>();
   private expiries = new Map<string, number>();
 
-  async set(key: string, value: string, opts?: { nx?: boolean; ex?: number }): Promise<string | null> {
-    if (opts?.nx && this.store.has(key)) return null;
+  /**
+   * Supports both call shapes used across the codebase:
+   *  - Options-object: set(key, value, { nx: true, ex: 60 }) — internal/legacy
+   *  - ioredis variadic: set(key, value, 'PX', ms, 'NX') / set(key, value, 'EX', s)
+   *    — matches real ioredis API, used by SmsService and CacheService.
+   */
+  async set(
+    key: string,
+    value: string,
+    ...args: unknown[]
+  ): Promise<string | null> {
+    let nx = false;
+    let ttlMs: number | undefined;
+
+    if (args.length === 1 && typeof args[0] === 'object' && args[0] !== null) {
+      // Options-object form: set(key, value, { nx?, ex? })
+      const opts = args[0] as { nx?: boolean; ex?: number };
+      nx = !!opts.nx;
+      if (opts.ex !== undefined) ttlMs = opts.ex * 1000;
+    } else {
+      // ioredis variadic form — flags may be any case
+      const flags = args.map((a) => (typeof a === 'string' ? a.toUpperCase() : a));
+      nx = flags.includes('NX');
+      const pxIdx = flags.indexOf('PX');
+      const exIdx = flags.indexOf('EX');
+      if (pxIdx >= 0) ttlMs = Number(flags[pxIdx + 1]);
+      else if (exIdx >= 0) ttlMs = Number(flags[exIdx + 1]) * 1000;
+    }
+
+    if (nx && this.store.has(key)) return null;
     this.store.set(key, value);
-    if (opts?.ex) {
+
+    if (ttlMs !== undefined && !Number.isNaN(ttlMs)) {
       const prev = this.ttls.get(key);
       if (prev) clearTimeout(prev);
-      this.expiries.set(key, Date.now() + opts.ex * 1000);
+      this.expiries.set(key, Date.now() + ttlMs);
       this.ttls.set(key, setTimeout(() => {
         this.store.delete(key);
         this.ttls.delete(key);
@@ -40,9 +69,71 @@ class InMemoryRedis {
           const userSet = this.sets.get(`{${showtimeId}}:user-seats:${userId}`);
           if (userSet) userSet.delete(seatId);
         }
-      }, opts.ex * 1000));
+      }, ttlMs));
     }
     return 'OK';
+  }
+
+  async decr(key: string): Promise<number> {
+    const next = Number(this.store.get(key) ?? '0') - 1;
+    this.store.set(key, String(next));
+    return next;
+  }
+
+  /**
+   * Returns TTL in milliseconds. Mirrors ioredis pttl:
+   *  - -2: key does not exist
+   *  - -1: key exists but has no TTL
+   *  - >= 0: remaining milliseconds
+   */
+  async pttl(key: string): Promise<number> {
+    if (!this.store.has(key) && !this.sets.has(key)) return -2;
+    const expiry = this.expiries.get(key);
+    if (!expiry) return -1;
+    const remaining = expiry - Date.now();
+    return remaining > 0 ? remaining : -2;
+  }
+
+  /**
+   * Minimal ioredis-compatible pipeline. Supports SET + DEL chaining (the ops
+   * SmsService uses). exec() resolves to Array<[Error | null, unknown]> tuples,
+   * matching ioredis semantics so callers can iterate results the same way.
+   */
+  pipeline(): {
+    set: (key: string, value: string, ...args: unknown[]) => ReturnType<InMemoryRedis['pipeline']>;
+    del: (...keys: string[]) => ReturnType<InMemoryRedis['pipeline']>;
+    exec: () => Promise<Array<[Error | null, unknown]>>;
+  } {
+    const ops: Array<() => Promise<[Error | null, unknown]>> = [];
+    const self = this;
+    const chain = {
+      set(key: string, value: string, ...args: unknown[]) {
+        ops.push(async () => {
+          try {
+            const res = await self.set(key, value, ...args);
+            return [null, res];
+          } catch (e) {
+            return [e as Error, null];
+          }
+        });
+        return chain;
+      },
+      del(...keys: string[]) {
+        ops.push(async () => {
+          try {
+            const res = await self.del(...keys);
+            return [null, res];
+          } catch (e) {
+            return [e as Error, null];
+          }
+        });
+        return chain;
+      },
+      async exec() {
+        return Promise.all(ops.map((fn) => fn()));
+      },
+    };
+    return chain;
   }
 
   async get(key: string): Promise<string | null> {
@@ -105,27 +196,70 @@ class InMemoryRedis {
    * Dispatches Lua script emulation using the ioredis flat signature.
    *
    * Signature: eval(script, numKeys, ...keysAndArgs)
-   * Supports: LOCK_SEAT (3 keys, 5 args), UNLOCK_SEAT (3 keys, 2 args),
-   * GET_VALID_LOCKED_SEATS (1 key, 1 arg).
+   * Dispatches by script content + key/arg arity.
    */
   async eval(
-    _script: string,
+    script: string,
     numKeys: number,
     ...keysAndArgs: (string | number)[]
   ): Promise<unknown> {
     const keys = keysAndArgs.slice(0, numKeys).map(String);
     const args = keysAndArgs.slice(numKeys).map(String);
 
+    if (keys.length === 3 && args.length === 3 && script.includes('VERIFIED')) {
+      return this.evalVerifyAndIncrement(keys, args);
+    }
     if (keys.length === 3 && args.length === 5) {
       return this.evalLockSeat(keys, args);
     }
     if (keys.length === 3 && args.length === 2) {
       return this.evalUnlockSeat(keys, args);
     }
+    if (keys.length === 1 && args.length === 1 && script.includes('INCR')) {
+      return this.evalAtomicIncr(keys, args);
+    }
     if (keys.length === 1 && args.length === 1) {
       return this.evalGetValidLockedSeats(keys, args);
     }
     throw new Error('InMemoryRedis: unknown Lua script pattern');
+  }
+
+  private evalAtomicIncr(keys: string[], args: string[]): number {
+    const [key] = keys;
+    const windowSec = Number(args[0]);
+    const current = Number(this.store.get(key) ?? '0') + 1;
+    this.store.set(key, String(current));
+    if (current === 1) {
+      void this.expire(key, windowSec);
+    }
+    return current;
+  }
+
+  private evalVerifyAndIncrement(keys: string[], args: string[]): [string, number] {
+    const [otpKey, attemptsKey, verifiedKey] = keys;
+    const [code, maxAttemptsStr, verifiedTtlStr] = args;
+    const maxAttempts = Number(maxAttemptsStr);
+    const verifiedTtl = Number(verifiedTtlStr);
+
+    const stored = this.store.get(otpKey);
+    if (stored === undefined) return ['EXPIRED', 0];
+
+    const attempts = Number(this.store.get(attemptsKey) ?? '0') + 1;
+    this.store.set(attemptsKey, String(attempts));
+    if (attempts === 1) void this.expire(attemptsKey, 900);
+
+    if (attempts > maxAttempts) {
+      void this.del(otpKey, attemptsKey);
+      return ['NO_MORE_ATTEMPTS', 0];
+    }
+
+    if (stored === code) {
+      void this.del(otpKey, attemptsKey);
+      void this.set(verifiedKey, '1', { ex: verifiedTtl });
+      return ['VERIFIED', attempts];
+    }
+
+    return ['WRONG', maxAttempts - attempts];
   }
 
   private async evalLockSeat(keys: string[], args: string[]): Promise<[number, string, string?]> {
