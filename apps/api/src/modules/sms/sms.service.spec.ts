@@ -20,12 +20,23 @@ vi.mock('node:crypto', async (importOriginal) => {
 import * as nodeCrypto from 'node:crypto';
 
 // ---------- Mocks ----------
+// [Issue 1 / PR #16 review] sendVerificationCode now uses redis.pipeline() to
+// SET the new OTP and DEL sms:attempts:{e164} together. The mock pipeline must
+// be chainable (set/del return `this`) and exec must resolve to ioredis-style
+// [Error|null, unknown][] tuples.
+const mockPipeline = {
+  set: vi.fn().mockReturnThis(),
+  del: vi.fn().mockReturnThis(),
+  exec: vi.fn(),
+};
 const mockRedis = {
   set: vi.fn(),
   get: vi.fn(),
   del: vi.fn(),
+  decr: vi.fn(),
   pttl: vi.fn(),
   eval: vi.fn(),
+  pipeline: vi.fn(() => mockPipeline),
 };
 
 function createConfigService(overrides: Record<string, string | undefined> = {}): ConfigService {
@@ -46,6 +57,14 @@ describe('SmsService', () => {
     vi.clearAllMocks();
     vi.restoreAllMocks();
     process.env['NODE_ENV'] = 'test';
+    // Re-establish chainable behavior on pipeline mocks (cleared by clearAllMocks)
+    mockPipeline.set.mockReturnThis();
+    mockPipeline.del.mockReturnThis();
+    // Default exec result: both ops succeed (null error, OK/1 result)
+    mockPipeline.exec.mockResolvedValue([
+      [null, 'OK'],
+      [null, 1],
+    ]);
   });
 
   // ---------- constructor ----------
@@ -157,11 +176,12 @@ describe('SmsService', () => {
         status: 'MESSAGE_ACCEPTED',
         groupId: 1,
       });
-      mockRedis.set.mockResolvedValueOnce('OK'); // OTP redis set
+      // OTP storage now goes through redis.pipeline().set(...).del(...).exec()
+      // — see beforeEach for default exec resolution.
 
       const result = await service.sendVerificationCode('+821012345678');
       expect(result.success).toBe(true);
-      expect(mockRedis.set).toHaveBeenCalledWith(
+      expect(mockPipeline.set).toHaveBeenCalledWith(
         expect.stringContaining('sms:otp:'),
         '654321',
         'PX',
@@ -181,7 +201,7 @@ describe('SmsService', () => {
         status: 'MESSAGE_ACCEPTED',
         groupId: 1,
       });
-      mockRedis.set.mockResolvedValueOnce('OK'); // OTP redis set
+      // OTP set via pipeline (default exec result from beforeEach)
 
       await service.sendVerificationCode('+821012345678');
       expect(sendSmsSpy).toHaveBeenCalledWith(
@@ -202,7 +222,7 @@ describe('SmsService', () => {
         status: 'MESSAGE_ACCEPTED',
         groupId: 1,
       });
-      mockRedis.set.mockResolvedValueOnce('OK'); // OTP redis set
+      // OTP set via pipeline (default exec result from beforeEach)
 
       await service.sendVerificationCode('+821012345678');
       expect(randomIntSpy).toHaveBeenCalledWith(100000, 1000000);
@@ -242,6 +262,70 @@ describe('SmsService', () => {
       );
     });
 
+    // ---------- Issue 2 (PR #16 review): phone-axis send counter rollback ----------
+    it('Infobip sendSms 5xx 시 sms:phone:send:{e164} 카운터도 DECR rollback', async () => {
+      // sms:phone:send:{e164} (5/3600s) was INCR'd before calling Infobip but
+      // never decremented when the call failed transiently. A series of 5xx
+      // errors could exhaust the user's hourly quota despite no SMS delivery.
+      const configService = createConfigService();
+      const service = new SmsService(configService, mockRedis as never);
+      mockRedis.set.mockResolvedValueOnce('OK'); // cooldown NX pass
+      mockRedis.eval.mockResolvedValueOnce(1); // phone counter OK
+      mockRedis.del.mockResolvedValueOnce(1); // cooldown DEL rollback resolves
+      mockRedis.decr.mockResolvedValueOnce(0); // counter DECR rollback resolves
+
+      vi.spyOn(InfobipClient.prototype, 'sendSms').mockRejectedValueOnce(
+        new InfobipApiError(500, 'Internal Server Error'),
+      );
+
+      await expect(service.sendVerificationCode('+821012345678')).rejects.toThrow();
+
+      expect(mockRedis.decr).toHaveBeenCalledWith(
+        'sms:phone:send:+821012345678',
+      );
+    });
+
+    it('Infobip sendSms 4xx 시 sms:phone:send: 카운터 유지 (DECR 미호출, 악용 방지)', async () => {
+      // 4xx (incl. groupId=5 REJECTED converted by InfobipClient) is a
+      // permanent rejection. Keep the counter so an abuser can't rapid-fire
+      // REJECTED responses to drain real users' quotas.
+      const configService = createConfigService();
+      const service = new SmsService(configService, mockRedis as never);
+      mockRedis.set.mockResolvedValueOnce('OK'); // cooldown NX pass
+      mockRedis.eval.mockResolvedValueOnce(1); // phone counter OK
+
+      vi.spyOn(InfobipClient.prototype, 'sendSms').mockRejectedValueOnce(
+        new InfobipApiError(400, 'REJECTED'),
+      );
+
+      await expect(service.sendVerificationCode('+821012345678')).rejects.toThrow();
+
+      expect(mockRedis.decr).not.toHaveBeenCalledWith(
+        expect.stringContaining('sms:phone:send:'),
+      );
+    });
+
+    it('non-InfobipApiError (network down 등) 시 sms:phone:send: 카운터 DECR rollback', async () => {
+      // Matches existing shouldRollback logic: !(err instanceof InfobipApiError)
+      // || err.status >= 500. Network/timeout errors should release the slot.
+      const configService = createConfigService();
+      const service = new SmsService(configService, mockRedis as never);
+      mockRedis.set.mockResolvedValueOnce('OK'); // cooldown NX pass
+      mockRedis.eval.mockResolvedValueOnce(1); // phone counter OK
+      mockRedis.del.mockResolvedValueOnce(1); // cooldown DEL rollback resolves
+      mockRedis.decr.mockResolvedValueOnce(0); // counter DECR rollback resolves
+
+      vi.spyOn(InfobipClient.prototype, 'sendSms').mockRejectedValueOnce(
+        new Error('network down'),
+      );
+
+      await expect(service.sendVerificationCode('+821012345678')).rejects.toThrow();
+
+      expect(mockRedis.decr).toHaveBeenCalledWith(
+        'sms:phone:send:+821012345678',
+      );
+    });
+
     it('phone axis send counter Lua INCR: 6번째 호출 429', async () => {
       const configService = createConfigService();
       const service = new SmsService(configService, mockRedis as never);
@@ -275,6 +359,70 @@ describe('SmsService', () => {
         expect.stringContaining('sms:phone:send:'),
         expect.any(Number),
       );
+    });
+
+    // ---------- Issue 1 (PR #16 review): sms:attempts reset on new OTP ----------
+    it('신규 OTP 저장 시 sms:attempts:{e164}를 함께 DEL (재발송 후 5회 시도 보장)', async () => {
+      // sms:attempts:{e164} TTL is 900s (set inside VERIFY_AND_INCREMENT_LUA),
+      // longer than OTP TTL 180s. Without this DEL, a user who failed N
+      // attempts on OTP#1 and then re-sends would start OTP#2 with attempts=N
+      // already counted — the very first verify on OTP#2 could trigger
+      // NO_MORE_ATTEMPTS. The pipeline keeps SET + DEL adjacent.
+      const configService = createConfigService();
+      const service = new SmsService(configService, mockRedis as never);
+      mockRedis.set.mockResolvedValueOnce('OK'); // cooldown NX pass
+      mockRedis.eval.mockResolvedValueOnce(1); // phone counter OK
+
+      vi.spyOn(nodeCrypto, 'randomInt').mockReturnValueOnce(424242);
+      vi.spyOn(InfobipClient.prototype, 'sendSms').mockResolvedValueOnce({
+        messageId: 'mid-att',
+        status: 'MESSAGE_ACCEPTED',
+        groupId: 1,
+      });
+
+      const result = await service.sendVerificationCode('+821012345678');
+
+      expect(result.success).toBe(true);
+      // Pipeline used (single round trip)
+      expect(mockRedis.pipeline).toHaveBeenCalled();
+      // SET OTP with TTL 180s
+      expect(mockPipeline.set).toHaveBeenCalledWith(
+        'sms:otp:+821012345678',
+        '424242',
+        'PX',
+        180000,
+      );
+      // DEL stale attempts counter
+      expect(mockPipeline.del).toHaveBeenCalledWith(
+        'sms:attempts:+821012345678',
+      );
+      // Success path must NOT release the cooldown (handled separately)
+      expect(mockRedis.del).not.toHaveBeenCalledWith(
+        expect.stringContaining('sms:resend:'),
+      );
+    });
+
+    it('OTP pipeline exec 에러 시 Infobip sendSms 미호출 (보안: 미저장 OTP로 SMS 보내지 않음)', async () => {
+      // Defense-in-depth: if Valkey is down at pipeline.exec(), the OTP was
+      // never stored. We must NOT send the SMS — the user would receive a
+      // code they cannot verify.
+      const configService = createConfigService();
+      const service = new SmsService(configService, mockRedis as never);
+      mockRedis.set.mockResolvedValueOnce('OK'); // cooldown NX pass
+      mockRedis.eval.mockResolvedValueOnce(1); // phone counter OK
+      // Pipeline exec reports an error on the SET op
+      mockPipeline.exec.mockResolvedValueOnce([
+        [new Error('valkey down'), null],
+        [null, 1],
+      ]);
+      mockRedis.del.mockResolvedValueOnce(1); // cooldown DEL rollback resolves
+      mockRedis.decr.mockResolvedValueOnce(0); // counter DECR rollback resolves
+
+      const sendSmsSpy = vi.spyOn(InfobipClient.prototype, 'sendSms');
+
+      await expect(service.sendVerificationCode('+821012345678')).rejects.toThrow();
+
+      expect(sendSmsSpy).not.toHaveBeenCalled();
     });
   });
 
