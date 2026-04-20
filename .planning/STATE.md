@@ -88,10 +88,10 @@ None.
 
 ### Blockers/Concerns
 
-- AUTH-01: 소셜 로그인 재로그인 버그 -- v1.1 최우선 해결 대상
-- VALK-03: Valkey eval() 시그니처 차이 -- Lua 스크립트 3개 호환성 검증 필수
+- ~~AUTH-01: 소셜 로그인 재로그인 버그~~ -- RESOLVED 2026-04-09. Phase 6 VALIDATION 승인 (PR #11, #12 merged). 카카오/네이버/구글 3 provider 재로그인 E2E 검증 완료, 근본 원인은 Strategy callbackURL 의 `/social/` 세그먼트 누락 (b87001d, 87925b1).
+- VALK-03: Valkey eval() 시그니처 차이 -- PARTIAL. 코드 레벨 14/14 verified (testcontainers + Lua 3개 라운드트립), 런타임 3/4 PASS (2026-04-13: /health redis up, 좌석 SET NX+TTL, 카탈로그 캐시 hit 52ms). 남은 미검증: (1) CLUSTER 모드 Valkey 호환성, (2) idle 재연결 장기 안정성. Phase 11 진행 중 관찰 후 closed 처리.
 - ~~R2-02: R2 CORS AllowedHeaders 와일드카드 불가~~ -- Phase 08에서 content-type 명시적 지정으로 해결
-- ADM-06: 통계 쿼리 캐싱은 Phase 7 Valkey 전환 완료 후 구현
+- ADM-06: 통계 쿼리 캐싱 -- 전제조건(Phase 7 Valkey 전환) 완료. Phase 11 어드민 대시보드에서 캐시 레이어 활용 대상으로 이관.
 
 ### Quick Tasks Completed
 
