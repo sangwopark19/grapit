@@ -61,7 +61,7 @@ test.describe('Admin Dashboard E2E', () => {
     ];
     await page
       .getByRole('group', { name: '기간 선택' })
-      .getByRole('button', { name: '7일' })
+      .getByRole('radio', { name: '7일' })
       .click();
     await Promise.all(responseWaits);
   });
