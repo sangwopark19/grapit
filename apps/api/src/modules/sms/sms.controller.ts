@@ -42,6 +42,19 @@ export class SmsController {
     return this.smsService.sendVerificationCode(dto.phone);
   }
 
+  /**
+   * Verify an SMS OTP.
+   *
+   * SECURITY: A `{ verified: true }` response is NOT by itself proof that the
+   * calling client owns the phone number. The current implementation returns
+   * `verified: true` for any request whose phone has a live `sms:verified`
+   * flag (TTL 600s), regardless of the supplied `code`. Downstream consumers
+   * (signup, password-reset) must correlate this response with the session
+   * that initiated the original `/send-code` call — e.g. via a server-issued
+   * opaque token bound at verify-time. Without that correlation the "verified"
+   * signal is impersonable by anyone who knows a recently-verified phone.
+   * See 10.1-REVIEW.md WR-02.
+   */
   @Public()
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 900_000 } })

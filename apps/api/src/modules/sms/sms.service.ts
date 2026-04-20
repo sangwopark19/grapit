@@ -243,6 +243,26 @@ export class SmsService {
     }
   }
 
+  /**
+   * Verify a user-supplied OTP against the Valkey-stored code.
+   *
+   * SECURITY NOTE: `verifyCode` is NOT a standalone authentication primitive.
+   * A `{ verified: true }` response means "this phone successfully verified an
+   * OTP within the last 10 minutes" — it does NOT prove that the CURRENT
+   * request originated from the device that completed the original send/verify
+   * handshake. Consumers (signup, password-reset) MUST correlate the verify
+   * response with the session/state that initiated `/send-code` (e.g. a
+   * server-issued token bound to the phone at verify-time). Without such
+   * correlation, anyone who knows a just-verified phone number can spoof the
+   * "verified" signal.
+   *
+   * Additionally, the phone-axis verify counter (D-07 — 10/900s) is
+   * incremented BEFORE any idempotent-verify short-circuit to prevent a 10-min
+   * enumeration oracle: without this ordering, an attacker could POST
+   * `/verify-code { phone, code: "000000" }` for arbitrary phones and
+   * distinguish verified-within-10min vs not based on response shape,
+   * regardless of the code supplied.
+   */
   async verifyCode(phone: string, code: string): Promise<VerifyResult> {
     const e164 = parseE164(phone);
 
@@ -255,13 +275,11 @@ export class SmsService {
       return { verified: false, message: '인증번호가 일치하지 않습니다' };
     }
 
-    // Idempotent re-verify: registration calls verifyCode again after initial verify
-    const alreadyVerified = await this.redis.get(`sms:verified:${e164}`);
-    if (alreadyVerified === '1') {
-      return { verified: true };
-    }
-
-    // D-07: phone axis verify 10/900s -- Lua atomic INCR+EXPIRE
+    // [WR-02] D-07 rate limit MUST run before any short-circuit — it is the
+    // only signal that resists enumeration of the `sms:verified:{e164}` flag.
+    // If we checked the verified flag first and returned early, the counter
+    // would not increment and an attacker could probe unlimited phones to
+    // distinguish "verified within last 10 min" vs not.
     const verifyCount = await this.atomicIncr(
       `sms:phone:verify:${e164}`, VERIFY_PHONE_WINDOW_SEC,
     );
@@ -273,6 +291,18 @@ export class SmsService {
         { statusCode: 429, message: '잠시 후 다시 시도해주세요', retryAfterMs: VERIFY_PHONE_WINDOW_SEC * 1000 },
         HttpStatus.TOO_MANY_REQUESTS,
       );
+    }
+
+    // Idempotent re-verify: registration/password-reset may call verifyCode
+    // again shortly after initial verify. We short-circuit AFTER the counter
+    // increment (see comment above) so enumeration is still rate-limited.
+    //
+    // TODO(sms-session-token): replace this phone-global flag with a
+    // server-issued opaque token returned at initial verify-time and required
+    // by downstream consumers. See WR-02 in 10.1-REVIEW.md for rationale.
+    const alreadyVerified = await this.redis.get(`sms:verified:${e164}`);
+    if (alreadyVerified === '1') {
+      return { verified: true };
     }
 
     // [Phase 10.1] Valkey Lua atomic OTP verify

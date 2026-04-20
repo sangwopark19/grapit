@@ -527,5 +527,55 @@ describe('SmsService', () => {
     it('Infobip verifyPin을 호출하지 않는다 (Valkey Lua 자체 검증)', () => {
       expect(InfobipClient.prototype).not.toHaveProperty('verifyPin');
     });
+
+    // ---------- WR-02: enumeration resistance on sms:verified flag ----------
+    it('[WR-02] sms:verified 플래그가 세팅돼 있어도 phone-axis 카운터는 먼저 INCR (enumeration 방지)', async () => {
+      // If the verified-flag short-circuit runs before the rate-limit counter,
+      // an attacker can probe arbitrary phones with `code:"000000"` and learn
+      // which ones verified within the last 10min based on the response shape.
+      // Ordering must be: atomicIncr(phone_axis_verify) -> get(sms:verified).
+      const configService = createConfigService();
+      const service = new SmsService(configService, mockRedis as never);
+
+      // Phone-axis verify counter returns 1 (within limit).
+      mockRedis.eval.mockResolvedValueOnce(1);
+      // sms:verified flag is set (10min window from earlier verify).
+      mockRedis.get.mockResolvedValueOnce('1');
+
+      const result = await service.verifyCode('+821012345678', '000000');
+      expect(result.verified).toBe(true);
+
+      // Critical: atomicIncr (redis.eval for counter) ran BEFORE the
+      // sms:verified GET short-circuit. Without this ordering, the counter
+      // never increments on spoofed verify probes and enumeration is unbounded.
+      const evalCalls = mockRedis.eval.mock.invocationCallOrder;
+      const getCalls = mockRedis.get.mock.invocationCallOrder;
+      expect(evalCalls[0]).toBeLessThan(getCalls[0]);
+      // Counter must have been incremented for this phone.
+      expect(mockRedis.eval).toHaveBeenCalledWith(
+        expect.stringContaining('INCR'),
+        expect.any(Number),
+        'sms:phone:verify:+821012345678',
+        expect.any(Number),
+      );
+    });
+
+    it('[WR-02] sms:verified 플래그 세팅 + phone-axis 카운터 초과 시 429 (short-circuit 금지)', async () => {
+      // Attacker-scenario regression: even if sms:verified is set, the 11th
+      // probe in the 15min window must be rate-limited. Without counter-first
+      // ordering, short-circuit returns `{ verified: true }` unboundedly.
+      const configService = createConfigService();
+      const service = new SmsService(configService, mockRedis as never);
+
+      mockRedis.eval.mockResolvedValueOnce(11); // counter > 10
+      // Note: redis.get for sms:verified should NEVER be reached.
+      mockRedis.get.mockResolvedValueOnce('1');
+
+      await expect(service.verifyCode('+821012345678', '000000')).rejects.toThrow(
+        HttpException,
+      );
+
+      expect(mockRedis.get).not.toHaveBeenCalled();
+    });
   });
 });
