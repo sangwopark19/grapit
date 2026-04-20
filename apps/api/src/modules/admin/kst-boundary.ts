@@ -14,7 +14,7 @@ const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 const DAY_MS = 86_400_000;
 
 /**
- * Returns UTC Date boundaries for "from N days ago 00:00 KST" to "tomorrow 00:00 KST".
+ * Returns UTC Date boundaries for an N-day window ending at "tomorrow 00:00 KST" (exclusive).
  *
  * Use as:
  *   where(and(
@@ -24,16 +24,22 @@ const DAY_MS = 86_400_000;
  *
  * 컬럼이 그대로 비교 대상이므로 (status, created_at) index eligible.
  *
- * @param days 0 = 오늘만. 30 = 오늘 포함 최근 30일.
+ * @param days 윈도우 길이(일). `1` = 오늘만, `7` = 오늘 포함 최근 7일, `30` = 오늘 포함 최근 30일.
+ *             `days < 1` 은 비어 있는 윈도우가 되어 의미가 없으므로 에러를 throw 한다.
  */
 export function kstBoundaryToUtc(days: number): { startUtc: Date; endUtc: Date } {
+  if (!Number.isInteger(days) || days < 1) {
+    throw new RangeError(
+      `kstBoundaryToUtc: days must be a positive integer (got ${String(days)})`,
+    );
+  }
   const nowUtcMs = Date.now();
   const nowKstMs = nowUtcMs + KST_OFFSET_MS;
   // KST 기준 오늘 00:00 (자정)의 KST epoch ms.
   const kstTodayStartMs = Math.floor(nowKstMs / DAY_MS) * DAY_MS;
   // 내일 00:00 KST = endUtc.
   const kstEndOfTodayMs = kstTodayStartMs + DAY_MS;
-  // startUtc = (today KST 00:00) - days * 24h.
+  // startUtc = (내일 KST 00:00) - days * 24h. days=1 이면 오늘 00:00 KST.
   const kstStartMs = kstEndOfTodayMs - days * DAY_MS;
   return {
     startUtc: new Date(kstStartMs - KST_OFFSET_MS),
@@ -44,9 +50,13 @@ export function kstBoundaryToUtc(days: number): { startUtc: Date; endUtc: Date }
 /**
  * "오늘 KST 00:00" ~ "내일 KST 00:00" UTC boundary.
  * 오늘 하루만 집계할 때 사용.
+ *
+ * NOTE: `kstBoundaryToUtc(1)` 을 호출한다. 과거에 `kstBoundaryToUtc(0)` 이었을 때는
+ * `startUtc === endUtc` 가 되어 WHERE 절이 항상 empty였다. `days` 는 윈도우 길이이므로
+ * "오늘만" 은 `1` 이다.
  */
 export function kstTodayBoundaryUtc(): { startUtc: Date; endUtc: Date } {
-  return kstBoundaryToUtc(0);
+  return kstBoundaryToUtc(1);
 }
 
 /**
