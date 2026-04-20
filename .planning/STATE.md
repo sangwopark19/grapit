@@ -4,8 +4,8 @@ milestone: v1.1
 milestone_name: 안정화 + 고도화
 status: "Phase 11 shipped — PR #17"
 stopped_at: Phase 11 UI-SPEC approved
-last_updated: "2026-04-20T08:19:34.109Z"
-last_activity: 2026-04-20
+last_updated: "2026-04-20T09:05:00.000Z"
+last_activity: 2026-04-20 - Completed quick task 260420-oxe: PR #17 코드리뷰 수정 (kstTodayBoundaryUtc empty-range)
 progress:
   total_phases: 9
   completed_phases: 7
@@ -107,6 +107,7 @@ None.
 | 260420-fi4 | Phase 10 UI-REVIEW 3건 수정 (phone-verification: button variant, text-caption 토큰, 타이머 aria-live) | 2026-04-20 | ee910f3 | [260420-fi4-phase-10-ui-review-3-phone-verification-](./quick/260420-fi4-phase-10-ui-review-3-phone-verification-/) |
 | 260420-cd7 | CD 복구: Phase 10.1 이후 누락된 프로덕션 시크릿 7개 주입 (Infobip 3 + Sentry api/web + Toss secret/client key) — grapit-api-00018 기동 실패 해소 | 2026-04-20 | c84ff98 | [260420-cd7-deploy-secrets-missing-infobip-sentry-toss](./quick/260420-cd7-deploy-secrets-missing-infobip-sentry-toss/) |
 | 260420-ci-toss-secrets-restore | CI 복구: 260420-cd7 에서 오판 제거된 TOSS_CLIENT_KEY_TEST / TOSS_SECRET_KEY_TEST 재등록 (D-13 격리 설계상 ci.yml 전용 — deploy.yml 기준 orphan 검사 false positive) | 2026-04-20 | a7ee3d1 | [260420-ci-toss-secrets-restore](./quick/260420-ci-toss-secrets-restore/) |
+| 260420-oxe | PR #17 코드리뷰 수정: kstTodayBoundaryUtc() empty-range 버그로 오늘 KPI 3종 항상 0 반환 → kstBoundaryToUtc(1) 로 교체 + 회귀 테스트 10건 추가 | 2026-04-20 | 84a1594 | [260420-oxe-code-review-fix](./quick/260420-oxe-code-review-fix/) |
 
 ## Session Continuity
 
