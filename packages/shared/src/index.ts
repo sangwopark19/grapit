@@ -3,12 +3,14 @@ export * from './schemas/auth.schema';
 export * from './schemas/user.schema';
 export * from './schemas/performance.schema';
 export * from './schemas/booking.schema';
+export * from './schemas/admin-dashboard.schema';
 
 // Types
 export * from './types/auth.types';
 export * from './types/user.types';
 export * from './types/performance.types';
 export * from './types/booking.types';
+export * from './types/admin-dashboard.types';
 
 // Constants
 export * from './constants/index';
