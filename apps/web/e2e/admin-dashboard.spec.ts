@@ -75,4 +75,30 @@ test.describe('Admin Dashboard E2E', () => {
     await expect(dashboardLink).toBeVisible();
     await expect(dashboardLink).toHaveClass(/text-primary/);
   });
+
+  test('chart-blank-guard: SVG child count > 0 for all 3 charts (recharts regression)', async ({
+    page,
+  }) => {
+    await loginAsTestUser(page);
+    await page.goto('/admin');
+    await page.getByRole('heading', { name: '매출 추이' }).waitFor();
+    await page.waitForTimeout(500);
+
+    const sections = [
+      { heading: '매출 추이' },
+      { heading: '장르별 예매 분포' },
+      { heading: '결제수단 분포' },
+    ];
+    for (const s of sections) {
+      const section = page
+        .locator('section')
+        .filter({ has: page.getByRole('heading', { name: s.heading }) });
+      const svg = section.locator('svg').first();
+      const childCount = await svg.locator(':scope > *').count();
+      expect(
+        childCount,
+        `${s.heading} 차트 SVG에 자식 노드가 없음 (recharts blank 회귀 가능성)`,
+      ).toBeGreaterThan(0);
+    }
+  });
 });
