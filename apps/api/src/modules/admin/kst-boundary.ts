@@ -85,16 +85,31 @@ export function buildWeeklyBucketSkeleton(weeks: number): string[] {
   for (let i = weeks - 1; i >= 0; i -= 1) {
     const dayMs = todayStartMs - i * 7 * DAY_MS;
     const kst = new Date(dayMs);
-    // ISO week calculation (ISO 8601):
-    // - 목요일 기준으로 주가 결정됨.
+    // ISO 8601 week calculation aligned with Postgres `to_char(..., 'IYYY-"W"IW')`.
+    // Rule: "week 1 of ISO year Y is the week containing the first Thursday of Y"
+    // (equivalently, the week containing Jan 4). Weeks roll across calendar-year
+    // boundaries — e.g. the week of 2026-12-28..2027-01-03 is 2026-W53 even though
+    // it contains Jan 1 2027 (WR-02).
+    //
+    // 1) `target` is the Thursday of the ISO week we want to label. The ISO year
+    //    is whatever calendar year that Thursday falls in.
+    // 2) `week1Monday` = Monday of ISO week 1 of that ISO year, derived from Jan 4.
+    // 3) weekNum = ((targetMonday - week1Monday) / 7 days) + 1.
     const target = new Date(
       Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate()),
     );
     const dayNum = target.getUTCDay() || 7;
-    target.setUTCDate(target.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
-    const weekNum = Math.ceil(((target.getTime() - yearStart.getTime()) / DAY_MS + 1) / 7);
-    const label = `${target.getUTCFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+    target.setUTCDate(target.getUTCDate() + 4 - dayNum); // move to Thursday
+    const isoYear = target.getUTCFullYear();
+    const jan4 = new Date(Date.UTC(isoYear, 0, 4));
+    const jan4Day = jan4.getUTCDay() || 7;
+    const week1Monday = new Date(jan4);
+    week1Monday.setUTCDate(jan4.getUTCDate() - (jan4Day - 1));
+    const targetMonday = new Date(target);
+    targetMonday.setUTCDate(target.getUTCDate() - 3); // Thu -> Mon
+    const weekNum =
+      Math.round((targetMonday.getTime() - week1Monday.getTime()) / (7 * DAY_MS)) + 1;
+    const label = `${isoYear}-W${String(weekNum).padStart(2, '0')}`;
     if (!seen.has(label)) {
       seen.add(label);
       buckets.push(label);
