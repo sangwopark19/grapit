@@ -118,7 +118,12 @@ export class SmsService {
     // are typically 4-15 digits. If Grapit adds non-KR routes later, relax
     // this to "numeric OR <= 11 alphanumeric chars" per Infobip sender-ID docs.
     if (isProduction && sender && !/^[0-9]{4,15}$/.test(sender)) {
-      const masked = sender.length <= 3 ? sender : `${sender.slice(0, 2)}***`;
+      // [WR-03] Always mask to first 2 chars + ***. Previous `length <= 3 ?
+      // sender : ...` branch leaked the full value for 1-3 char inputs (the
+      // error lands in Cloud Run stdout -> Cloud Logging). For values shorter
+      // than 2 chars, emit only '***' since the prefix would be the entire
+      // value.
+      const masked = sender.length <= 2 ? '***' : `${sender.slice(0, 2)}***`;
       throw new Error(
         `[sms] INFOBIP_SENDER must be a KISA-registered numeric ID (got "${masked}"). ` +
           'Alphanumeric senders are silently rewritten by KR MNOs and cause every send ' +

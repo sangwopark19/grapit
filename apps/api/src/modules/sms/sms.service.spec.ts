@@ -155,6 +155,46 @@ describe('SmsService', () => {
       );
     });
 
+    it('[WR-03] production에서 INFOBIP_SENDER 길이 3 이하 시에도 값은 마스킹됨 (로그 유출 방지)', () => {
+      // Prior `length <= 3 ? sender : ${slice}***` branch leaked the full
+      // value for 1-3 char inputs (e.g., "abc" was echoed verbatim into the
+      // boot-time error -> Cloud Logging). Always mask.
+      process.env['NODE_ENV'] = 'production';
+      const configService = createConfigService({
+        INFOBIP_SENDER: 'abc',
+        NODE_ENV: 'production',
+      });
+
+      try {
+        new SmsService(configService, mockRedis as never);
+        expect.fail('should throw');
+      } catch (err) {
+        const msg = (err as Error).message;
+        // Full 3-char value must not appear verbatim.
+        expect(msg).not.toContain('"abc"');
+        // First 2 chars + *** is the canonical mask.
+        expect(msg).toContain('ab***');
+      }
+    });
+
+    it('[WR-03] production에서 INFOBIP_SENDER 길이 1-2 시에는 *** 전용 마스킹', () => {
+      process.env['NODE_ENV'] = 'production';
+      const configService = createConfigService({
+        INFOBIP_SENDER: 'x',
+        NODE_ENV: 'production',
+      });
+
+      try {
+        new SmsService(configService, mockRedis as never);
+        expect.fail('should throw');
+      } catch (err) {
+        const msg = (err as Error).message;
+        // Prefix would be the entire value — emit *** only.
+        expect(msg).not.toContain('"x"');
+        expect(msg).toContain('"***"');
+      }
+    });
+
     it('[WR-03] production에서 INFOBIP_SENDER가 숫자 4-15자리면 통과', () => {
       process.env['NODE_ENV'] = 'production';
       const configService = createConfigService({
