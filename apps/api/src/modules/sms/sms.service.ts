@@ -183,7 +183,28 @@ export class SmsService {
     try {
       // Store OTP first -- SMS delivery only matters after user receives it.
       // On sendSms failure, OTP naturally expires via TTL 180s. Next send overwrites.
-      await this.redis.set(`sms:otp:${e164}`, otp, 'PX', OTP_TTL_MS);
+      //
+      // [Issue 1 / PR #16 review] Reset attempts counter atomically with new
+      // OTP storage. sms:attempts:{e164} TTL is 900s (set inside
+      // VERIFY_AND_INCREMENT_LUA on first INCR), longer than OTP TTL 180s.
+      // Without this DEL, a user who failed N attempts on OTP#1 and then
+      // re-sends would start OTP#2 with attempts=N already counted in Valkey
+      // — the very first verify on the fresh OTP could trigger
+      // NO_MORE_ATTEMPTS.
+      //
+      // ioredis pipeline keeps both ops in a single round trip and adjacent.
+      // The verify path reads OTP first (KEYS[1]), so a Lua script is not
+      // required — pipeline ordering is observably atomic for the consumer.
+      const pipeline = this.redis.pipeline();
+      pipeline.set(`sms:otp:${e164}`, otp, 'PX', OTP_TTL_MS);
+      pipeline.del(`sms:attempts:${e164}`);
+      const results = await pipeline.exec();
+      // ioredis pipeline.exec returns Array<[Error|null, unknown]> | null.
+      // Treat any op error as a failed send — flow into the catch below so the
+      // SMS is NOT sent (otherwise the user would receive an unverifiable code).
+      if (!results || results.some(([opErr]) => opErr)) {
+        throw new Error('Failed to store OTP / reset attempts in Valkey');
+      }
 
       await this.client!.sendSms(e164, text);
       this.logger.log({ event: 'sms.sent', phone: e164 });
