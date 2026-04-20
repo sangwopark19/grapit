@@ -245,12 +245,24 @@ export class SmsService {
       const shouldRollback =
         !(err instanceof InfobipApiError) || err.status >= 500;
       if (shouldRollback) {
-        await Promise.all([
-          this.redis.del(cooldownKey).catch(() => { /* best effort */ }),
-          this.redis
-            .decr(`sms:phone:send:${e164}`)
-            .catch(() => { /* best effort */ }),
+        // [WR-02] Emit per-op rollback failures so ops can detect stuck-quota
+        // states. Silently swallowing `.catch(() => {})` meant a Valkey blip
+        // during rollback could pin a user in the 30s cooldown or retain
+        // their phone-axis slot with zero observability.
+        const rollbackResults = await Promise.allSettled([
+          this.redis.del(cooldownKey),
+          this.redis.decr(`sms:phone:send:${e164}`),
         ]);
+        rollbackResults.forEach((r, i) => {
+          if (r.status === 'rejected') {
+            this.logger.warn({
+              event: 'sms.rollback_failed',
+              phone: e164,
+              op: i === 0 ? 'cooldown_del' : 'counter_decr',
+              err: (r.reason as Error).message,
+            });
+          }
+        });
       }
 
       const country = e164.startsWith('+82') ? 'KR' : 'unknown';
