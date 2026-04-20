@@ -635,6 +635,47 @@ describe('SmsService', () => {
       expect(InfobipClient.prototype).not.toHaveProperty('verifyPin');
     });
 
+    // ---------- WR-04: verify-counter rollback on Valkey eval failure ----------
+    it('[WR-04] Lua eval 실패 시 sms:phone:verify: 카운터 DECR rollback', async () => {
+      // Transient Valkey failure (network blip, eval error) must release the
+      // phone-axis verify slot that atomicIncr consumed before the Lua call.
+      // Without this, each failure burns one of the user's 10/15min attempts
+      // without delivering a verification outcome.
+      const configService = createConfigService();
+      const service = new SmsService(configService, mockRedis as never);
+
+      mockRedis.eval
+        .mockResolvedValueOnce(1)                                    // phone-axis counter
+        .mockRejectedValueOnce(new Error('valkey eval transient'));  // Lua fails
+      mockRedis.decr.mockResolvedValueOnce(0); // rollback resolves
+
+      const result = await service.verifyCode('+821012345678', '123456');
+
+      expect(result.verified).toBe(false);
+      expect(mockRedis.decr).toHaveBeenCalledWith(
+        'sms:phone:verify:+821012345678',
+      );
+    });
+
+    it('[WR-04] GoneException은 verify 카운터를 rollback하지 않는다', async () => {
+      // EXPIRED/NO_MORE_ATTEMPTS는 정상적인 검증 outcome이므로 카운터를 소모.
+      const configService = createConfigService();
+      const service = new SmsService(configService, mockRedis as never);
+
+      mockRedis.eval
+        .mockResolvedValueOnce(1)                  // phone-axis counter
+        .mockResolvedValueOnce(['EXPIRED', 0]);    // OTP expired (legit outcome)
+
+      await expect(
+        service.verifyCode('+821012345678', '123456'),
+      ).rejects.toThrow(GoneException);
+
+      // DECR must NOT have been called — this is a legitimate verify outcome.
+      expect(mockRedis.decr).not.toHaveBeenCalledWith(
+        'sms:phone:verify:+821012345678',
+      );
+    });
+
     // ---------- WR-02: enumeration resistance on sms:verified flag ----------
     it('[WR-02] phone-axis 카운터는 Lua OTP 검증보다 먼저 INCR (enumeration 방지)', async () => {
       // If any verify branch runs before the rate-limit counter, an attacker

@@ -389,6 +389,21 @@ export class SmsService {
       }
     } catch (err) {
       if (err instanceof GoneException) throw err;
+      // [WR-04] Transient Valkey eval failure: the user got no verification
+      // outcome, so release the verify slot that atomicIncr just consumed.
+      // Mirrors the sendVerificationCode rollback policy for 5xx/network
+      // failures. Without this, each Valkey blip burns one of the user's
+      // 10/15min verify attempts without producing any result.
+      await this.redis
+        .decr(`sms:phone:verify:${e164}`)
+        .catch((rollbackErr: unknown) => {
+          this.logger.warn({
+            event: 'sms.rollback_failed',
+            phone: e164,
+            op: 'verify_counter_decr',
+            err: (rollbackErr as Error).message,
+          });
+        });
       // Valkey eval failure etc. -- log + propagate as user-facing generic message
       Sentry.withScope((scope) => {
         scope.setTag('provider', 'valkey');
