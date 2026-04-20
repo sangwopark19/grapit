@@ -1,10 +1,11 @@
 ---
 phase: 11
 slug: admin-dashboard
-status: draft
+status: approved
 shadcn_initialized: true
 preset: new-york / base=neutral (cssVariables)
 created: 2026-04-20
+reviewed_at: 2026-04-20T00:00:00+09:00
 ---
 
 # Phase 11 — UI Design Contract
