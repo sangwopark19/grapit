@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import userEvent from '@testing-library/user-event';
 import { PhoneVerification } from '../phone-verification';
@@ -95,8 +95,18 @@ describe('PhoneVerification', () => {
 
       await user.click(screen.getByRole('button', { name: /인증번호 발송/ }));
 
+      // 쿨다운 카운트다운이 시작된 뒤에 timer를 advance해야 한다.
+      // user.click은 dispatch까지만 await하므로 handleSendCode의 setResendCooldown(30)이
+      // 아직 commit되지 않은 상태에서 advanceTimersByTime을 호출하면 setInterval이
+      // 존재하지 않아 advance가 무의미해진다 (CI에서 100% 실패하는 race condition).
+      await waitFor(() => {
+        expect(screen.getByText(/재발송 \(30s\)/)).toBeInTheDocument();
+      });
+
       // 30초 경과
-      vi.advanceTimersByTime(30_000);
+      await act(async () => {
+        vi.advanceTimersByTime(30_000);
+      });
 
       await waitFor(() => {
         const btn = screen.getByRole('button', { name: /재발송/ });
