@@ -4,7 +4,7 @@ milestone: v1.1
 milestone_name: 안정화 + 고도화
 status: "Phase 10.1 shipped — PR #16 updated"
 stopped_at: Phase 10 UI-SPEC approved
-last_updated: "2026-04-20T00:56:17.999Z"
+last_updated: "2026-04-20T03:20:00.000Z"
 last_activity: 2026-04-20
 progress:
   total_phases: 9
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 Phase: 11
 Plan: Not started
 Status: Phase 10.1 shipped — PR #16 updated
-Last activity: 2026-04-20 - Completed quick task 260420-fi4: Phase 10 UI-REVIEW 3건 수정 (phone-verification)
+Last activity: 2026-04-20 - Completed quick task 260420-cd7: CD 복구 — Phase 10.1 이후 누락된 프로덕션 시크릿 7개 주입 (Infobip/Sentry/Toss)
 
 Progress: [██████████] 100%
 
@@ -104,6 +104,7 @@ None.
 | 260417-ghv | 국제 전화번호 입력 UX 개선 — 국가코드 선택 라이브러리 도입 (react-phone-number-input + shadcn wrapper) | 2026-04-17 | 4938d74 | [260417-ghv-ux](./quick/260417-ghv-ux/) |
 | 260420-et3 | PR #16 코드리뷰 이슈 3건 수정 (sms:attempts 리셋, phone-axis send 5xx 롤백, Infobip groupId=5 검증) | 2026-04-20 | 8ad4a15 | [260420-et3-pr-16-3-sms-attempts-phone-axis-send-5xx](./quick/260420-et3-pr-16-3-sms-attempts-phone-axis-send-5xx/) |
 | 260420-fi4 | Phase 10 UI-REVIEW 3건 수정 (phone-verification: button variant, text-caption 토큰, 타이머 aria-live) | 2026-04-20 | ee910f3 | [260420-fi4-phase-10-ui-review-3-phone-verification-](./quick/260420-fi4-phase-10-ui-review-3-phone-verification-/) |
+| 260420-cd7 | CD 복구: Phase 10.1 이후 누락된 프로덕션 시크릿 7개 주입 (Infobip 3 + Sentry api/web + Toss secret/client key) — grapit-api-00018 기동 실패 해소 | 2026-04-20 | c84ff98 | [260420-cd7-deploy-secrets-missing-infobip-sentry-toss](./quick/260420-cd7-deploy-secrets-missing-infobip-sentry-toss/) |
 
 ## Session Continuity
 
