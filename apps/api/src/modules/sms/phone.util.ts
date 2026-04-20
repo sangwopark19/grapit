@@ -37,9 +37,17 @@ export function parseE164(input: string): string {
   }
 
   // 5. E.164 파싱
+  // [WR-05] The unconditional `00` -> `+` rewrite above lets inputs like
+  // "00700xxx" (KR international dialing prefix 00700 for carrier routing)
+  // slip through as "+700xxx", which libphonenumber may accept as another
+  // country. Guard against that by requiring the parsed number to be valid
+  // (isValid() checks length + national-number format per country).
   try {
     const toParse = digits.startsWith('+') ? digits : `+${digits}`;
     const parsed = parsePhoneNumberWithError(toParse);
+    if (!parsed.isValid()) {
+      throw new Error('올바른 휴대폰 번호를 입력해주세요');
+    }
     return parsed.number;
   } catch (err: unknown) {
     if (err instanceof ParseError) {

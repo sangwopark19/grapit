@@ -42,6 +42,19 @@ describe('parseE164', () => {
   it('[Review #8] 공백 포함 번호 → E.164', () => {
     expect(parseE164('+ 86 139 1234 5678')).toBe('+8613912345678');
   });
+
+  // [WR-05] `00` prefix misparse guard
+  it('[WR-05] KR 국제전화 식별번호 00700xxx 같은 비-intl-prefix 00 prefix는 reject', () => {
+    // Without the isValid() guard, `00700xxx` was stripped to `+700xxx` and
+    // libphonenumber may accept it as an obscure country shape. Reject.
+    expect(() => parseE164('007001234567')).toThrow(
+      '올바른 휴대폰 번호를 입력해주세요',
+    );
+  });
+
+  it('[WR-05] 정상 0086 prefix는 여전히 통과 (regression)', () => {
+    expect(parseE164('008613912345678')).toBe('+8613912345678');
+  });
 });
 
 describe('isChinaMainland', () => {
