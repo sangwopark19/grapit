@@ -195,5 +195,5 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
 | 8. R2 프로덕션 연동 | v1.1 | 0/3 | Planning | - |
 | 9. 기술부채 청산 | v1.1 | 0/0 | Not started | - |
 | 10. SMS 인증 실연동 | v1.1 | 9/9 | Complete    | 2026-04-16 |
-| 11. 어드민 대시보드 | v1.1 | 4/4 | Complete | 2026-04-20 |
+| 11. 어드민 대시보드 | v1.1 | 4/4 | Complete    | 2026-04-20 |
 | 12. UX 현대화 | v1.1 | 0/0 | Not started | - |
