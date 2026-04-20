@@ -157,7 +157,12 @@ Plans:
   3. 장르별 예매 분포(donut)와 결제수단 분포(bar)가 차트로 표시
   4. 인기 공연 Top 10 랭킹이 표시되어 운영 우선순위 판단 가능
   5. 통계 쿼리 결과가 Valkey에 캐싱되어 대시보드 로딩이 빠름
-**Plans**: TBD
+**Plans:** 4 plans
+Plans:
+- [ ] 11-01-PLAN.md — Wave 1 RED: shared zod schema/DTO + unit/integration/E2E 테스트 스캐폴딩
+- [ ] 11-02-PLAN.md — Wave 2 API: AdminDashboardService/Controller + AdminModule 등록
+- [ ] 11-03-PLAN.md — Wave 2 Web: shadcn chart/toggle-group + sidebar diff + 5 컴포넌트 + /admin/page.tsx
+- [ ] 11-04-PLAN.md — Wave 3 검증: 자동 테스트 실행 + 수동 QA + 문서 갱신
 **UI hint**: yes
 
 ### Phase 12: UX 현대화
