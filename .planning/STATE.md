@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 Phase: 11
 Plan: Not started
 Status: Phase 10.1 shipped — PR #16 updated
-Last activity: 2026-04-20
+Last activity: 2026-04-20 - Completed quick task 260420-et3: PR #16 코드리뷰 이슈 3건 수정
 
 Progress: [██████████] 100%
 
@@ -102,6 +102,7 @@ None.
 | 260413-jw1 | seed.mjs에 어드민 유저(admin@grapit.test) 추가 | 2026-04-13 | 7bd1753 | [260413-jw1-admin-grapit-test](./quick/260413-jw1-admin-grapit-test/) |
 | 260413-k99 | 프로덕션 어드민 접속 불가 수정 (proxy.ts 쿠키 체크 제거) | 2026-04-13 | 5f15b7a | [260413-k99-admin-grapit-test-cli](./quick/260413-k99-admin-grapit-test-cli/) |
 | 260417-ghv | 국제 전화번호 입력 UX 개선 — 국가코드 선택 라이브러리 도입 (react-phone-number-input + shadcn wrapper) | 2026-04-17 | 4938d74 | [260417-ghv-ux](./quick/260417-ghv-ux/) |
+| 260420-et3 | PR #16 코드리뷰 이슈 3건 수정 (sms:attempts 리셋, phone-axis send 5xx 롤백, Infobip groupId=5 검증) | 2026-04-20 | 8ad4a15 | [260420-et3-pr-16-3-sms-attempts-phone-axis-send-5xx](./quick/260420-et3-pr-16-3-sms-attempts-phone-axis-send-5xx/) |
 
 ## Session Continuity
 
