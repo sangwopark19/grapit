@@ -109,6 +109,23 @@ export class SmsService {
       );
     }
 
+    // [WR-03] In production, reject alphanumeric sender IDs. KR MNOs silently
+    // rewrite non-numeric senders, which causes Infobip to return 4xx for every
+    // send. Our rollback policy keeps the phone-axis counter on 4xx (abuse
+    // mitigation), so a sender-ID typo like `INFOBIP_SENDER=Grapit` would
+    // permanently drain every user's 5/hour quota with zero delivery.
+    // KISA-registered numeric senders (landline or pre-approved short codes)
+    // are typically 4-15 digits. If Grapit adds non-KR routes later, relax
+    // this to "numeric OR <= 11 alphanumeric chars" per Infobip sender-ID docs.
+    if (isProduction && sender && !/^[0-9]{4,15}$/.test(sender)) {
+      const masked = sender.length <= 3 ? sender : `${sender.slice(0, 2)}***`;
+      throw new Error(
+        `[sms] INFOBIP_SENDER must be a KISA-registered numeric ID (got "${masked}"). ` +
+          'Alphanumeric senders are silently rewritten by KR MNOs and cause every send ' +
+          'to fail with Infobip 4xx, draining users\' hourly quotas.',
+      );
+    }
+
     this.isDevMock = !isProduction && missing.length > 0;
     this.client = this.isDevMock ? null : new InfobipClient(baseUrl, apiKey, sender);
 

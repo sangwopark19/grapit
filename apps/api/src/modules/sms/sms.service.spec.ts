@@ -126,6 +126,73 @@ describe('SmsService', () => {
       expect(requestedKeys).not.toContain('INFOBIP_APPLICATION_ID');
       expect(requestedKeys).not.toContain('INFOBIP_MESSAGE_ID');
     });
+
+    // ---------- WR-03: INFOBIP_SENDER format validation ----------
+    it('[WR-03] production에서 INFOBIP_SENDER가 알파벳 포함 시 throw (KR MNO silent rewrite 방지)', () => {
+      // Alphanumeric senders are silently rewritten by KR MNOs — Infobip then
+      // returns 4xx for every send, and our 4xx rollback policy keeps the
+      // phone-axis counter (abuse mitigation), permanently draining quotas.
+      process.env['NODE_ENV'] = 'production';
+      const configService = createConfigService({
+        INFOBIP_SENDER: 'Grapit',
+        NODE_ENV: 'production',
+      });
+
+      expect(() => new SmsService(configService, mockRedis as never)).toThrow(
+        /INFOBIP_SENDER must be a KISA-registered numeric ID/,
+      );
+    });
+
+    it('[WR-03] production에서 INFOBIP_SENDER가 4자리 미만의 숫자이면 throw', () => {
+      process.env['NODE_ENV'] = 'production';
+      const configService = createConfigService({
+        INFOBIP_SENDER: '123',
+        NODE_ENV: 'production',
+      });
+
+      expect(() => new SmsService(configService, mockRedis as never)).toThrow(
+        /INFOBIP_SENDER must be a KISA-registered numeric ID/,
+      );
+    });
+
+    it('[WR-03] production에서 INFOBIP_SENDER가 숫자 4-15자리면 통과', () => {
+      process.env['NODE_ENV'] = 'production';
+      const configService = createConfigService({
+        INFOBIP_SENDER: '0212345678',
+        NODE_ENV: 'production',
+      });
+
+      expect(() => new SmsService(configService, mockRedis as never)).not.toThrow();
+    });
+
+    it('[WR-03] production에서 INFOBIP_SENDER 에러 메시지는 sender 값을 마스킹 (로그 유출 방지)', () => {
+      process.env['NODE_ENV'] = 'production';
+      const configService = createConfigService({
+        INFOBIP_SENDER: 'SECRETVALUE',
+        NODE_ENV: 'production',
+      });
+
+      try {
+        new SmsService(configService, mockRedis as never);
+        expect.fail('should throw');
+      } catch (err) {
+        const msg = (err as Error).message;
+        // Only first 2 chars leak as prefix; full value must not appear.
+        expect(msg).not.toContain('SECRETVALUE');
+        expect(msg).toContain('SE***');
+      }
+    });
+
+    it('[WR-03] non-production에서는 INFOBIP_SENDER 형식 검사를 스킵', () => {
+      // Dev-friendly: allow anything (including "TEST") in local/test envs.
+      process.env['NODE_ENV'] = 'test';
+      const configService = createConfigService({
+        INFOBIP_SENDER: 'TESTSENDER',
+        NODE_ENV: 'test',
+      });
+
+      expect(() => new SmsService(configService, mockRedis as never)).not.toThrow();
+    });
   });
 
   // ---------- sendVerificationCode ----------
