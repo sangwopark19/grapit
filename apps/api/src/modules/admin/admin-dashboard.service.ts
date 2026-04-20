@@ -194,10 +194,12 @@ export class AdminDashboardService {
       async () => {
         const days = daysForPeriod(period);
         const { startUtc, endUtc } = kstBoundaryToUtc(days);
-        // WHERE는 raw SQL fragment로 구성하여 `reservations.status = 'CONFIRMED' AND
-        // payments.status = 'DONE'` 두 조건을 단일 조각으로 명시한다 (review MEDIUM 5).
-        // startUtc/endUtc는 parameter bind로 주입되어 SQL injection 안전 + index eligible.
-        const paymentFilter = sql`reservations.status = 'CONFIRMED' AND payments.status = 'DONE' AND reservations.created_at >= ${startUtc} AND reservations.created_at < ${endUtc}`;
+        // WR-03: 기존에는 raw SQL fragment로 `reservations.status`, `payments.status`,
+        // `reservations.created_at` 식별자를 하드코드했다. 값은 parameter bind라 안전했지만
+        // 식별자가 문자열이라 Drizzle이 subquery/CTE 등에서 테이블을 alias하면 조용히 깨질
+        // 위험이 있었다. 타입된 `and(eq(...))` 조합으로 재작성해 같은 index(`idx_reservations_status`,
+        // `reservations.created_at`)를 계속 탈 수 있게 하면서 식별자 fragility를 제거한다
+        // (review MEDIUM 5 / Pitfall 5 — CONFIRMED + DONE 두 조건 동시 요구).
         const rows = await this.db
           .select({
             method: payments.method,
@@ -205,7 +207,14 @@ export class AdminDashboardService {
           })
           .from(payments)
           .innerJoin(reservations, eq(payments.reservationId, reservations.id))
-          .where(paymentFilter)
+          .where(
+            and(
+              eq(reservations.status, 'CONFIRMED'),
+              eq(payments.status, 'DONE'),
+              gte(reservations.createdAt, startUtc),
+              lt(reservations.createdAt, endUtc),
+            ),
+          )
           .groupBy(payments.method)
           .orderBy(sql`count(*) desc`);
         return rows;

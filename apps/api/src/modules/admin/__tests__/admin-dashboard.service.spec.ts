@@ -132,7 +132,7 @@ describe('AdminDashboardService', () => {
   });
 
   describe('payment', () => {
-    it('joins payments with reservations where reservations.status = CONFIRMED AND payments.status = DONE (Pitfall 5 + review MEDIUM 5)', async () => {
+    it('joins payments with reservations where reservations.status = CONFIRMED AND payments.status = DONE (Pitfall 5 + review MEDIUM 5 + WR-03)', async () => {
       mockCache.get.mockResolvedValue(null);
       const groupBySpy = vi.fn(() => createChainMock([{ method: 'card', count: 8 }]));
       const whereSpy = vi.fn(() => ({ groupBy: groupBySpy }));
@@ -141,9 +141,34 @@ describe('AdminDashboardService', () => {
       mockDb.select.mockReturnValue({ from: fromSpy });
       await service.getPaymentDistribution('30d' as DashboardPeriod);
       const whereArg = whereSpy.mock.calls[0]?.[0];
-      const serialized = JSON.stringify(whereArg);
-      expect(serialized).toContain('CONFIRMED');
-      expect(serialized).toContain('DONE');
+      // WR-03: After rewriting the raw SQL fragment to typed `and(eq(...))`,
+      // JSON.stringify hits a PgTable <-> PgColumn cycle. Walk the AST by hand
+      // with a cycle-safe string collector and assert both literals appear.
+      const collectStrings = (node: unknown): string[] => {
+        const out: string[] = [];
+        const seen = new WeakSet<object>();
+        const walk = (v: unknown) => {
+          if (typeof v === 'string') {
+            out.push(v);
+            return;
+          }
+          if (v === null || typeof v !== 'object') return;
+          if (seen.has(v as object)) return;
+          seen.add(v as object);
+          if (Array.isArray(v)) {
+            v.forEach(walk);
+            return;
+          }
+          for (const key of Object.keys(v as Record<string, unknown>)) {
+            walk((v as Record<string, unknown>)[key]);
+          }
+        };
+        walk(node);
+        return out;
+      };
+      const strings = collectStrings(whereArg);
+      expect(strings).toContain('CONFIRMED');
+      expect(strings).toContain('DONE');
     });
   });
 
