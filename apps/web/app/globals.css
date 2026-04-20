@@ -45,6 +45,13 @@
   --color-info: #6C3CE0;
   --color-info-surface: #F3EFFF;
 
+  /* Chart palette (Phase 11 — shadcn Chart tokens, purple monochromatic per UI-SPEC) */
+  --chart-1: #6C3CE0;
+  --chart-2: #8B6DE8;
+  --chart-3: #B8A3EF;
+  --chart-4: #D1D1DB;
+  --chart-5: #A1A1AA;
+
   /* Spacing scale (4px base, 8-point grid) */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
