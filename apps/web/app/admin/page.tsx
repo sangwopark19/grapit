@@ -58,7 +58,14 @@ export default function AdminDashboardPage() {
   const payment = useDashboardPayment(period);
   const top10 = useDashboardTop10();
 
-  const revenueMode = pickMode(revenue, (d) => d.length === 0);
+  // WR-01: revenue service always pads the response with a full bucket
+  // skeleton, so `d.length === 0` never fires. Detect empty via the numeric
+  // signal (all-zero revenue) so the UI-SPEC D-01 empty copy ("해당 기간 동안
+  // 예매 내역이 없습니다") is actually reachable for the revenue panel.
+  const revenueMode = pickMode(
+    revenue,
+    (d) => d.length === 0 || d.every((b) => b.revenue === 0),
+  );
   const genreMode = pickMode(genre, (d) => d.length === 0);
   const paymentMode = pickMode(payment, (d) => d.length === 0);
 
