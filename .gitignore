@@ -9,6 +9,9 @@ dist/
 # Turborepo
 .turbo/
 
+# Cloudflare Wrangler local state
+.wrangler/
+
 # Environment
 .env
 .env.local
