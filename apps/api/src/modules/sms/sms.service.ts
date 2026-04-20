@@ -310,17 +310,25 @@ export class SmsService {
       );
     }
 
-    // Idempotent re-verify: registration/password-reset may call verifyCode
-    // again shortly after initial verify. We short-circuit AFTER the counter
-    // increment (see comment above) so enumeration is still rate-limited.
+    // [CR-01] SECURITY: previously we short-circuited to `{ verified: true }`
+    // whenever `sms:verified:{e164}` was '1', regardless of the submitted code.
+    // During the 600s flag TTL, any caller who knew a recently-verified phone
+    // could pass verification with `code: "000000"` (or anything). This was an
+    // impersonation primitive against every downstream consumer of verifyCode
+    // (signup, password-reset, etc.).
     //
-    // TODO(sms-session-token): replace this phone-global flag with a
-    // server-issued opaque token returned at initial verify-time and required
-    // by downstream consumers. See WR-02 in 10.1-REVIEW.md for rationale.
-    const alreadyVerified = await this.redis.get(`sms:verified:${e164}`);
-    if (alreadyVerified === '1') {
-      return { verified: true };
-    }
+    // Short-term mitigation: remove the short-circuit entirely. Every verify
+    // call must evaluate the Lua script against the actual OTP. Idempotent
+    // re-verify after a successful first pass returns EXPIRED (GoneException)
+    // because the OTP was DEL'd — downstream consumers should treat that as
+    // "already verified" via explicit check OR re-send.
+    //
+    // The `sms:verified:{e164}` flag is still SETEX'd inside the Lua script on
+    // VERIFIED; it remains available for downstream consumers to query
+    // explicitly if they need an idempotency signal, but it no longer gates
+    // the verify-response. Long-term plan (WR-02 follow-up): issue a
+    // server-bound opaque token at verify-time and require it on downstream
+    // endpoints.
 
     // [Phase 10.1] Valkey Lua atomic OTP verify
     try {

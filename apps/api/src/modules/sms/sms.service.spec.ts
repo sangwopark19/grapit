@@ -596,30 +596,26 @@ describe('SmsService', () => {
     });
 
     // ---------- WR-02: enumeration resistance on sms:verified flag ----------
-    it('[WR-02] sms:verified 플래그가 세팅돼 있어도 phone-axis 카운터는 먼저 INCR (enumeration 방지)', async () => {
-      // If the verified-flag short-circuit runs before the rate-limit counter,
-      // an attacker can probe arbitrary phones with `code:"000000"` and learn
-      // which ones verified within the last 10min based on the response shape.
-      // Ordering must be: atomicIncr(phone_axis_verify) -> get(sms:verified).
+    it('[WR-02] phone-axis 카운터는 Lua OTP 검증보다 먼저 INCR (enumeration 방지)', async () => {
+      // If any verify branch runs before the rate-limit counter, an attacker
+      // can probe arbitrary phones and learn which ones verified within the
+      // last 10min based on the response shape. Ordering must be:
+      // atomicIncr(phone_axis_verify) -> Lua VERIFY_AND_INCREMENT.
       const configService = createConfigService();
       const service = new SmsService(configService, mockRedis as never);
 
-      // Phone-axis verify counter returns 1 (within limit).
-      mockRedis.eval.mockResolvedValueOnce(1);
-      // sms:verified flag is set (10min window from earlier verify).
-      mockRedis.get.mockResolvedValueOnce('1');
+      // First eval call = phone-axis counter returns 1 (within limit).
+      // Second eval call = Lua VERIFY_AND_INCREMENT result.
+      mockRedis.eval
+        .mockResolvedValueOnce(1)
+        .mockResolvedValueOnce(['WRONG', 4]);
 
       const result = await service.verifyCode('+821012345678', '000000');
-      expect(result.verified).toBe(true);
+      expect(result.verified).toBe(false);
 
-      // Critical: atomicIncr (redis.eval for counter) ran BEFORE the
-      // sms:verified GET short-circuit. Without this ordering, the counter
-      // never increments on spoofed verify probes and enumeration is unbounded.
-      const evalCalls = mockRedis.eval.mock.invocationCallOrder;
-      const getCalls = mockRedis.get.mock.invocationCallOrder;
-      expect(evalCalls[0]).toBeLessThan(getCalls[0]);
-      // Counter must have been incremented for this phone.
-      expect(mockRedis.eval).toHaveBeenCalledWith(
+      // Counter must have been incremented for this phone, ordered first.
+      expect(mockRedis.eval).toHaveBeenNthCalledWith(
+        1,
         expect.stringContaining('INCR'),
         expect.any(Number),
         'sms:phone:verify:+821012345678',
@@ -627,22 +623,76 @@ describe('SmsService', () => {
       );
     });
 
-    it('[WR-02] sms:verified 플래그 세팅 + phone-axis 카운터 초과 시 429 (short-circuit 금지)', async () => {
-      // Attacker-scenario regression: even if sms:verified is set, the 11th
-      // probe in the 15min window must be rate-limited. Without counter-first
-      // ordering, short-circuit returns `{ verified: true }` unboundedly.
+    it('[WR-02] phone-axis 카운터 초과 시 429 (Lua 검증 미도달)', async () => {
+      // Attacker-scenario regression: the 11th probe in the 15min window must
+      // be rate-limited regardless of OTP state. Without counter-first
+      // ordering, enumeration is unbounded.
       const configService = createConfigService();
       const service = new SmsService(configService, mockRedis as never);
 
       mockRedis.eval.mockResolvedValueOnce(11); // counter > 10
-      // Note: redis.get for sms:verified should NEVER be reached.
-      mockRedis.get.mockResolvedValueOnce('1');
 
       await expect(service.verifyCode('+821012345678', '000000')).rejects.toThrow(
         HttpException,
       );
 
-      expect(mockRedis.get).not.toHaveBeenCalled();
+      // Only the counter eval should have run; Lua VERIFY_AND_INCREMENT must not.
+      expect(mockRedis.eval).toHaveBeenCalledTimes(1);
+    });
+
+    // ---------- CR-01: no short-circuit on sms:verified flag ----------
+    it('[CR-01] sms:verified 플래그가 세팅돼 있어도 잘못된 code는 거부 (impersonation 방지)', async () => {
+      // PREVIOUS BUG: when `sms:verified:{e164}` == '1', verifyCode returned
+      // `{ verified: true }` for ANY submitted code (including "000000") for
+      // the 600s flag TTL. This allowed anyone who knew a recently-verified
+      // phone to spoof verification on signup/password-reset.
+      //
+      // Fix: short-circuit removed. Every verify call must pass Lua
+      // VERIFY_AND_INCREMENT with the correct stored OTP.
+      const configService = createConfigService();
+      const service = new SmsService(configService, mockRedis as never);
+
+      mockRedis.eval
+        .mockResolvedValueOnce(1)                       // phone-axis counter
+        .mockResolvedValueOnce(['WRONG', 4]);           // Lua: wrong code
+
+      // Even if redis.get('sms:verified:...') would have returned '1'
+      // (simulating a recently-verified phone), the code path must not
+      // consult it — and must return verified:false for a wrong code.
+      mockRedis.get.mockResolvedValue('1');
+
+      const result = await service.verifyCode('+821012345678', '000000');
+
+      expect(result.verified).toBe(false);
+      // sms:verified flag MUST NOT be consulted (no short-circuit path).
+      expect(mockRedis.get).not.toHaveBeenCalledWith(
+        expect.stringContaining('sms:verified:'),
+      );
+    });
+
+    it('[CR-01] sms:verified 플래그가 세팅돼 있어도 올바른 Lua VERIFIED 응답만 verified:true', async () => {
+      // Positive regression: the legitimate path still works — the Lua script
+      // DEL'd OTP on first VERIFIED so idempotent re-verify against the same
+      // OTP returns EXPIRED (GoneException). That is the documented trade-off
+      // of the CR-01 short-term mitigation.
+      const configService = createConfigService();
+      const service = new SmsService(configService, mockRedis as never);
+
+      mockRedis.eval
+        .mockResolvedValueOnce(1)                       // phone-axis counter
+        .mockResolvedValueOnce(['EXPIRED', 0]);         // OTP already consumed
+
+      // sms:verified flag set from a prior verify.
+      mockRedis.get.mockResolvedValue('1');
+
+      await expect(
+        service.verifyCode('+821012345678', '123456'),
+      ).rejects.toThrow(GoneException);
+
+      // Flag must not have short-circuited the GoneException.
+      expect(mockRedis.get).not.toHaveBeenCalledWith(
+        expect.stringContaining('sms:verified:'),
+      );
     });
   });
 });
