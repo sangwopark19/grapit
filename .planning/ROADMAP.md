@@ -29,7 +29,7 @@ Full details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 - [x] **Phase 8: R2 프로덕션 연동** - Cloudflare R2 키 발급부터 CDN 서빙까지 프로덕션 파일 스토리지 완성 (completed 2026-04-13)
 - [x] **Phase 9: 기술부채 청산** - v1.0에서 누적된 stub/회귀/미검증 6건 해소 (completed 2026-04-15)
 - [x] **Phase 10: SMS 인증 실연동** - dev mock을 실제 SMS 발송/검증으로 전환 (completed 2026-04-16, Phase 10.1 Infobip v3 재작업 shipped 2026-04-20 PR #16)
-- [ ] **Phase 11: 어드민 대시보드** - 통계 대시보드 + Valkey 캐싱으로 어드민 고도화
+- [x] **Phase 11: 어드민 대시보드** - 통계 대시보드 + Valkey 캐싱으로 어드민 고도화 (completed 2026-04-20, 수동 QA 유예 — 11-HUMAN-UAT.md 참조)
 - [ ] **Phase 12: UX 현대화** - 디자인 트렌드 반영 + SVG 좌석맵 UX 개선
 
 ## Phase Details
@@ -157,12 +157,12 @@ Plans:
   3. 장르별 예매 분포(donut)와 결제수단 분포(bar)가 차트로 표시
   4. 인기 공연 Top 10 랭킹이 표시되어 운영 우선순위 판단 가능
   5. 통계 쿼리 결과가 Valkey에 캐싱되어 대시보드 로딩이 빠름
-**Plans:** 4 plans
+**Plans:** 4/4 plans complete
 Plans:
-- [ ] 11-01-PLAN.md — Wave 1 RED: shared zod schema/DTO + unit/integration/E2E 테스트 스캐폴딩
-- [ ] 11-02-PLAN.md — Wave 2 API: AdminDashboardService/Controller + AdminModule 등록
-- [ ] 11-03-PLAN.md — Wave 2 Web: shadcn chart/toggle-group + sidebar diff + 5 컴포넌트 + /admin/page.tsx
-- [ ] 11-04-PLAN.md — Wave 3 검증: 자동 테스트 실행 + 수동 QA + 문서 갱신
+- [x] 11-01-PLAN.md — Wave 1 RED: shared schema + service/controller skeleton + unit/controller-access/integration/E2E 테스트 스캐폴딩
+- [x] 11-02-PLAN.md — Wave 2 API: kst-boundary helper + AdminDashboardService/Controller + AdminModule 등록
+- [x] 11-03-PLAN.md — Wave 2 Web: shadcn chart + sidebar diff + ChartPanelState + 5 컴포넌트 + /admin/page.tsx
+- [x] 11-04-PLAN.md — Wave 3 검증: 자동 테스트 풀 실행 + chart blank guard + UI-SPEC scope 스캔 + 수동 QA (HUMAN-UAT로 유예)
 **UI hint**: yes
 
 ### Phase 12: UX 현대화
@@ -195,5 +195,5 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
 | 8. R2 프로덕션 연동 | v1.1 | 0/3 | Planning | - |
 | 9. 기술부채 청산 | v1.1 | 0/0 | Not started | - |
 | 10. SMS 인증 실연동 | v1.1 | 9/9 | Complete    | 2026-04-16 |
-| 11. 어드민 대시보드 | v1.1 | 0/0 | Not started | - |
+| 11. 어드민 대시보드 | v1.1 | 4/4 | Complete | 2026-04-20 |
 | 12. UX 현대화 | v1.1 | 0/0 | Not started | - |
