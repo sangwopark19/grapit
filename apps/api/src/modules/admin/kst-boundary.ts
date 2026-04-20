@@ -1,0 +1,104 @@
+/**
+ * KST(Asia/Seoul) 자정 경계를 UTC Date로 pre-compute하는 헬퍼.
+ *
+ * WHERE 절에서 `reservations.createdAt` 컬럼과 UTC Date를 직접 비교하여
+ * `(status, created_at)` index가 그대로 활용되도록 한다. `AT TIME ZONE
+ * 'Asia/Seoul'` 로 컬럼을 래핑하면 index가 무력화되므로 (review MEDIUM 4),
+ * boundary 계산은 Node 측에서 진행하고 DB에는 raw Date만 전달한다.
+ *
+ * 또한 revenue-trend의 bucket skeleton (일별/주별 빈 날짜 0 채움)도
+ * 이 모듈에서 제공한다 (review MEDIUM 6).
+ */
+
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+const DAY_MS = 86_400_000;
+
+/**
+ * Returns UTC Date boundaries for "from N days ago 00:00 KST" to "tomorrow 00:00 KST".
+ *
+ * Use as:
+ *   where(and(
+ *     gte(reservations.createdAt, startUtc),
+ *     lt(reservations.createdAt, endUtc),
+ *   ))
+ *
+ * 컬럼이 그대로 비교 대상이므로 (status, created_at) index eligible.
+ *
+ * @param days 0 = 오늘만. 30 = 오늘 포함 최근 30일.
+ */
+export function kstBoundaryToUtc(days: number): { startUtc: Date; endUtc: Date } {
+  const nowUtcMs = Date.now();
+  const nowKstMs = nowUtcMs + KST_OFFSET_MS;
+  // KST 기준 오늘 00:00 (자정)의 KST epoch ms.
+  const kstTodayStartMs = Math.floor(nowKstMs / DAY_MS) * DAY_MS;
+  // 내일 00:00 KST = endUtc.
+  const kstEndOfTodayMs = kstTodayStartMs + DAY_MS;
+  // startUtc = (today KST 00:00) - days * 24h.
+  const kstStartMs = kstEndOfTodayMs - days * DAY_MS;
+  return {
+    startUtc: new Date(kstStartMs - KST_OFFSET_MS),
+    endUtc: new Date(kstEndOfTodayMs - KST_OFFSET_MS),
+  };
+}
+
+/**
+ * "오늘 KST 00:00" ~ "내일 KST 00:00" UTC boundary.
+ * 오늘 하루만 집계할 때 사용.
+ */
+export function kstTodayBoundaryUtc(): { startUtc: Date; endUtc: Date } {
+  return kstBoundaryToUtc(0);
+}
+
+/**
+ * YYYY-MM-DD bucket list in KST for the last `days` days, inclusive of today.
+ * Returned ASC by date (가장 오래된 날짜가 맨 앞).
+ *
+ * review MEDIUM 6: DB 결과에 없는 날짜도 0 revenue로 표시하기 위한 skeleton.
+ */
+export function buildDailyBucketSkeleton(days: number): string[] {
+  const nowKstMs = Date.now() + KST_OFFSET_MS;
+  const todayStartMs = Math.floor(nowKstMs / DAY_MS) * DAY_MS;
+  const buckets: string[] = [];
+  for (let i = days - 1; i >= 0; i -= 1) {
+    const dayMs = todayStartMs - i * DAY_MS;
+    // KST epoch ms를 UTC Date로 해석해 YYYY-MM-DD 추출.
+    const kst = new Date(dayMs);
+    const y = kst.getUTCFullYear();
+    const m = String(kst.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(kst.getUTCDate()).padStart(2, '0');
+    buckets.push(`${y}-${m}-${d}`);
+  }
+  return buckets;
+}
+
+/**
+ * ISO week bucket list (e.g. "2026-W17") for the last `weeks` weeks in KST.
+ * Postgres `to_char(..., 'IYYY-"W"IW')` 결과와 동일한 형식을 목표로 한다.
+ *
+ * review MEDIUM 6: 90d period에서 빈 주 0 revenue 채움용.
+ */
+export function buildWeeklyBucketSkeleton(weeks: number): string[] {
+  const nowKstMs = Date.now() + KST_OFFSET_MS;
+  const todayStartMs = Math.floor(nowKstMs / DAY_MS) * DAY_MS;
+  const buckets: string[] = [];
+  const seen = new Set<string>();
+  for (let i = weeks - 1; i >= 0; i -= 1) {
+    const dayMs = todayStartMs - i * 7 * DAY_MS;
+    const kst = new Date(dayMs);
+    // ISO week calculation (ISO 8601):
+    // - 목요일 기준으로 주가 결정됨.
+    const target = new Date(
+      Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate()),
+    );
+    const dayNum = target.getUTCDay() || 7;
+    target.setUTCDate(target.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
+    const weekNum = Math.ceil(((target.getTime() - yearStart.getTime()) / DAY_MS + 1) / 7);
+    const label = `${target.getUTCFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+    if (!seen.has(label)) {
+      seen.add(label);
+      buckets.push(label);
+    }
+  }
+  return buckets;
+}

@@ -35,12 +35,20 @@ describe('AdminDashboardController (access control)', () => {
       controllers: [AdminDashboardController],
       providers: [
         AdminDashboardService,
-        // service constructor의 @Inject(DRIZZLE)과 CacheService 충족용 더미
+        // service constructor의 @Inject(DRIZZLE)과 CacheService 충족용 더미.
+        // Plan 02가 handler body를 구현하면 service.getSummary()는 readThrough로 감싸지고,
+        // cache hit 경로를 타면 DB는 호출되지 않는다. 따라서 cache.get이 더미 summary 값을
+        // 반환하도록 설정하면 DRIZZLE이 stub이어도 admin 케이스가 200으로 통과한다.
         { provide: DRIZZLE, useValue: {} },
         {
           provide: CacheService,
           useValue: {
-            get: async () => null,
+            get: async () => ({
+              todayBookings: 0,
+              todayRevenue: 0,
+              todayCancelled: 0,
+              activePerformances: 0,
+            }),
             set: async () => undefined,
             invalidate: async () => undefined,
             invalidatePattern: async () => undefined,
