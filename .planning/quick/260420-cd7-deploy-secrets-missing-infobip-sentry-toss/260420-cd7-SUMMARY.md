@@ -52,6 +52,8 @@ Phase 10.1 에서 `SmsService` constructor 가 production 환경에서 `INFOBIP_
 
 추가 정리: `TOSS_CLIENT_KEY_TEST`, `TOSS_SECRET_KEY_TEST` 2개 고아 시크릿 제거 (deploy.yml 어디서도 참조되지 않고 있었음).
 
+> **⚠️ 보정 (2026-04-20, quick `260420-ci-toss-secrets-restore`)**: 이 두 시크릿 제거는 **오판이었다**. Phase 09-03 D-13 격리 설계상 `TOSS_CLIENT_KEY_TEST` / `TOSS_SECRET_KEY_TEST` 는 **의도적으로 `deploy.yml` 에 주입 금지**이며 `ci.yml` 전용 (E2E Toss 결제 테스트 + non-fork hard-gate)으로 존재해야 한다. orphan 검사를 `deploy.yml` 단독 기준으로 돌리면 D-13 격리 시크릿은 반드시 false positive 로 잡힌다. 이후 PR #17 CI 의 `Verify Toss test secrets present` step 이 exit 1 로 실패했고, 동일 값으로 즉시 재등록했다. 다음 번 orphan 검사는 반드시 `.github/workflows/*.yml` 전체 grep 으로 확인할 것.
+
 ### 3. `apps/web/Dockerfile` (+4 lines)
 builder stage 에 ARG/ENV 쌍 2개 추가:
 ```
