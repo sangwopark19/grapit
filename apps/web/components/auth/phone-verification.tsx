@@ -184,7 +184,7 @@ export function PhoneVerification({
         />
         <Button
           type="button"
-          variant={codeSent ? 'outline' : 'default'}
+          variant={isSending ? 'default' : codeSent ? 'outline' : 'default'}
           size="lg"
           onClick={handleSendCode}
           disabled={sendButtonDisabled}
@@ -244,7 +244,11 @@ export function PhoneVerification({
             </Button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div
+            className="flex items-center gap-2"
+            aria-live={timeLeft === 0 ? 'polite' : 'off'}
+            role={timeLeft === 0 ? 'status' : undefined}
+          >
             {timeLeft > 0 ? (
               <span className="text-caption text-error">
                 {formatTime(timeLeft)}
@@ -270,7 +274,7 @@ export function PhoneVerification({
       {isVerified && (
         <div className="flex items-center gap-2" role="status">
           <CheckCircle2 className="h-5 w-5 text-success" />
-          <span className="text-sm text-success">인증 완료</span>
+          <span className="text-caption text-success">인증 완료</span>
         </div>
       )}
     </div>
