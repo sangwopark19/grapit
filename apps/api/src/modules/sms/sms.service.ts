@@ -189,13 +189,22 @@ export class SmsService {
       this.logger.log({ event: 'sms.sent', phone: e164 });
       return { success: true, message: '인증번호가 발송되었습니다' };
     } catch (err) {
-      // [Phase 10 review] Cooldown rollback policy
-      // 5xx/timeout/network -> user didn't receive SMS but blocked 30s -> DEL
-      // 4xx(Infobip bad request) -> user error/abuse -> keep cooldown
-      const shouldRollbackCooldown =
+      // [Phase 10 review + Issue 2] Rollback policy
+      // 5xx/timeout/network -> user didn't receive SMS -> release BOTH the
+      //   30s cooldown AND the phone-axis hourly send slot. Otherwise a
+      //   transient Infobip outage would burn the user's 5/hour quota
+      //   without delivering anything (Issue 2 from PR #16 review).
+      // 4xx (incl. groupId=5 REJECTED, converted by InfobipClient) -> permanent
+      //   rejection -> keep both cooldown and counter (abuse mitigation).
+      const shouldRollback =
         !(err instanceof InfobipApiError) || err.status >= 500;
-      if (shouldRollbackCooldown) {
-        await this.redis.del(cooldownKey).catch(() => { /* best effort */ });
+      if (shouldRollback) {
+        await Promise.all([
+          this.redis.del(cooldownKey).catch(() => { /* best effort */ }),
+          this.redis
+            .decr(`sms:phone:send:${e164}`)
+            .catch(() => { /* best effort */ }),
+        ]);
       }
 
       const country = e164.startsWith('+82') ? 'KR' : 'unknown';

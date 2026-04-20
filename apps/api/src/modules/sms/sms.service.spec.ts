@@ -24,6 +24,7 @@ const mockRedis = {
   set: vi.fn(),
   get: vi.fn(),
   del: vi.fn(),
+  decr: vi.fn(),
   pttl: vi.fn(),
   eval: vi.fn(),
 };
@@ -239,6 +240,70 @@ describe('SmsService', () => {
 
       expect(mockRedis.del).not.toHaveBeenCalledWith(
         expect.stringContaining('sms:resend:'),
+      );
+    });
+
+    // ---------- Issue 2 (PR #16 review): phone-axis send counter rollback ----------
+    it('Infobip sendSms 5xx 시 sms:phone:send:{e164} 카운터도 DECR rollback', async () => {
+      // sms:phone:send:{e164} (5/3600s) was INCR'd before calling Infobip but
+      // never decremented when the call failed transiently. A series of 5xx
+      // errors could exhaust the user's hourly quota despite no SMS delivery.
+      const configService = createConfigService();
+      const service = new SmsService(configService, mockRedis as never);
+      mockRedis.set.mockResolvedValueOnce('OK'); // cooldown NX pass
+      mockRedis.eval.mockResolvedValueOnce(1); // phone counter OK
+      mockRedis.del.mockResolvedValueOnce(1); // cooldown DEL rollback resolves
+      mockRedis.decr.mockResolvedValueOnce(0); // counter DECR rollback resolves
+
+      vi.spyOn(InfobipClient.prototype, 'sendSms').mockRejectedValueOnce(
+        new InfobipApiError(500, 'Internal Server Error'),
+      );
+
+      await expect(service.sendVerificationCode('+821012345678')).rejects.toThrow();
+
+      expect(mockRedis.decr).toHaveBeenCalledWith(
+        'sms:phone:send:+821012345678',
+      );
+    });
+
+    it('Infobip sendSms 4xx 시 sms:phone:send: 카운터 유지 (DECR 미호출, 악용 방지)', async () => {
+      // 4xx (incl. groupId=5 REJECTED converted by InfobipClient) is a
+      // permanent rejection. Keep the counter so an abuser can't rapid-fire
+      // REJECTED responses to drain real users' quotas.
+      const configService = createConfigService();
+      const service = new SmsService(configService, mockRedis as never);
+      mockRedis.set.mockResolvedValueOnce('OK'); // cooldown NX pass
+      mockRedis.eval.mockResolvedValueOnce(1); // phone counter OK
+
+      vi.spyOn(InfobipClient.prototype, 'sendSms').mockRejectedValueOnce(
+        new InfobipApiError(400, 'REJECTED'),
+      );
+
+      await expect(service.sendVerificationCode('+821012345678')).rejects.toThrow();
+
+      expect(mockRedis.decr).not.toHaveBeenCalledWith(
+        expect.stringContaining('sms:phone:send:'),
+      );
+    });
+
+    it('non-InfobipApiError (network down 등) 시 sms:phone:send: 카운터 DECR rollback', async () => {
+      // Matches existing shouldRollback logic: !(err instanceof InfobipApiError)
+      // || err.status >= 500. Network/timeout errors should release the slot.
+      const configService = createConfigService();
+      const service = new SmsService(configService, mockRedis as never);
+      mockRedis.set.mockResolvedValueOnce('OK'); // cooldown NX pass
+      mockRedis.eval.mockResolvedValueOnce(1); // phone counter OK
+      mockRedis.del.mockResolvedValueOnce(1); // cooldown DEL rollback resolves
+      mockRedis.decr.mockResolvedValueOnce(0); // counter DECR rollback resolves
+
+      vi.spyOn(InfobipClient.prototype, 'sendSms').mockRejectedValueOnce(
+        new Error('network down'),
+      );
+
+      await expect(service.sendVerificationCode('+821012345678')).rejects.toThrow();
+
+      expect(mockRedis.decr).toHaveBeenCalledWith(
+        'sms:phone:send:+821012345678',
       );
     });
 
