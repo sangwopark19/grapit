@@ -105,6 +105,18 @@ NOL 티켓(nol.interpark.com/ticket)을 상세 분석한 5개 문서가 docs/에
 | HealthController Valkey ping (Terminus 11) | Cloud Run liveness probe가 Valkey 장애를 즉시 감지 → silent outage 차단 | Phase 7 Plan 05 — cross-AI 리뷰 MEDIUM #7 대응 |
 | Family-based refresh token rotation | 토큰 탈취 감지 | ✓ Good — SHA-256 해시 저장, 가족 단위 무효화 |
 
+## Security Debt
+
+Known security concerns deferred to a future security phase. Tracked to prevent silent accumulation.
+
+- **Phase 12 admin SVG client-side validation only (2026-04-21, reviews revision D-19):**
+  현재 `apps/web/components/admin/svg-preview.tsx`는 DOMParser 기반 stage 마커 검증을 **클라이언트에서만** 수행한다.
+  Admin 계정이 탈취되거나 API가 우회되면 악성 SVG (`<script>` / event handler / XSS payload)가 R2에 업로드되어
+  `dangerouslySetInnerHTML`로 viewer에서 렌더링될 수 있다.
+  - Mitigation 예정: 서버측 re-validation (API DTO) + DOMPurify SVG profile + CSP strict-dynamic
+  - Risk level: MEDIUM (admin 공격 surface 한정)
+  - Tracking: 12-REVIEWS.md LOW #9, 12-CONTEXT.md D-19 SECURITY DEBT NOTE
+
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
