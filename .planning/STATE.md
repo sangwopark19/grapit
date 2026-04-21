@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
-status: "Phase 10.1 shipped — PR #16 updated"
-stopped_at: Phase 10 UI-SPEC approved
-last_updated: "2026-04-20T00:56:17.999Z"
-last_activity: 2026-04-20
+status: "Phase 11 shipped — PR #17"
+stopped_at: Phase 11 UI-SPEC approved
+last_updated: "2026-04-20T09:05:00.000Z"
+last_activity: 2026-04-20 - Completed quick task 260420-oxe: PR #17 코드리뷰 수정 (kstTodayBoundaryUtc empty-range)
 progress:
   total_phases: 9
-  completed_phases: 6
-  total_plans: 35
-  completed_plans: 34
+  completed_phases: 7
+  total_plans: 39
+  completed_plans: 38
   percent: 97
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** 사용자가 원하는 공연을 발견하고, 좌석을 직접 선택하여, 안정적으로 예매를 완료할 수 있는 것
-**Current focus:** Phase 10.1 — sms-api-v3-rewrite
+**Current focus:** Phase 11 — admin-dashboard
 
 ## Current Position
 
-Phase: 11
+Phase: 12
 Plan: Not started
-Status: Phase 10.1 shipped — PR #16 updated
-Last activity: 2026-04-20 - Completed quick task 260420-fi4: Phase 10 UI-REVIEW 3건 수정 (phone-verification)
+Status: Phase 11 shipped — PR #17
+Last activity: 2026-04-20
 
 Progress: [██████████] 100%
 
@@ -36,7 +36,7 @@ Progress: [██████████] 100%
 
 **Velocity:**
 
-- Total plans completed: 55 (v1.0)
+- Total plans completed: 59 (v1.0)
 - Average duration: ~10min
 - Total execution time: ~3 hours
 
@@ -53,6 +53,7 @@ Progress: [██████████] 100%
 | 09.1 | 5 | - | - |
 | 10 | 9 | - | - |
 | 10.1 | 6 | - | - |
+| 11 | 4 | - | - |
 
 **Recent Trend:**
 
@@ -88,10 +89,10 @@ None.
 
 ### Blockers/Concerns
 
-- AUTH-01: 소셜 로그인 재로그인 버그 -- v1.1 최우선 해결 대상
-- VALK-03: Valkey eval() 시그니처 차이 -- Lua 스크립트 3개 호환성 검증 필수
+- ~~AUTH-01: 소셜 로그인 재로그인 버그~~ -- RESOLVED 2026-04-09. Phase 6 VALIDATION 승인 (PR #11, #12 merged). 카카오/네이버/구글 3 provider 재로그인 E2E 검증 완료, 근본 원인은 Strategy callbackURL 의 `/social/` 세그먼트 누락 (b87001d, 87925b1).
+- VALK-03: Valkey eval() 시그니처 차이 -- PARTIAL. 코드 레벨 14/14 verified (testcontainers + Lua 3개 라운드트립), 런타임 3/4 PASS (2026-04-13: /health redis up, 좌석 SET NX+TTL, 카탈로그 캐시 hit 52ms). 남은 미검증: (1) CLUSTER 모드 Valkey 호환성, (2) idle 재연결 장기 안정성. Phase 11 진행 중 관찰 후 closed 처리.
 - ~~R2-02: R2 CORS AllowedHeaders 와일드카드 불가~~ -- Phase 08에서 content-type 명시적 지정으로 해결
-- ADM-06: 통계 쿼리 캐싱은 Phase 7 Valkey 전환 완료 후 구현
+- ADM-06: 통계 쿼리 캐싱 -- 전제조건(Phase 7 Valkey 전환) 완료. Phase 11 어드민 대시보드에서 캐시 레이어 활용 대상으로 이관.
 
 ### Quick Tasks Completed
 
@@ -104,9 +105,14 @@ None.
 | 260417-ghv | 국제 전화번호 입력 UX 개선 — 국가코드 선택 라이브러리 도입 (react-phone-number-input + shadcn wrapper) | 2026-04-17 | 4938d74 | [260417-ghv-ux](./quick/260417-ghv-ux/) |
 | 260420-et3 | PR #16 코드리뷰 이슈 3건 수정 (sms:attempts 리셋, phone-axis send 5xx 롤백, Infobip groupId=5 검증) | 2026-04-20 | 8ad4a15 | [260420-et3-pr-16-3-sms-attempts-phone-axis-send-5xx](./quick/260420-et3-pr-16-3-sms-attempts-phone-axis-send-5xx/) |
 | 260420-fi4 | Phase 10 UI-REVIEW 3건 수정 (phone-verification: button variant, text-caption 토큰, 타이머 aria-live) | 2026-04-20 | ee910f3 | [260420-fi4-phase-10-ui-review-3-phone-verification-](./quick/260420-fi4-phase-10-ui-review-3-phone-verification-/) |
+| 260420-cd7 | CD 복구: Phase 10.1 이후 누락된 프로덕션 시크릿 7개 주입 (Infobip 3 + Sentry api/web + Toss secret/client key) — grapit-api-00018 기동 실패 해소 | 2026-04-20 | c84ff98 | [260420-cd7-deploy-secrets-missing-infobip-sentry-toss](./quick/260420-cd7-deploy-secrets-missing-infobip-sentry-toss/) |
+| 260420-ci-toss-secrets-restore | CI 복구: 260420-cd7 에서 오판 제거된 TOSS_CLIENT_KEY_TEST / TOSS_SECRET_KEY_TEST 재등록 (D-13 격리 설계상 ci.yml 전용 — deploy.yml 기준 orphan 검사 false positive) | 2026-04-20 | a7ee3d1 | [260420-ci-toss-secrets-restore](./quick/260420-ci-toss-secrets-restore/) |
+| 260420-oxe | PR #17 코드리뷰 수정: kstTodayBoundaryUtc() empty-range 버그로 오늘 KPI 3종 항상 0 반환 → kstBoundaryToUtc(1) 로 교체 + 회귀 테스트 10건 추가 | 2026-04-20 | 84a1594 | [260420-oxe-code-review-fix](./quick/260420-oxe-code-review-fix/) |
 
 ## Session Continuity
 
-Last session: 2026-04-15T08:49:57.167Z
-Stopped at: Phase 10 UI-SPEC approved
-Resume file: .planning/phases/10-sms/10-UI-SPEC.md
+Last session: --stopped-at
+Stopped at: Phase 11 UI-SPEC approved
+Resume file: --resume-file
+
+**Planned Phase:** 11 (admin-dashboard) — 4 plans — 2026-04-20T06:20:22.598Z

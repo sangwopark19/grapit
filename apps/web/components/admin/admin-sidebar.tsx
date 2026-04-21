@@ -2,10 +2,15 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Theater, Image, Ticket } from 'lucide-react';
+import { Theater, Image, Ticket, LayoutDashboard } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
 const NAV_ITEMS = [
+  {
+    label: '대시보드',
+    href: '/admin',
+    icon: LayoutDashboard,
+  },
   {
     label: '공연 관리',
     href: '/admin/performances',
@@ -29,13 +34,16 @@ export function AdminSidebar() {
   return (
     <aside className="hidden w-[240px] shrink-0 border-r bg-white lg:block">
       <div className="flex h-16 items-center border-b px-6">
-        <Link href="/admin/performances" className="text-lg font-semibold">
+        <Link href="/admin" className="text-sm font-semibold">
           Grapit Admin
         </Link>
       </div>
       <nav className="flex flex-col gap-1 p-4" aria-label="관리자 네비게이션">
         {NAV_ITEMS.map((item) => {
-          const isActive = pathname.startsWith(item.href);
+          const isActive =
+            item.href === '/admin'
+              ? pathname === '/admin'
+              : pathname.startsWith(item.href);
           const Icon = item.icon;
           return (
             <Link

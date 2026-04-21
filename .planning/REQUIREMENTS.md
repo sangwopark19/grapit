@@ -45,12 +45,12 @@ Requirements for v1.1 안정화 + 고도화. Each maps to roadmap phases.
 
 ### 어드민 대시보드
 
-- [ ] **ADM-01**: 오늘 요약 카드 (예매 수, 매출, 취소, 활성 공연)
-- [ ] **ADM-02**: 매출 추이 차트 (일별/주별 area chart)
-- [ ] **ADM-03**: 장르별 예매 분포 차트 (donut chart)
-- [ ] **ADM-04**: 인기 공연 랭킹 Top 10
-- [ ] **ADM-05**: 결제수단 분포 차트 (bar chart)
-- [ ] **ADM-06**: 통계 데이터 캐싱 + 집계 쿼리 최적화
+- [x] **ADM-01**: 오늘 요약 카드 (예매 수, 매출, 취소, 활성 공연)
+- [x] **ADM-02**: 매출 추이 차트 (일별/주별 area chart)
+- [x] **ADM-03**: 장르별 예매 분포 차트 (donut chart)
+- [x] **ADM-04**: 인기 공연 랭킹 Top 10
+- [x] **ADM-05**: 결제수단 분포 차트 (bar chart)
+- [x] **ADM-06**: 통계 데이터 캐싱 + 집계 쿼리 최적화
 
 ### UX 현대화
 
@@ -117,12 +117,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SMS-02 | Phase 10 | Pending |
 | SMS-03 | Phase 10 | Pending |
 | SMS-04 | Phase 10 | Pending |
-| ADM-01 | Phase 11 | Pending |
-| ADM-02 | Phase 11 | Pending |
-| ADM-03 | Phase 11 | Pending |
-| ADM-04 | Phase 11 | Pending |
-| ADM-05 | Phase 11 | Pending |
-| ADM-06 | Phase 11 | Pending |
+| ADM-01 | Phase 11 | Complete |
+| ADM-02 | Phase 11 | Complete |
+| ADM-03 | Phase 11 | Complete |
+| ADM-04 | Phase 11 | Complete |
+| ADM-05 | Phase 11 | Complete |
+| ADM-06 | Phase 11 | Complete |
 | UX-01 | Phase 12 | Pending |
 | UX-02 | Phase 12 | Pending |
 | UX-03 | Phase 12 | Pending |

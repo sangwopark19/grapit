@@ -45,6 +45,13 @@
   --color-info: #6C3CE0;
   --color-info-surface: #F3EFFF;
 
+  /* Chart palette (Phase 11 — shadcn Chart tokens, purple monochromatic per UI-SPEC) */
+  --chart-1: #6C3CE0;
+  --chart-2: #8B6DE8;
+  --chart-3: #B8A3EF;
+  --chart-4: #D1D1DB;
+  --chart-5: #A1A1AA;
+
   /* Spacing scale (4px base, 8-point grid) */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
@@ -91,6 +98,21 @@
     50% { transform: translateX(4px); }
     75% { transform: translateX(-4px); }
   }
+}
+
+/*
+ * Chart palette — expose as plain CSS custom properties on :root so
+ * recharts/shadcn components that use `var(--chart-1)` can resolve them.
+ * Tailwind v4 @theme auto-injects only namespaced tokens (--color-*, --spacing-*
+ * 등) into :root; --chart-* is not in a recognized namespace, so we mirror it here.
+ * Values must stay in sync with the @theme block above (Phase 11 UI-SPEC palette).
+ */
+:root {
+  --chart-1: #6C3CE0;
+  --chart-2: #8B6DE8;
+  --chart-3: #B8A3EF;
+  --chart-4: #D1D1DB;
+  --chart-5: #A1A1AA;
 }
 
 html {
