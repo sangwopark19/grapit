@@ -182,7 +182,7 @@ Plans:
 - [x] 12-02-hook-and-admin-validation-PLAN.md — Wave 2: useIsMobile hook + svg-preview admin 검증 (reviews revision: unified parsing contract + enum 검증 + try/catch parse 실패 toast)
 - [x] 12-03-viewer-core-changes-PLAN.md — Wave 3 core: seat-map-viewer.tsx 변경 (reviews revision: per-seat timeout Map + unified parsing + viewBox min-x/min-y + D-13 BROADCAST PRIORITY) + W-2 helper 파일 분리
 - [x] 12-03.5-minimap-smoke-test-PLAN.md — Wave 3 gate (reviews revision MED #5): react-zoom-pan-pinch MiniMap 런타임 contract 수동 smoke test (3 check — 축소 SVG copy / viewport rect 동기화 / 모바일 숨김) — FAIL 시 D-14 원안 fallback
-- [ ] 12-04-regression-and-manual-qa-PLAN.md — Wave 4: 자동 회귀 + manual QA gate (11개 항목 포함 reviews revision HIGH #1/#2/MED #4) + D-19 SECURITY DEBT PROJECT.md 기록 (reviews revision LOW #9)
+- [x] 12-04-regression-and-manual-qa-PLAN.md — Wave 4: 자동 회귀 + manual QA gate (11개 항목 포함 reviews revision HIGH #1/#2/MED #4) + D-19 SECURITY DEBT PROJECT.md 기록 (reviews revision LOW #9)
 **UI hint**: yes
 
 ## Progress
