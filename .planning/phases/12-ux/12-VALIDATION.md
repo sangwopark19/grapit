@@ -1,10 +1,11 @@
 ---
 phase: 12
 slug: ux
-status: draft
+status: approved
 nyquist_compliant: true
 wave_0_complete: true
 created: 2026-04-21
+signed_off: 2026-04-21
 ---
 
 # Phase 12 — Validation Strategy
