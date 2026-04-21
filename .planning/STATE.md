@@ -4,14 +4,14 @@ milestone: v1.1
 milestone_name: 안정화 + 고도화
 status: executing
 stopped_at: Phase 12 UI-SPEC approved
-last_updated: "2026-04-21T06:35:00.000Z"
-last_activity: 2026-04-21 -- Phase 12 Plan 12-03 complete (viewer core changes) — awaiting 12-03.5 smoke test
+last_updated: "2026-04-21T06:45:00.000Z"
+last_activity: 2026-04-21 -- Phase 12 Wave 3 complete (12-03 viewer + 12-03.5 MiniMap smoke test approved)
 progress:
   total_phases: 9
   completed_phases: 7
   total_plans: 45
-  completed_plans: 42
-  percent: 93
+  completed_plans: 43
+  percent: 96
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 ## Current Position
 
 Phase: 12 (ux) — EXECUTING
-Plan: 5 of 6 (12-03.5 MiniMap smoke test checkpoint)
-Status: Executing Phase 12 — awaiting MiniMap smoke test sign-off
-Last activity: 2026-04-21 -- Plan 12-03 viewer core changes complete (136/136 vitest GREEN)
+Plan: 6 of 6 (Wave 4 regression + manual QA)
+Status: Executing Phase 12 — Wave 3 complete, MiniMap smoke test approved
+Last activity: 2026-04-21 -- MiniMap smoke test approved (3 checks all PASS)
 
 Progress: [██████████] 100%
 
