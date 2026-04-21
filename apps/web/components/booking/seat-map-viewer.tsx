@@ -307,6 +307,51 @@ export function SeatMapViewer({
     return doc.documentElement.outerHTML;
   }, [rawSvg, seatStates, selectedSeatIds, tierColorMap, pendingRemovals]);
 
+  // B-2-RESIDUAL-V2 Option C (reviews revision MED #4 D-13 BROADCAST PRIORITY):
+  // dangerouslySetInnerHTML이 SVG를 재마운트한 *직후* 동일 element의 fill을 변경.
+  // useMemo가 outerHTML 전체를 string으로 반환 → React가 자식 DOM을 unmount/remount
+  //   → 새 rect는 mount 시점부터 tier 색이 박혀 *이전→새 값* 변화가 없음 → CSS `transition: fill 150ms` 무효.
+  // 권장 패턴 (RESEARCH §Pitfall 3): 마운트 후 useEffect가 *동일 element의 속성*을 변경 → CSS transition 정상 발화.
+  //
+  // reviews revision MED #4 D-13 BROADCAST PRIORITY:
+  //   selectedSeatIds 안의 좌석이 broadcast로 locked/sold로 전환된 경우,
+  //   useEffect가 primary 색으로 덮어쓰면 D-13의 "broadcast 즉시 회색" 정책 침해.
+  //   → seatStates.get(seatId) === 'locked' | 'sold'이면 skip.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !processedSvg) return;
+    const root = container.querySelector('svg');
+    if (!root) return;
+
+    // 선택 좌석: fill을 primary로 변경 + transition 부여
+    // 단 D-13: locked/sold 상태는 skip (broadcast 우선)
+    selectedSeatIds.forEach((seatId) => {
+      const state = seatStates.get(seatId);
+      if (state === 'locked' || state === 'sold') {
+        // reviews revision MED #4: useMemo가 이미 LOCKED_COLOR + transition:none으로 박아둠.
+        // useEffect는 건드리지 않음 → D-13 broadcast 즉시 회색 정책 유지.
+        return;
+      }
+      const el = root.querySelector(
+        `[data-seat-id="${seatId}"]`,
+      ) as SVGElement | null;
+      if (!el) return;
+      el.style.transition = 'fill 150ms ease-out, stroke 150ms ease-out';
+      el.setAttribute('fill', '#6C3CE0'); // Brand Purple — D-03
+    });
+
+    // 해제 중인 좌석: fill을 원래 tier 색상으로 복원 + transition 유지
+    pendingRemovals.forEach((seatId) => {
+      const el = root.querySelector(
+        `[data-seat-id="${seatId}"]`,
+      ) as SVGElement | null;
+      if (!el) return;
+      el.style.transition = 'fill 150ms ease-out, stroke 150ms ease-out';
+      const originalFill = tierColorMap.get(seatId)?.color ?? LOCKED_COLOR;
+      el.setAttribute('fill', originalFill);
+    });
+  }, [selectedSeatIds, pendingRemovals, tierColorMap, seatStates, processedSvg]);
+
   // Event delegation for seat clicks
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
