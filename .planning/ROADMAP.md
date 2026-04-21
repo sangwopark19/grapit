@@ -175,7 +175,13 @@ Plans:
   3. 좌석 선택/해제 시 자연스러운 애니메이션 전환
   4. 줌 상태에서 미니맵으로 현재 위치 파악 가능
   5. 모바일에서 좌석 터치 타겟이 최소 44px로 보장되어 오탭 방지
-**Plans**: TBD
+**Plans:** 5 plans
+Plans:
+- [ ] 12-00-test-scaffolding-PLAN.md — Wave 0 RED: svg-preview/use-is-mobile 신규 테스트 + seat-map-viewer mock 확장 (5 신규 케이스)
+- [ ] 12-01-foundation-tokens-PLAN.md — Wave 1 Foundation: globals.css shadow/radius 토큰 + seat-checkmark-fade-in keyframe + 홈 3개 섹션 mt-12→mt-10
+- [ ] 12-02-hook-and-admin-validation-PLAN.md — Wave 2: useIsMobile hook 신규 + svg-preview admin DOMParser 검증 (R2 PUT 이전)
+- [ ] 12-03-viewer-core-changes-PLAN.md — Wave 3: seat-map-viewer.tsx 5건 통합 변경 (transition + 체크마크 attr + STAGE 오버레이 + TransformWrapper key/initialScale + MiniMap)
+- [ ] 12-04-regression-and-manual-qa-PLAN.md — Wave 4: 자동 회귀 + manual QA gate (UX-01/03/04/05/06 + reduced-motion + D-13 broadcast)
 **UI hint**: yes
 
 ## Progress
@@ -196,4 +202,4 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
 | 9. 기술부채 청산 | v1.1 | 0/0 | Not started | - |
 | 10. SMS 인증 실연동 | v1.1 | 9/9 | Complete    | 2026-04-16 |
 | 11. 어드민 대시보드 | v1.1 | 4/4 | Complete    | 2026-04-20 |
-| 12. UX 현대화 | v1.1 | 0/0 | Not started | - |
+| 12. UX 현대화 | v1.1 | 0/5 | Planning | - |
