@@ -4,14 +4,14 @@ milestone: v1.1
 milestone_name: 안정화 + 고도화
 status: executing
 stopped_at: Phase 12 UI-SPEC approved
-last_updated: "2026-04-21T06:05:00.000Z"
-last_activity: 2026-04-21 -- Phase 12 Wave 1 complete (12-00, 12-01)
+last_updated: "2026-04-21T06:20:00.000Z"
+last_activity: 2026-04-21 -- Phase 12 Wave 2 complete (12-02)
 progress:
   total_phases: 9
   completed_phases: 7
   total_plans: 45
-  completed_plans: 40
-  percent: 89
+  completed_plans: 41
+  percent: 91
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 ## Current Position
 
 Phase: 12 (ux) — EXECUTING
-Plan: 3 of 6 (Wave 2 next)
-Status: Executing Phase 12 — Wave 1 complete
-Last activity: 2026-04-21 -- Phase 12 Wave 1 complete (12-00 RED tests + 12-01 foundation tokens)
+Plan: 4 of 6 (Wave 3 next)
+Status: Executing Phase 12 — Wave 2 complete
+Last activity: 2026-04-21 -- Phase 12 Wave 2 complete (12-02 useIsMobile + admin unified parsing)
 
 Progress: [██████████] 100%
 
