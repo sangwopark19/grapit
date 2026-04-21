@@ -70,6 +70,16 @@
   --animate-in: enter 0.2s ease-out;
   --animate-out: exit 0.15s ease-in;
 
+  /* Phase 12 (D-01/D-02): Modern shadow scale — Linear/Vercel convention (sm + md only) */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.08);
+
+  /* Phase 12 (D-01/D-02): Modern radius scale — 6/8/10/12px range */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+
   @keyframes enter {
     from {
       opacity: 0;
@@ -98,6 +108,18 @@
     50% { transform: translateX(4px); }
     75% { transform: translateX(-4px); }
   }
+
+  /* Phase 12 (D-12 + UI-SPEC §Interaction): Seat selection checkmark fade-in (선택 시 mount) */
+  @keyframes seat-checkmark-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* Phase 12 (D-12 + UI-SPEC §Interaction): Seat selection checkmark fade-out (해제 시 unmount 직전 150ms) */
+  @keyframes seat-checkmark-fade-out {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+  }
 }
 
 /*
@@ -113,6 +135,30 @@
   --chart-3: #B8A3EF;
   --chart-4: #D1D1DB;
   --chart-5: #A1A1AA;
+}
+
+/* Phase 12 (D-12 + UI-SPEC §Interaction): Seat checkmark animation — 선택·해제 둘 다 fade.
+ * Plan 12-03 viewer가:
+ *   - 선택 시 체크마크 <text>에 `data-seat-checkmark` attr 부여 → fade-in 150ms 자동 트리거
+ *   - 해제 시 같은 element에 `data-fading-out="true"` attr 부여 → fade-out 150ms 자동 트리거
+ *     → setTimeout(150ms) 후 DOM 제거 (12-03 pendingRemovals 메커니즘이 처리)
+ * prefers-reduced-motion 시 fade-in·fade-out 모두 0.01ms로 override (즉시 표시·즉시 제거).
+ */
+[data-seat-checkmark] {
+  animation: seat-checkmark-fade-in 150ms ease-out forwards;
+}
+
+[data-seat-checkmark][data-fading-out="true"] {
+  animation: seat-checkmark-fade-out 150ms ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-seat-checkmark] {
+    animation-duration: 0.01ms;
+  }
+  [data-seat-checkmark][data-fading-out="true"] {
+    animation-duration: 0.01ms;
+  }
 }
 
 html {
