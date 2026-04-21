@@ -1,12 +1,14 @@
 'use client';
 
 import { useRef, useState, useCallback, useMemo, useEffect } from 'react';
-import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
+import { TransformWrapper, TransformComponent, MiniMap } from 'react-zoom-pan-pinch';
 import { Loader2, RefreshCw } from 'lucide-react';
 import type { SeatMapConfig, SeatState } from '@grapit/shared';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SeatMapControls } from './seat-map-controls';
+import { useIsMobile } from '@/hooks/use-is-mobile';
+import { prefixSvgDefsIds } from './__utils__/prefix-svg-defs-ids';
 
 interface SeatMapViewerProps {
   svgUrl: string;
@@ -27,6 +29,7 @@ export function SeatMapViewer({
   selectedSeatIds,
   onSeatClick,
 }: SeatMapViewerProps) {
+  const isMobile = useIsMobile();
   const containerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [rawSvg, setRawSvg] = useState<string | null>(null);
@@ -276,7 +279,8 @@ export function SeatMapViewer({
   return (
     <div className="relative overflow-hidden rounded-lg bg-gray-50">
       <TransformWrapper
-        initialScale={1}
+        key={isMobile ? 'mobile' : 'desktop'}
+        initialScale={isMobile ? 1.4 : 1}
         minScale={0.5}
         maxScale={4}
         centerOnInit
@@ -284,6 +288,18 @@ export function SeatMapViewer({
         doubleClick={{ disabled: true }}
       >
         <SeatMapControls />
+        {!isMobile && (
+          <MiniMap
+            width={120}
+            borderColor="#6C3CE0"
+            className="absolute top-3 left-3 z-40 rounded-md border border-gray-200 bg-white/90 p-1 shadow-md"
+          >
+            <div
+              dangerouslySetInnerHTML={{ __html: prefixSvgDefsIds(processedSvg, 'mini-') }}
+              aria-label="좌석 미니맵"
+            />
+          </MiniMap>
+        )}
         <TransformComponent
           wrapperClass="w-full min-h-[300px] lg:min-h-[500px]"
           contentClass="w-full"
