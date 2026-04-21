@@ -13,13 +13,14 @@ requirements: [UX-02, UX-06]
 must_haves:
   truths:
     - "apps/web/hooks/use-is-mobile.ts 신규 파일이 useSyncExternalStore + matchMedia('(max-width: 767px)') 패턴으로 구현되어 SSR fallback false (desktop), 클라이언트 hydrate 후 viewport에 따라 true/false 반환"
+    - "use-is-mobile.ts가 getServerSnapshot 함수를 named export로도 노출하여(B-4) 12-00 Task 2가 SSR fallback 정합성을 unit test로 자동 검증 가능"
     - "svg-preview.tsx의 handleSvgUpload가 R2 PUT 호출 이전에 DOMParser로 SVG를 파싱하여 <text>STAGE</text> 또는 [data-stage] 마커 부재 시 toast.error + early return — 잘못된 SVG는 R2 비용을 소비하지 않음"
-    - "Plan 12-00에서 작성된 svg-preview.test.tsx의 4 케이스 + use-is-mobile.test.ts의 3 케이스 모두 GREEN"
+    - "Plan 12-00에서 작성된 svg-preview.test.tsx의 4 케이스 + use-is-mobile.test.ts의 4 케이스(3 기존 + 1 getServerSnapshot named export 검증) 모두 GREEN"
     - "기존 admin 업로드의 size 검증(10MB) + presigned URL + R2 PUT + 좌석 카운트 + toast.success 흐름은 회귀 0"
   artifacts:
     - path: "apps/web/hooks/use-is-mobile.ts"
-      provides: "useIsMobile hook — 모바일 viewport 감지 (UX-06 D-17)"
-      contains: "useSyncExternalStore, matchMedia, '(max-width: 767px)', getServerSnapshot"
+      provides: "useIsMobile hook + getServerSnapshot named export — 모바일 viewport 감지 (UX-06 D-17) + SSR 안전성"
+      contains: "useSyncExternalStore, matchMedia, '(max-width: 767px)', export function getServerSnapshot, useIsMobile"
       min_lines: 15
     - path: "apps/web/components/admin/svg-preview.tsx"
       provides: "admin SVG 업로드 시 stage 마커 검증 (UX-02 D-06/D-08)"
@@ -29,6 +30,10 @@ must_haves:
       to: "apps/web/hooks/use-is-mobile.ts"
       via: "import { useIsMobile } from '@/hooks/use-is-mobile';"
       pattern: "import.*useIsMobile.*from.*hooks/use-is-mobile"
+    - from: "apps/web/hooks/__tests__/use-is-mobile.test.ts (Plan 12-00 신규)"
+      to: "apps/web/hooks/use-is-mobile.ts (getServerSnapshot named export)"
+      via: "import { getServerSnapshot } from '@/hooks/use-is-mobile' → expect(getServerSnapshot()).toBe(false)"
+      pattern: "export function getServerSnapshot"
     - from: "apps/web/components/admin/svg-preview.tsx handleSvgUpload"
       to: "DOMParser API → 검증 실패 시 toast.error → early return → R2 PUT 미발생"
       via: "size 체크 직후, presignedUpload.mutateAsync 호출 직전에 prepend"
@@ -39,17 +44,18 @@ must_haves:
 Wave 2 — Hook 신규 + Admin 검증.
 
 두 변경은 file disjoint이므로 병렬 가능하나 단일 plan에 묶음(2 task ≈ 30% context):
-1. `apps/web/hooks/use-is-mobile.ts` 신규 생성 — Plan 12-03 viewer가 모바일 분기에 사용
+1. `apps/web/hooks/use-is-mobile.ts` 신규 생성 — Plan 12-03 viewer가 모바일 분기에 사용. **getServerSnapshot을 named export로도 노출하여 SSR fallback 자동 검증을 가능하게 함 (B-4)**
 2. `apps/web/components/admin/svg-preview.tsx` 검증 추가 — UX-02 D-06/D-08 admin 보호 (R2 PUT 이전 abort)
 
 Purpose:
 - Plan 12-03 viewer 변경(initialScale 모바일 분기 + MiniMap 마운트 분기)이 작동하기 위해 useIsMobile hook이 선행되어야 함
+- getServerSnapshot named export로 SSR fallback (`false`)이 unit test에서 자동 검증 가능 — Wave 4 manual QA의 hydration warning 검증과 이중 가드
 - 잘못된 SVG가 R2에 업로드되어 비용 발생 + 잘못된 publicUrl 발급 + 후속 viewer가 stage 마커 부재로 graceful degrade되는 케이스를 admin 단계에서 차단
 
 Output:
-- 신규 `apps/web/hooks/use-is-mobile.ts` (~15줄)
+- 신규 `apps/web/hooks/use-is-mobile.ts` (~17줄, getServerSnapshot named export 포함)
 - 수정 `apps/web/components/admin/svg-preview.tsx` (handleSvgUpload 콜백 안 ~12줄 prepend)
-- Plan 12-00의 테스트 7건(svg-preview 4 + use-is-mobile 3) GREEN 전환
+- Plan 12-00의 테스트 8건(svg-preview 4 + use-is-mobile 4) GREEN 전환
 </objective>
 
 <execution_context>
@@ -79,13 +85,14 @@ NEW: apps/web/hooks/use-is-mobile.ts
 ```ts
 'use client';
 export function useIsMobile(): boolean;
+export function getServerSnapshot(): boolean;  // B-4: named export로도 노출 (SSR fallback 자동 검증용)
 ```
 - 의존: `react`의 `useSyncExternalStore`
 - query: `'(max-width: 767px)'`
 - SSR fallback: `false` (desktop = initialScale=1 적용)
 - subscribe: `window.matchMedia(query).addEventListener('change', cb)` + cleanup `removeEventListener`
 - getSnapshot: `window.matchMedia(query).matches` (typeof window === 'undefined' → false)
-- getServerSnapshot: 항상 `false`
+- getServerSnapshot: 항상 `false` (named export — `useSyncExternalStore` 3번째 인자 + 단위 테스트 양쪽에서 사용 가능)
 
 MODIFIED: apps/web/components/admin/svg-preview.tsx (handleSvgUpload 콜백)
 - 현재 흐름: size 체크 → try { presignedUpload.mutateAsync → fetch PUT → setSvgUrl → 좌석 카운트 → toast.success } catch { toast.error }
@@ -98,11 +105,11 @@ MODIFIED: apps/web/components/admin/svg-preview.tsx (handleSvgUpload 콜백)
 <tasks>
 
 <task type="auto" tdd="true">
-  <name>Task 1: useIsMobile hook 신규 생성</name>
+  <name>Task 1: useIsMobile hook 신규 생성 + getServerSnapshot named export</name>
   <files>apps/web/hooks/use-is-mobile.ts</files>
   <read_first>
-    - apps/web/hooks/use-countdown.ts (file 상단 'use client' + 함수형 export 구조 — 동일 컨벤션 적용)
-    - apps/web/hooks/__tests__/use-is-mobile.test.ts (Plan 12-00에서 작성된 테스트 — 본 task 완료 후 GREEN 전환)
+    - apps/web/hooks/use-countdown.ts (file 상단 'use client' + 함수형 단일 export hook 구조 — 동일 컨벤션 적용)
+    - apps/web/hooks/__tests__/use-is-mobile.test.ts (Plan 12-00에서 작성된 테스트 — 본 task 완료 후 GREEN 전환. getServerSnapshot named export 검증 케이스 포함)
     - .planning/phases/12-ux/12-PATTERNS.md §"apps/web/hooks/use-is-mobile.ts (hook, event-driven) — NEW" (line 388~452)
     - .planning/phases/12-ux/12-RESEARCH.md §"Pattern 3: useSyncExternalStore" (line 313~385) — 특히 hook 본체 코드 (line 320~347)
     - .planning/phases/12-ux/12-RESEARCH.md §"Pitfall 4 SSR/Client hydration mismatch" (line 516~520)
@@ -113,9 +120,10 @@ MODIFIED: apps/web/components/admin/svg-preview.tsx (handleSvgUpload 콜백)
     - matchMedia change 이벤트가 발생하면 hook이 새 값으로 자동 리렌더링
     - SSR (typeof window === 'undefined') 시 false 반환 — desktop 기본 (initialScale=1로 SSR HTML 생성, 모바일 hydrate 후 prop 변경 + key 토글로 재마운트는 12-03 viewer 책임)
     - cleanup: hook unmount 시 matchMedia change listener 제거
+    - **B-4: `getServerSnapshot`을 named export로도 노출** — Wave 0 unit test가 `import { getServerSnapshot } from '@/hooks/use-is-mobile'` 후 `expect(getServerSnapshot()).toBe(false)`로 SSR fallback 정합성을 자동 검증 가능
   </behavior>
   <action>
-신규 파일 작성. 정확히 다음 내용:
+신규 파일 작성. 정확히 다음 내용 (B-4: getServerSnapshot이 named export로 노출됨):
 
 ```ts
 'use client';
@@ -136,7 +144,15 @@ function getSnapshot(): boolean {
   return window.matchMedia(MOBILE_QUERY).matches;
 }
 
-function getServerSnapshot(): boolean {
+/**
+ * SSR snapshot — 항상 false (desktop fallback).
+ *
+ * `useSyncExternalStore`의 3번째 인자로 사용되며, named export로도 노출하여
+ * Wave 0 unit test가 SSR fallback 정합성을 직접 검증할 수 있도록 한다 (B-4).
+ *
+ * @returns false (Next.js SSR HTML 생성 시 desktop initialScale=1 적용 보장)
+ */
+export function getServerSnapshot(): boolean {
   return false;
 }
 
@@ -161,13 +177,14 @@ export function useIsMobile(): boolean {
 - `'use client'` directive는 file 첫 줄 (공백 없음). React 19 + Next.js 16 App Router 표준 (PATTERNS.md §S1).
 - Strict TypeScript: 명시적 return type (`: boolean`, `: () => void`). `any` 금지.
 - React 직접 import — `react` from named import (배럴 사용 안 함, PATTERNS.md §use-countdown 분석체 컨벤션).
-- 단일 export, 함수형 hook (CLAUDE.md: 함수형 우선).
+- **B-4 변경: `getServerSnapshot`을 `export function`으로 변경** (기존 plan에서는 internal function이었음). useSyncExternalStore가 3번째 인자로 `getServerSnapshot` 참조를 그대로 사용 — closure capture 아니므로 named export로 변경해도 hook 동작 동일.
+- 함수형 hook (CLAUDE.md: 함수형 우선).
 - query는 module-level const — 재할당 회피.
-- subscribe는 function declaration (hoisting) — useSyncExternalStore에 안정 reference로 전달.
+- subscribe / getSnapshot은 function declaration (hoisting) — useSyncExternalStore에 안정 reference로 전달. (named export가 아니므로 hook 외부에 노출 안 됨)
 - file 끝에 newline 1줄 (lint 컨벤션).
   </action>
   <verify>
-    <automated>cd /Users/sangwopark19/icons/grapit && test -f apps/web/hooks/use-is-mobile.ts && grep -q "^'use client';" apps/web/hooks/use-is-mobile.ts && grep -q "useSyncExternalStore" apps/web/hooks/use-is-mobile.ts && grep -q "(max-width: 767px)" apps/web/hooks/use-is-mobile.ts && grep -q "export function useIsMobile(): boolean" apps/web/hooks/use-is-mobile.ts && grep -q "function getServerSnapshot(): boolean" apps/web/hooks/use-is-mobile.ts && grep -q "return false;" apps/web/hooks/use-is-mobile.ts && pnpm --filter @grapit/web typecheck 2>&1 | tail -5 && pnpm --filter @grapit/web lint 2>&1 | tail -5 && pnpm --filter @grapit/web test -- use-is-mobile --run 2>&1 | tail -20</automated>
+    <automated>cd /Users/sangwopark19/icons/grapit && test -f apps/web/hooks/use-is-mobile.ts && grep -q "^'use client';" apps/web/hooks/use-is-mobile.ts && grep -q "useSyncExternalStore" apps/web/hooks/use-is-mobile.ts && grep -q "(max-width: 767px)" apps/web/hooks/use-is-mobile.ts && grep -q "export function useIsMobile(): boolean" apps/web/hooks/use-is-mobile.ts && grep -q "export function getServerSnapshot(): boolean" apps/web/hooks/use-is-mobile.ts && grep -q "return false;" apps/web/hooks/use-is-mobile.ts && pnpm --filter @grapit/web typecheck 2>&1 | tail -5 && pnpm --filter @grapit/web lint 2>&1 | tail -5 && pnpm --filter @grapit/web test -- use-is-mobile --run 2>&1 | tail -20</automated>
   </verify>
   <acceptance_criteria>
     - 파일 생성: `test -f apps/web/hooks/use-is-mobile.ts`
@@ -177,7 +194,7 @@ export function useIsMobile(): boolean {
       - `grep -q "useSyncExternalStore" apps/web/hooks/use-is-mobile.ts`
       - `grep -q "(max-width: 767px)" apps/web/hooks/use-is-mobile.ts`
       - `grep -q "export function useIsMobile(): boolean" apps/web/hooks/use-is-mobile.ts`
-      - `grep -q "function getServerSnapshot(): boolean" apps/web/hooks/use-is-mobile.ts`
+      - **B-4: `grep -q "export function getServerSnapshot(): boolean" apps/web/hooks/use-is-mobile.ts` (named export)**
       - `grep -q "function subscribe" apps/web/hooks/use-is-mobile.ts`
       - `grep -q "function getSnapshot" apps/web/hooks/use-is-mobile.ts`
       - `grep -q "addEventListener" apps/web/hooks/use-is-mobile.ts`
@@ -189,11 +206,11 @@ export function useIsMobile(): boolean {
     - 정적 검사:
       - `pnpm --filter @grapit/web typecheck` exit 0
       - `pnpm --filter @grapit/web lint` exit 0
-    - Plan 12-00의 use-is-mobile.test.ts 모든 케이스 GREEN:
-      - `pnpm --filter @grapit/web test -- use-is-mobile --run` exit 0 + 출력에 "3 passed" 또는 "Tests  3 passed" 포함
+    - Plan 12-00의 use-is-mobile.test.ts 모든 케이스 GREEN (3 기존 + 1 getServerSnapshot named export 검증):
+      - `pnpm --filter @grapit/web test -- use-is-mobile --run` exit 0 + 출력에 "4 passed" 또는 "Tests  4 passed" 포함
   </acceptance_criteria>
   <done>
-useIsMobile hook이 React 19 useSyncExternalStore 패턴으로 신규 생성됨. SSR fallback false + client matchMedia 구독 + cleanup 모두 구현. Plan 12-00의 테스트 3 케이스 GREEN 전환. typecheck/lint GREEN. Plan 12-03이 import해서 사용 가능.
+useIsMobile hook + getServerSnapshot named export(B-4)가 React 19 useSyncExternalStore 패턴으로 신규 생성됨. SSR fallback false + client matchMedia 구독 + cleanup 모두 구현. Plan 12-00의 테스트 4 케이스(3 기존 + 1 getServerSnapshot 검증) GREEN 전환. typecheck/lint GREEN. Plan 12-03이 import해서 사용 가능.
   </done>
 </task>
 
@@ -318,6 +335,7 @@ useIsMobile hook이 React 19 useSyncExternalStore 패턴으로 신규 생성됨.
 - 카피는 UI-SPEC §Copywriting Contract 라인 144와 정확히 일치: `'스테이지 마커가 없는 SVG입니다. <text>STAGE</text> 또는 data-stage 속성을 포함해주세요.'`
 - DOMParser는 jsdom (test) + 모든 evergreen 브라우저에서 기본 제공 — polyfill 불필요.
 - useCallback deps `[presignedUpload]` 유지 — 검증은 file 인자만 의존, 외부 state 의존 신규 추가 없음.
+- **W-4: `text` / `parser` / `doc` 모두 useCallback 본문 안 local 변수 — closure capture 아니므로 deps 영향 없음.**
 - 정규식 (`/data-seat-id/g`)은 좌석 카운트 단계에서 그대로 유지 — RESEARCH.md §Pitfall 8은 stage 마커 검증에 정규식을 쓰지 말라는 것이지, 단순 카운트는 정규식 OK.
 - DOMParser 결과 `doc.querySelectorAll('text')`는 NodeList — `Array.from(...).some(...)` 패턴으로 some 사용. 직접 `nodeList.some`은 TypeScript 에러.
 - `doc.documentElement.hasAttribute('data-stage')`는 root `<svg>` 자체의 속성 검증 (CONTEXT.md D-06: "data-stage 속성을 가진 요소"). `doc.querySelector('[data-stage]')`는 자손 요소까지 cover.
@@ -375,10 +393,10 @@ svg-preview.tsx의 handleSvgUpload가 size 체크 직후, R2 PUT 직전에 DOMPa
 </threat_model>
 
 <verification>
-- [ ] `apps/web/hooks/use-is-mobile.ts` 신규 생성 + 핵심 식별자(useSyncExternalStore, matchMedia, getServerSnapshot, '(max-width: 767px)') 모두 존재
+- [ ] `apps/web/hooks/use-is-mobile.ts` 신규 생성 + 핵심 식별자(useSyncExternalStore, matchMedia, **export function getServerSnapshot**, '(max-width: 767px)') 모두 존재
 - [ ] `apps/web/components/admin/svg-preview.tsx` 검증 코드(DOMParser, hasStageText, hasDataStage, '스테이지 마커가 없는 SVG입니다') 추가
 - [ ] svg-preview의 DOMParser 검증 위치가 R2 PUT 이전 (라인 번호 비교)
-- [ ] use-is-mobile.test.ts 3 케이스 GREEN
+- [ ] use-is-mobile.test.ts 4 케이스 GREEN (3 기존 + 1 getServerSnapshot named export)
 - [ ] svg-preview.test.tsx 4 케이스 GREEN (stage 마커 거부 + 통과 + size 회귀)
 - [ ] `pnpm --filter @grapit/web typecheck` GREEN
 - [ ] `pnpm --filter @grapit/web lint` GREEN
@@ -388,13 +406,15 @@ svg-preview.tsx의 handleSvgUpload가 size 체크 직후, R2 PUT 직전에 DOMPa
 <success_criteria>
 - 자동: 위 verification 8개 항목 모두 충족
 - T-12-01 mitigate 증거: svg-preview.test.tsx의 "stage 마커 없는 SVG 거부" 케이스가 GREEN — toast.error 호출 + presignedUpload.mutateAsync 미호출 + fetch 미호출이 자동 검증
+- B-4 SSR 정합성 가드 1단: use-is-mobile.test.ts의 `getServerSnapshot()` 케이스가 GREEN — Wave 4 manual QA의 hydration warning 검증과 이중 가드
 </success_criteria>
 
 <output>
 After completion, create `.planning/phases/12-ux/12-02-SUMMARY.md`:
-- 신규 use-is-mobile.ts 라인 인용
+- 신규 use-is-mobile.ts 라인 인용 (getServerSnapshot named export 포함)
 - svg-preview.tsx handleSvgUpload 변경 diff (size 체크 이후 → DOMParser 검증 prepend → R2 PUT)
-- 7 케이스(svg-preview 4 + use-is-mobile 3) GREEN 증거
+- 8 케이스(svg-preview 4 + use-is-mobile 4) GREEN 증거
 - T-12-01 disposition: mitigate (DOMParser 검증 + R2 PUT 이전 abort)
 - typecheck/lint 결과
 </output>
+</content>

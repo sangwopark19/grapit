@@ -935,32 +935,37 @@ export function useIsMobile(): boolean {
 | A8 | `MiniMap` 자식으로 dangerouslySetInnerHTML로 SVG를 전달해도 라이브러리가 정상 축소 렌더 | §Pattern 2 | 중간 — 라이브러리 docs는 보통 `<img>` 또는 React 컴포넌트 children 예시. SVG dangerouslySetInnerHTML이 동일 동작인지 plan 단계에서 spike 권장 (5분 내 확인). |
 | A9 | sonner 2.0.7 (현재 설치)이 `motion-reduce` Tailwind variant와 충돌 없음 | §Common Pitfalls | 낮음 — sonner는 자체 애니메이션을 inline style로 적용. Tailwind variant와 무관. Phase 11에서 이미 dashboard chart에 적용된 `motion-reduce:[&_*]:!transition-none` 패턴 검증됨. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **UI-SPEC §Component Inventory와 라이브러리 내장 `MiniMap` 호환 정합성**
    - What we know: UI-SPEC은 NEW component `seat-map-minimap.tsx` 명시 (line 173).
    - What's unclear: 본 RESEARCH의 권장(라이브러리 내장 사용)을 적용 시 UI-SPEC 갱신이 필요한가?
    - Recommendation: **plan 단계에서 UI-SPEC `## Component Inventory` 행을 "Existing (라이브러리 내장 MiniMap 재사용)"으로 정정 — `gsd-ui-researcher` 재호출 또는 UI-SPEC inline patch.** 결과적으로 신규 파일 `seat-map-minimap.tsx`는 만들지 않음.
+   - **RESOLVED:** Plan 12-03 Task 1 (UX-05) 채택 — react-zoom-pan-pinch 내장 `MiniMap` 재사용. 신규 `seat-map-minimap.tsx` 파일은 만들지 않음. UI-SPEC §Component Inventory는 plan 산출물(seat-map-viewer.tsx)이 이미 라이브러리 내장 MiniMap 사용으로 일관됨 → UI-SPEC 별도 inline patch 불필요.
 
 2. **모바일 미니맵 노출 정책 재확인**
    - What we know: D-16은 모바일 숨김.
    - What's unclear: tablet (768~1024px)도 미니맵 표시? D-16은 `< md` (768px 미만)만 명시.
    - Recommendation: tablet 이상 = 표시. `!isMobile` = `>= 768px` = 데스크톱+태블릿. 의문이면 plan 단계에서 user 확인.
+   - **RESOLVED:** Plan 12-02/12-03 채택 — `useIsMobile()`의 query는 `(max-width: 767px)` 단일 임계 → tablet (≥ 768px) 이상에서 MiniMap 표시. D-16과 정합 (모바일 숨김 = `< 768px` 숨김).
 
 3. **`<defs>` ID 충돌 방어 범위**
    - What we know: sample SVG에는 `<defs>` 없음 (즉시 위험 0).
    - What's unclear: 실제 admin이 업로드할 외부 SVG 패턴.
    - Recommendation: **단기(Phase 12)** — DOMParser로 `<defs>` 안 ID에 'mini-' 접두사 일괄 부여 + `url(#)` 참조 동시 변경. 추가 10~15줄. **장기 (deferred)** — `react-svg-unique-id` 등 라이브러리 도입은 별도 phase.
+   - **RESOLVED:** Plan 12-03 Task 1 (UX-05, W-6) 채택 — `prefixSvgDefsIds(processedSvg, 'mini-')` 헬퍼를 단기 처리로 추가. `<defs>` 가드로 sample SVG에서는 no-op, 외부 admin SVG의 `<defs>` 사용 시 자동 ID 접두사 부여 + `url(#...)` 참조 일괄 치환. 장기 라이브러리 도입은 deferred.
 
 4. **체크마크 fade-in 보다 fill transition이 먼저 보일 수 있는가**
    - What we know: 선택 시 rect fill 변경 + 체크마크 mount 동시.
    - What's unclear: brower paint 순서로 fill transition이 먼저 보이고 체크마크가 늦게 fade-in 되어 어색해 보일 수 있음.
    - Recommendation: 둘 다 150ms easing 동일이므로 paint 시점 차 ≤ 1프레임. **plan 단계에서 manual QA로 확인.**
+   - **RESOLVED:** Plan 12-03 Task 2 (B-2) 채택 — pendingSelections/pendingRemovals 메커니즘으로 신규 선택 좌석에 `data-fading-in="true"` 잠시 부여 → 다음 frame에 primary fill로 변경 → CSS transition trigger 보장. 체크마크와 fill 모두 동일 frame에서 transition 시작 → paint 시점 차 ≤ 1프레임 보장. Plan 12-04 Task 2 manual QA 검증 3에서 시각 확인.
 
 5. **TransformWrapper의 `key`로 강제 재마운트 시 사용자 zoom state 손실**
    - What we know: 디바이스 회전 시 isMobile 분기 변경 → key 변경 → 재마운트 → centerOnInit 다시 적용.
    - What's unclear: 사용자가 줌·팬한 상태에서 회전하면 reset됨.
    - Recommendation: 의도된 동작 (디바이스 회전 = 새 viewport — reset이 자연스러움). 별도 처리 불필요.
+   - **RESOLVED:** Plan 12-03 Task 1 (UX-06) 채택 — `key={isMobile ? 'mobile' : 'desktop'}` 적용. 디바이스 회전 = 새 viewport context로 reset이 자연스러운 UX → 별도 zoom state 보존 처리 없음. Phase 12 범위에서 종결.
 
 ## Environment Availability
 
