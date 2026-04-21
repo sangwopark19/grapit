@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
-status: "Phase 11 shipped — PR #17"
+status: executing
 stopped_at: Phase 12 UI-SPEC approved
-last_updated: "2026-04-21T05:44:46.925Z"
-last_activity: 2026-04-20
+last_updated: "2026-04-21T05:46:57.864Z"
+last_activity: 2026-04-21 -- Phase 12 execution started
 progress:
   total_phases: 9
   completed_phases: 7
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** 사용자가 원하는 공연을 발견하고, 좌석을 직접 선택하여, 안정적으로 예매를 완료할 수 있는 것
-**Current focus:** Phase 11 — admin-dashboard
+**Current focus:** Phase 12 — ux
 
 ## Current Position
 
-Phase: 12
-Plan: Not started
-Status: Phase 11 shipped — PR #17
-Last activity: 2026-04-20
+Phase: 12 (ux) — EXECUTING
+Plan: 1 of 6
+Status: Executing Phase 12
+Last activity: 2026-04-21 -- Phase 12 execution started
 
 Progress: [██████████] 100%
 
