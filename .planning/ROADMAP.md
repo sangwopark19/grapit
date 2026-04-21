@@ -177,8 +177,8 @@ Plans:
   5. 모바일에서 좌석 터치 타겟이 최소 44px로 보장되어 오탭 방지
 **Plans:** 6 plans (reviews revision 2026-04-21: +12-03.5 smoke test gate per 12-REVIEWS.md MED #5)
 Plans:
-- [ ] 12-00-test-scaffolding-PLAN.md — Wave 0 RED: svg-preview/use-is-mobile/seat-map-viewer/prefix-svg-defs-ids 테스트 (reviews revision: rapid reselect + descendant data-stage + selected+locked 회귀 + parse 실패 toast + dynamic import)
-- [ ] 12-01-foundation-tokens-PLAN.md — Wave 1 Foundation: globals.css shadow/radius 토큰 + seat-checkmark fade-in/out keyframe + 홈 3개 섹션 mt-12→mt-10
+- [x] 12-00-test-scaffolding-PLAN.md — Wave 0 RED: svg-preview/use-is-mobile/seat-map-viewer/prefix-svg-defs-ids 테스트 (reviews revision: rapid reselect + descendant data-stage + selected+locked 회귀 + parse 실패 toast + dynamic import)
+- [x] 12-01-foundation-tokens-PLAN.md — Wave 1 Foundation: globals.css shadow/radius 토큰 + seat-checkmark fade-in/out keyframe + 홈 3개 섹션 mt-12→mt-10
 - [ ] 12-02-hook-and-admin-validation-PLAN.md — Wave 2: useIsMobile hook + svg-preview admin 검증 (reviews revision: unified parsing contract + enum 검증 + try/catch parse 실패 toast)
 - [ ] 12-03-viewer-core-changes-PLAN.md — Wave 3 core: seat-map-viewer.tsx 변경 (reviews revision: per-seat timeout Map + unified parsing + viewBox min-x/min-y + D-13 BROADCAST PRIORITY) + W-2 helper 파일 분리
 - [ ] 12-03.5-minimap-smoke-test-PLAN.md — Wave 3 gate (reviews revision MED #5): react-zoom-pan-pinch MiniMap 런타임 contract 수동 smoke test (3 check — 축소 SVG copy / viewport rect 동기화 / 모바일 숨김) — FAIL 시 D-14 원안 fallback
