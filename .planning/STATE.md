@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
-status: executing
+status: milestone_complete
 stopped_at: Phase 12 UI-SPEC approved
 last_updated: "2026-04-21T07:00:00.000Z"
 last_activity: 2026-04-21 -- Phase 12 all plans complete (12-04 wave 4 done) — awaiting verification
 progress:
   total_phases: 9
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 45
   completed_plans: 44
-  percent: 98
+  percent: 89
 ---
 
 # Project State
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 
 ## Current Position
 
-Phase: 12 (ux) — VERIFYING
-Plan: 6 of 6 (all plans complete)
-Status: Phase 12 plans done — entering code review + verification gates
-Last activity: 2026-04-21 -- All 6 plans complete (Wave 1~4 + 12-03.5 smoke test)
+Phase: 12
+Plan: Not started
+Status: Milestone complete
+Last activity: 2026-04-21
 
 Progress: [██████████] 100%
 
@@ -36,7 +36,7 @@ Progress: [██████████] 100%
 
 **Velocity:**
 
-- Total plans completed: 59 (v1.0)
+- Total plans completed: 65 (v1.0)
 - Average duration: ~10min
 - Total execution time: ~3 hours
 
@@ -54,6 +54,7 @@ Progress: [██████████] 100%
 | 10 | 9 | - | - |
 | 10.1 | 6 | - | - |
 | 11 | 4 | - | - |
+| 12 | 6 | - | - |
 
 **Recent Trend:**
 
