@@ -2,6 +2,7 @@
 
 **Gathered:** 2026-04-21
 **Status:** Ready for planning
+**Revised:** 2026-04-21 (reviews revision — D-06/D-07 unified parsing contract added per 12-REVIEWS.md HIGH concern #2)
 
 <domain>
 ## Phase Boundary
@@ -27,6 +28,10 @@
 ### UX-02 스테이지 방향 표시
 - **D-06:** **스테이지 정보 소스 = SVG 내부 `data-stage` 속성 + `<text>STAGE</text>` fallback.** admin 업로드 파이프라인에서 신규 SVG는 `data-stage="top|right|bottom|left"` 속성을 가진 요소 또는 stage 영역 marker 존재를 검증. 기존 sample-seat-map.svg처럼 `<text>STAGE</text>`가 있는 SVG는 자동 통과.
 - **D-07:** **뷰어 렌더링 전략:** viewer는 먼저 SVG 내 `<text>STAGE</text>` / `[data-stage]`를 파싱해 방향을 결정. SVG에 이미 스테이지 시각 요소가 있으면 그대로 렌더. 없고 `data-stage` 속성만 있는 경우 viewer가 viewBox 기준 해당 변(top/right/bottom/left)에 회색 배지("🎤 STAGE" 또는 간결한 무대 마커)를 오버레이.
+- **D-06/D-07 UNIFIED PARSING CONTRACT (reviews revision 2026-04-21):**
+  - **파싱 소스:** admin 검증 + viewer 렌더링 모두 `doc.querySelector('[data-stage]')`를 사용하여 root `<svg>` *또는 그 어떤 descendant* 중 첫 번째로 발견되는 `data-stage` 속성 요소의 값을 읽는다. 즉 `<svg><g data-stage="top">`처럼 자손에 위치해도 동일하게 인식된다.
+  - **Enum 검증:** 읽힌 값은 반드시 `top | right | bottom | left` 중 하나여야 한다. admin은 enum 위반 시 구체 toast로 거부, viewer는 invalid value를 default top으로 fallback하되 admin 단계에서 이미 걸러진다는 전제.
+  - **Why:** 12-REVIEWS.md Codex HIGH concern #2 — admin이 descendant `[data-stage]`를 통과시켰는데 viewer가 root-only로 읽으면 UX-02 silently fails. unified contract로 해결.
 - **D-08:** **기존 SVG 호환:** `<text>STAGE</text>` 파싱이 1차 소스. 기존 업로드 데이터 migration 불필요. 신규 admin 업로드만 `data-stage` OR `<text>STAGE</text>` 둘 중 하나 필수 검증.
 - **D-09:** DB 스키마(performances/seatMapConfig) 변경 없음. stage 정보는 SVG 파일에 완전히 위임.
 
@@ -37,9 +42,11 @@
 - **D-11:** **테크닉 = 선택/해제 좌석에만 transition.** `seat-map-viewer.tsx`의 `style="transition:none"` 정책은 유지하되, `selectedSeatIds` 차이만큼에 한해 transition을 켠다. 수백 좌석 동시 재렌더 성능 리스크 방지.
 - **D-12:** **피드백 = 체크마크 fade-in + fill 전환 (duration 150ms).** 현재 `seat-map-viewer.tsx:91-120`의 체크마크 삽입 로직 재활용. 체크마크 `<text>`의 `opacity` 0→1 (CSS transition 또는 SMIL `<animate>`), 선택 좌석 rect의 `fill` transition도 150ms. scale 펄스/glow는 미도입 (transform-origin 복잡도, 좌석 오버랩 위험).
 - **D-13:** **실시간 broadcast는 애니메이션 없음.** 타 사용자의 좌석 잠금/해제로 생성되는 `seatStates` 변화는 `transition:none` 유지 — flick 방지 + 다량 동시 플립 방지. 로컬 사용자의 명시적 선택/해제만 애니메이션 대상.
+- **D-13 CLARIFICATION (reviews revision 2026-04-21):** 선택한 좌석이 broadcast로 `locked`/`sold`로 전환되는 경우, D-13이 UX-04 선택 transition보다 우선한다. viewer의 fill transition useEffect는 `seatStates.get(seatId)`가 `locked` 또는 `sold`이면 primary 색으로 전환하지 않고 LOCKED 색 유지 + transition 스킵. 12-REVIEWS.md Codex MED concern #4.
 
 ### UX-05 미니맵 네비게이터
 - **D-14:** **형태 = 축소 SVG 복제 + viewport rect 오버레이.** `processedSvg`를 그대로 `width: 120px, height: auto`로 2번째 인스턴스로 렌더 + `TransformWrapper`의 `positionX/Y/scale`을 `onTransformed` 콜백으로 받아 현재 보이는 영역을 빨간 stroke rect로 그린다. 실시간 seat state 변화도 자동 반영.
+- **D-14 IMPLEMENTATION NOTE (reviews revision 2026-04-21):** 실제 구현은 `react-zoom-pan-pinch@3.7.0`의 내장 `MiniMap` export를 사용하여 D-14의 "축소 SVG 복제 + viewport rect"를 라이브러리가 제공하도록 위임한다. 단, 라이브러리 MiniMap의 실제 렌더링 + viewport rect 동기화가 D-14 의도대로 작동하는지를 **Wave 3 ↔ Wave 4 사이의 dev-server smoke test gate**로 한 번 수동 확인한다 (12-REVIEWS.md Codex MED concern #5). 실패 시 D-14 원안(수동 SVG 복제)으로 fallback.
 - **D-15:** **위치 = 데스크톱 좌상단 고정(absolute).** 우측 하단/상단은 zoom 컨트롤과 tooltip이 이미 사용 중. 좌상단이 충돌 없음. `position: absolute; top: 12px; left: 12px; z-index: 40`.
 - **D-16:** **모바일(< md breakpoint)에서는 숨김.** 화면 좌우 폭 부족, 모바일은 `initialScale=1.4`(D-18)로 이미 충분한 터치 가용성 확보. 추후 필요 시 상단 토글 버튼 도입 검토(deferred).
 
@@ -47,6 +54,7 @@
 - **D-17:** **전략 = 모바일 자동 초기 줌 1.4x.** breakpoint `< md`(768px 미만)에서 `TransformWrapper initialScale`을 1.4로 적용. 32x32 좌석 → 44.8x44.8 렌더. 데스크톱은 기존대로 `initialScale=1`.
 - **D-18:** 사용자의 수동 zoom-out은 허용 (`minScale` 0.5 유지). 최소 터치 타겟 "기본값 보장"이 목표.
 - **D-19:** **SVG 파일/DB 스키마 변경 없음, admin 업로드 검증 변경 없음.** UX-02만 admin 검증을 추가하고 UX-06은 순수 뷰어 레벨 대응. Hit-area overlay rect 방식은 SVG 복잡도 증가 + 기존 tooltip 로직 간섭으로 불채택.
+- **D-19 SECURITY DEBT NOTE (reviews revision 2026-04-21):** Admin SVG upload 검증은 현재 **클라이언트 전용**이다. Admin 계정 탈취 또는 API 우회 시 악성 SVG가 R2 + `dangerouslySetInnerHTML`로 렌더될 잠재 위험이 있음. MVP에서는 accept하되 별도 security phase에서 서버측 re-validation + DOMPurify SVG profile 도입을 예정. 12-REVIEWS.md Codex LOW concern #9. 본 tech-debt는 Plan 12-04 SUMMARY에 footnote로 기록한다.
 
 ### Claude's Discretion
 - `globals.css @theme`의 구체적 shadow/radius/spacing 숫자값 — Minimalism 방향 안에서 researcher/planner 재량 (참고: shadow sm=`0 1px 2px rgba(0,0,0,0.05)`, md=`0 4px 12px rgba(0,0,0,0.08)`, radius 기본 10px, 카드 12px 등이 출발점).
@@ -144,7 +152,7 @@
 - **Scale 펄스 / Glow ring 애니메이션** — transform-origin/overlap 복잡도, Phase 12는 fade-in만
 - **미니맵 모바일 토글 버튼** — 일단 숨김, 공연장 규모 커지면 재검토
 - **Hit-area invisible overlay rect (UX-06 대안)** — SVG 복잡도 증가로 미채택, 모바일 자동 줌으로 해결
-- **SVG 업로드 서버 측 검증** — 클라이언트 검증만으로 MVP 충분, 악성 SVG 대응은 보안 phase로 분리 가능
+- **SVG 업로드 서버 측 검증** — 클라이언트 검증만으로 MVP 충분, 악성 SVG 대응은 보안 phase로 분리 가능 (D-19 tech-debt 연동)
 - **관리자가 stage 위치를 별도 지정 (DB 컬럼 stagePosition)** — SVG 자체가 SoT, 스키마 단순화 우선
 - **햅틱 피드백 (UX-07)** — v2 이전 완료
 - **공연 목록 Swiper 변경 / 캐러셀 재설계** — Phase 12 out, 필요 시 별도 phase
@@ -157,3 +165,4 @@
 
 *Phase: 12-ux*
 *Context gathered: 2026-04-21*
+*Reviews revision: 2026-04-21 — D-06/D-07 unified parsing contract, D-13 broadcast priority clarification, D-14 MiniMap smoke test gate, D-19 security debt note*

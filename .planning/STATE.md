@@ -4,14 +4,14 @@ milestone: v1.1
 milestone_name: 안정화 + 고도화
 status: "Phase 11 shipped — PR #17"
 stopped_at: Phase 12 UI-SPEC approved
-last_updated: "2026-04-21T03:48:31.090Z"
+last_updated: "2026-04-21T05:44:46.925Z"
 last_activity: 2026-04-20
 progress:
   total_phases: 9
   completed_phases: 7
-  total_plans: 44
+  total_plans: 45
   completed_plans: 38
-  percent: 86
+  percent: 84
 ---
 
 # Project State
@@ -115,4 +115,4 @@ Last session: --stopped-at
 Stopped at: Phase 12 UI-SPEC approved
 Resume file: --resume-file
 
-**Planned Phase:** 12 (UX 현대화) — 5 plans — 2026-04-21T03:48:31.086Z
+**Planned Phase:** 12 (UX 현대화) — 6 plans — 2026-04-21T05:44:46.922Z
