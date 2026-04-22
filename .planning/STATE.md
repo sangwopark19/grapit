@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
-status: "Phase 11 shipped — PR #17"
-stopped_at: Phase 11 UI-SPEC approved
-last_updated: "2026-04-20T09:05:00.000Z"
-last_activity: 2026-04-20 - Completed quick task 260420-oxe: PR #17 코드리뷰 수정 (kstTodayBoundaryUtc empty-range)
+status: "Phase 12 shipped — PR #18"
+stopped_at: Phase 12 UI-SPEC approved
+last_updated: "2026-04-22T01:55:00.000Z"
+last_activity: 2026-04-22
 progress:
   total_phases: 9
-  completed_phases: 7
-  total_plans: 39
-  completed_plans: 38
-  percent: 97
+  completed_phases: 8
+  total_plans: 45
+  completed_plans: 44
+  percent: 98
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** 사용자가 원하는 공연을 발견하고, 좌석을 직접 선택하여, 안정적으로 예매를 완료할 수 있는 것
-**Current focus:** Phase 11 — admin-dashboard
+**Current focus:** Phase 12 — ux
 
 ## Current Position
 
 Phase: 12
 Plan: Not started
-Status: Phase 11 shipped — PR #17
-Last activity: 2026-04-20
+Status: Phase 12 shipped — PR #18
+Last activity: 2026-04-22 - Completed quick task 260422-eya: PR #18 코드리뷰 maxSelect+locked regression 수정
 
 Progress: [██████████] 100%
 
@@ -36,7 +36,7 @@ Progress: [██████████] 100%
 
 **Velocity:**
 
-- Total plans completed: 59 (v1.0)
+- Total plans completed: 65 (v1.0)
 - Average duration: ~10min
 - Total execution time: ~3 hours
 
@@ -54,6 +54,7 @@ Progress: [██████████] 100%
 | 10 | 9 | - | - |
 | 10.1 | 6 | - | - |
 | 11 | 4 | - | - |
+| 12 | 6 | - | - |
 
 **Recent Trend:**
 
@@ -108,11 +109,12 @@ None.
 | 260420-cd7 | CD 복구: Phase 10.1 이후 누락된 프로덕션 시크릿 7개 주입 (Infobip 3 + Sentry api/web + Toss secret/client key) — grapit-api-00018 기동 실패 해소 | 2026-04-20 | c84ff98 | [260420-cd7-deploy-secrets-missing-infobip-sentry-toss](./quick/260420-cd7-deploy-secrets-missing-infobip-sentry-toss/) |
 | 260420-ci-toss-secrets-restore | CI 복구: 260420-cd7 에서 오판 제거된 TOSS_CLIENT_KEY_TEST / TOSS_SECRET_KEY_TEST 재등록 (D-13 격리 설계상 ci.yml 전용 — deploy.yml 기준 orphan 검사 false positive) | 2026-04-20 | a7ee3d1 | [260420-ci-toss-secrets-restore](./quick/260420-ci-toss-secrets-restore/) |
 | 260420-oxe | PR #17 코드리뷰 수정: kstTodayBoundaryUtc() empty-range 버그로 오늘 KPI 3종 항상 0 반환 → kstBoundaryToUtc(1) 로 교체 + 회귀 테스트 10건 추가 | 2026-04-20 | 84a1594 | [260420-oxe-code-review-fix](./quick/260420-oxe-code-review-fix/) |
+| 260422-eya | PR #18 코드리뷰 수정: seat-map-viewer handleClick maxSelect 가드가 locked 좌석 클릭을 차단해 parent toast 미발화 → state !== 'locked' 가드 추가 + 회귀 테스트 3건 (commit 45b884e invariant 복원) | 2026-04-22 | fcc6a7b | [260422-eya-seat-map-viewer-maxselect-locked](./quick/260422-eya-seat-map-viewer-maxselect-locked/) |
 
 ## Session Continuity
 
 Last session: --stopped-at
-Stopped at: Phase 11 UI-SPEC approved
+Stopped at: Phase 12 UI-SPEC approved
 Resume file: --resume-file
 
-**Planned Phase:** 11 (admin-dashboard) — 4 plans — 2026-04-20T06:20:22.598Z
+**Planned Phase:** 12 (UX 현대화) — 6 plans — 2026-04-21T05:44:46.922Z

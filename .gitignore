@@ -33,6 +33,9 @@ apps/web/playwright-report/
 apps/web/blob-report/
 apps/web/playwright/.cache/
 
+# Playwright MCP browser automation artifacts (local only)
+.playwright-mcp/
+
 # Docker volumes
 pgdata/
 

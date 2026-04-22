@@ -28,15 +28,72 @@ export function SvgPreview({
   const presignedUpload = usePresignedUpload();
   const saveSeatMap = useSaveSeatMap(performanceId);
 
+  // review IN-05: mutateAsync만 좁혀 deps로 사용.
+  //   presignedUpload 객체 전체를 deps로 쓰면 isPending 등 내부 상태 변화로 identity가 바뀌어
+  //   handleSvgUpload가 불필요하게 재생성된다. React setter(setSvgUrl/setTotalSeats)는 stable identity라
+  //   exhaustive-deps 규칙상 추가하지 않아도 된다 (React 컨벤션).
+  const presignedUploadMutate = presignedUpload.mutateAsync;
+
   const handleSvgUpload = useCallback(
     async (file: File) => {
       if (file.size > 10 * 1024 * 1024) {
         toast.error('SVG 파일은 10MB 이하여야 합니다.');
         return;
       }
+
+      // Phase 12 reviews revision (D-06/D-07 unified contract + HIGH #2 + LOW #7):
+      // 1) try/catch로 file.text() + DOMParser를 감싸 parse 실패를 graceful 처리
+      // 2) doc.querySelector('[data-stage]')로 root + descendant 모두 탐색 (viewer와 동일 계약)
+      // 3) data-stage 값 enum 검증 (top|right|bottom|left)
+      // DOMParser 사용 (정규식 금지, RESEARCH §Pitfall 8).
+      const VALID_STAGES = ['top', 'right', 'bottom', 'left'] as const;
+      let text: string;
+      let doc: Document;
+      try {
+        text = await file.text();
+        const parser = new DOMParser();
+        doc = parser.parseFromString(text, 'image/svg+xml');
+        // parsererror tagName 가드: invalid XML은 documentElement.tagName === 'parsererror'
+        if (
+          doc.documentElement.tagName === 'parsererror' ||
+          doc.querySelector('parsererror')
+        ) {
+          toast.error('SVG 형식이 올바르지 않습니다. 다시 확인 후 업로드하세요.');
+          return;
+        }
+      } catch {
+        toast.error('SVG 형식이 올바르지 않습니다. 다시 확인 후 업로드하세요.');
+        return;
+      }
+
+      const hasStageText = Array.from(doc.querySelectorAll('text')).some(
+        (t) => t.textContent?.trim() === 'STAGE',
+      );
+      // UNIFIED CONTRACT (reviews revision D-06/D-07): root + descendant 모두 탐색
+      const stageEl = doc.querySelector('[data-stage]');
+      const hasDataStage = stageEl !== null;
+
+      if (!hasStageText && !hasDataStage) {
+        toast.error(
+          '스테이지 마커가 없는 SVG입니다. <text>STAGE</text> 또는 data-stage 속성을 포함해주세요.',
+        );
+        return;
+      }
+
+      // reviews revision HIGH #2: data-stage 발견 시 enum 검증
+      if (hasDataStage) {
+        const value = stageEl!.getAttribute('data-stage') ?? '';
+        if (!VALID_STAGES.includes(value as (typeof VALID_STAGES)[number])) {
+          toast.error(
+            'data-stage 속성 값은 top, right, bottom, left 중 하나여야 합니다.',
+          );
+          return;
+        }
+      }
+
       try {
         const { uploadUrl, publicUrl } =
-          await presignedUpload.mutateAsync({
+          await presignedUploadMutate({
             folder: 'seat-maps',
             contentType: 'image/svg+xml',
             extension: 'svg',
@@ -48,9 +105,10 @@ export function SvgPreview({
         });
         setSvgUrl(publicUrl);
 
-        // Count seats in SVG
-        const text = await file.text();
-        const seatCount = (text.match(/data-seat-id/g) || []).length;
+        // review IN-03: 문자열 정규식 대신 이미 파싱한 `doc`으로 DOM 기반 카운트.
+        //   주석/CDATA/다른 tag 속성 이름 등에 'data-seat-id' substring이 우연히
+        //   포함된 경우의 false positive를 제거하여 의도와 실제 좌석 수가 일치하도록 보장.
+        const seatCount = doc.querySelectorAll('[data-seat-id]').length;
         setTotalSeats(seatCount);
 
         toast.success('좌석맵 SVG가 업로드되었습니다.');
@@ -58,7 +116,7 @@ export function SvgPreview({
         toast.error('SVG 업로드에 실패했습니다.');
       }
     },
-    [presignedUpload],
+    [presignedUploadMutate],
   );
 
   function handleFileInput(e: React.ChangeEvent<HTMLInputElement>) {

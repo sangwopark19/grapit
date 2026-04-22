@@ -41,7 +41,7 @@ const GENRE_LIST: Genre[] = [
 // 장르 바로가기는 정적 컴포넌트로 현재 빈 상태 없음
 export function GenreGrid() {
   return (
-    <section className="mt-12 pb-12">
+    <section className="mt-10 pb-12">
       <h2 className="mb-6 text-display font-semibold leading-[1.2]">
         장르별 바로가기
       </h2>

@@ -30,7 +30,7 @@ Full details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 - [x] **Phase 9: 기술부채 청산** - v1.0에서 누적된 stub/회귀/미검증 6건 해소 (completed 2026-04-15)
 - [x] **Phase 10: SMS 인증 실연동** - dev mock을 실제 SMS 발송/검증으로 전환 (completed 2026-04-16, Phase 10.1 Infobip v3 재작업 shipped 2026-04-20 PR #16)
 - [x] **Phase 11: 어드민 대시보드** - 통계 대시보드 + Valkey 캐싱으로 어드민 고도화 (completed 2026-04-20, 수동 QA 유예 — 11-HUMAN-UAT.md 참조)
-- [ ] **Phase 12: UX 현대화** - 디자인 트렌드 반영 + SVG 좌석맵 UX 개선
+- [x] **Phase 12: UX 현대화** - 디자인 트렌드 반영 + SVG 좌석맵 UX 개선 (completed 2026-04-21)
 
 ## Phase Details
 
@@ -175,7 +175,14 @@ Plans:
   3. 좌석 선택/해제 시 자연스러운 애니메이션 전환
   4. 줌 상태에서 미니맵으로 현재 위치 파악 가능
   5. 모바일에서 좌석 터치 타겟이 최소 44px로 보장되어 오탭 방지
-**Plans**: TBD
+**Plans:** 6/6 plans complete
+Plans:
+- [x] 12-00-test-scaffolding-PLAN.md — Wave 0 RED: svg-preview/use-is-mobile/seat-map-viewer/prefix-svg-defs-ids 테스트 (reviews revision: rapid reselect + descendant data-stage + selected+locked 회귀 + parse 실패 toast + dynamic import)
+- [x] 12-01-foundation-tokens-PLAN.md — Wave 1 Foundation: globals.css shadow/radius 토큰 + seat-checkmark fade-in/out keyframe + 홈 3개 섹션 mt-12→mt-10
+- [x] 12-02-hook-and-admin-validation-PLAN.md — Wave 2: useIsMobile hook + svg-preview admin 검증 (reviews revision: unified parsing contract + enum 검증 + try/catch parse 실패 toast)
+- [x] 12-03-viewer-core-changes-PLAN.md — Wave 3 core: seat-map-viewer.tsx 변경 (reviews revision: per-seat timeout Map + unified parsing + viewBox min-x/min-y + D-13 BROADCAST PRIORITY) + W-2 helper 파일 분리
+- [x] 12-03.5-minimap-smoke-test-PLAN.md — Wave 3 gate (reviews revision MED #5): react-zoom-pan-pinch MiniMap 런타임 contract 수동 smoke test (3 check — 축소 SVG copy / viewport rect 동기화 / 모바일 숨김) — FAIL 시 D-14 원안 fallback
+- [x] 12-04-regression-and-manual-qa-PLAN.md — Wave 4: 자동 회귀 + manual QA gate (11개 항목 포함 reviews revision HIGH #1/#2/MED #4) + D-19 SECURITY DEBT PROJECT.md 기록 (reviews revision LOW #9)
 **UI hint**: yes
 
 ## Progress
@@ -196,4 +203,20 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
 | 9. 기술부채 청산 | v1.1 | 0/0 | Not started | - |
 | 10. SMS 인증 실연동 | v1.1 | 9/9 | Complete    | 2026-04-16 |
 | 11. 어드민 대시보드 | v1.1 | 4/4 | Complete    | 2026-04-20 |
-| 12. UX 현대화 | v1.1 | 0/0 | Not started | - |
+| 12. UX 현대화 | v1.1 | 6/6 | Complete    | 2026-04-21 |
+
+## Backlog
+
+### Phase 999.1: 홈 HOT/신규 오픈 "더보기" 전 장르 라우트 신설 (BACKLOG)
+
+**Goal:** [Captured for future planning]
+**Requirements:** TBD
+**Plans:** 0 plans
+
+**Context (from Phase 12 code review IN-06):**
+- `apps/web/components/home/hot-section.tsx:22-27` 및 `new-section.tsx:18-23`의 "더보기" 링크가 `/genre/musical?sort=popular|latest`로 musical 장르에 하드코딩되어 있음.
+- HOT / 신규 오픈 섹션은 전 장르 큐레이션이므로 제품 의도와 불일치. 코드만으로는 의도 여부를 확정할 수 없어 Info 레벨 finding으로 남음.
+- 제품 결정 필요: (A) 전 장르 대상 `/performances?sort=popular|latest` 같은 통합 목록 라우트 신설 → 링크 교체, (B) MVP 주력이 musical인 의도적 제약 → 주석으로만 명시.
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)

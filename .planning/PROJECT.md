@@ -56,13 +56,15 @@
 
 ## Context
 
-### Current State (v1.0 shipped)
+### Current State (v1.1 complete — 2026-04-21)
 
-- **코드베이스:** 23,547 LOC TypeScript, 331 commits
-- **Tech stack:** Next.js 16 + NestJS 11 + Drizzle ORM + PostgreSQL 16 + Google Memorystore for Valkey (ioredis) + Socket.IO + Toss Payments
+- **v1.1 milestone 완료:** Phase 6~12 전 구간 shipped. Phase 12 "UX 현대화"까지 포함하여 안정화·고도화 단계 종료
+- **Phase 12 산출:** shadcn UI 시스템 modernize(globals.css 토큰), 좌석 선택 visual feedback(Option C useEffect fill transition + 체크마크 fade-in/out), react-zoom-pan-pinch 내장 MiniMap viewport rect 동기화, 모바일 WCAG 2.5.5 터치 타겟(44.8px first paint), admin SVG unified parsing contract (`[data-stage]` root+descendant + enum), UX-01~UX-06 6개 requirement 모두 validated
+- **Tech stack:** Next.js 16 + React 19 + Tailwind CSS v4 + NestJS 11 + Drizzle ORM + PostgreSQL 16 + Google Memorystore for Valkey (ioredis) + Socket.IO + Toss Payments + Infobip SMS v3
 - **배포:** Cloud Run (서울 asia-northeast3), GitHub Actions CI/CD, Sentry 에러 추적
-- **테스트:** 63 백엔드 유닛 테스트, 45 프론트엔드 테스트
-- **알려진 기술 부채:** 12건 (password reset stub, 테스트 회귀 1건, Toss E2E 미검증 등)
+- **테스트 (phase 12 시점):** 백엔드 63+, 프론트엔드 vitest 136/136 GREEN (20 files), typecheck 0 errors, lint 0 errors
+- **알려진 기술 부채:** D-19 admin SVG client-side validation only → §Security Debt로 공식 tracked. 추후 별도 security phase에서 해소 예정
+- **Phase 12 잔여 UAT:** 12-HUMAN-UAT.md 3건 (admin/dashboard 시각 톤앤매너 · 실 모바일 터치 오탭 · hydration warning 0건) — 자동 검증 PASS + plan 12-03.5 smoke test 간접 증거 완비, 추후 prod smoke로 최종 close
 
 ### 참조 사이트
 NOL 티켓(nol.interpark.com/ticket)을 상세 분석한 5개 문서가 docs/에 있음:
@@ -105,6 +107,18 @@ NOL 티켓(nol.interpark.com/ticket)을 상세 분석한 5개 문서가 docs/에
 | HealthController Valkey ping (Terminus 11) | Cloud Run liveness probe가 Valkey 장애를 즉시 감지 → silent outage 차단 | Phase 7 Plan 05 — cross-AI 리뷰 MEDIUM #7 대응 |
 | Family-based refresh token rotation | 토큰 탈취 감지 | ✓ Good — SHA-256 해시 저장, 가족 단위 무효화 |
 
+## Security Debt
+
+Known security concerns deferred to a future security phase. Tracked to prevent silent accumulation.
+
+- **Phase 12 admin SVG client-side validation only (2026-04-21, reviews revision D-19):**
+  현재 `apps/web/components/admin/svg-preview.tsx`는 DOMParser 기반 stage 마커 검증을 **클라이언트에서만** 수행한다.
+  Admin 계정이 탈취되거나 API가 우회되면 악성 SVG (`<script>` / event handler / XSS payload)가 R2에 업로드되어
+  `dangerouslySetInnerHTML`로 viewer에서 렌더링될 수 있다.
+  - Mitigation 예정: 서버측 re-validation (API DTO) + DOMPurify SVG profile + CSP strict-dynamic
+  - Risk level: MEDIUM (admin 공격 surface 한정)
+  - Tracking: 12-REVIEWS.md LOW #9, 12-CONTEXT.md D-19 SECURITY DEBT NOTE
+
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
@@ -123,4 +137,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-20 — Phase 11 어드민 대시보드 완료 (ADM-01~06, 자동 383/383 PASS, 수동 QA는 HUMAN-UAT로 유예)*
+*Last updated: 2026-04-21 — Phase 12 UX 현대화 완료 (UX-01~06 전부 code-level PASS, vitest 136/136 GREEN, reviews revision 9/9 closed, prod smoke 3건은 12-HUMAN-UAT로 유예). v1.1 milestone complete.*

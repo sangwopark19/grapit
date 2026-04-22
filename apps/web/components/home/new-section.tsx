@@ -12,7 +12,7 @@ export function NewSection() {
   if (!performances?.length) return null;
 
   return (
-    <section className="mt-12">
+    <section className="mt-10">
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-display font-semibold leading-[1.2]">신규 오픈</h2>
         <Link

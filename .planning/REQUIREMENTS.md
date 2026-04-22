@@ -54,12 +54,12 @@ Requirements for v1.1 안정화 + 고도화. Each maps to roadmap phases.
 
 ### UX 현대화
 
-- [ ] **UX-01**: 전체 디자인 현대화 (테두리/스타일 → 모던 트렌드, 심층 리서치 기반)
-- [ ] **UX-02**: SVG 좌석맵 스테이지 방향 표시
-- [ ] **UX-03**: SVG 좌석맵 등급별 색상 범례 + 가격 표시
-- [ ] **UX-04**: 좌석 선택 상태 전환 애니메이션
-- [ ] **UX-05**: 미니맵 네비게이터 (줌 시 전체 뷰 위치)
-- [ ] **UX-06**: 모바일 터치 타겟 44px 최소 보장
+- [x] **UX-01**: 전체 디자인 현대화 (테두리/스타일 → 모던 트렌드, 심층 리서치 기반)
+- [x] **UX-02**: SVG 좌석맵 스테이지 방향 표시
+- [x] **UX-03**: SVG 좌석맵 등급별 색상 범례 + 가격 표시
+- [x] **UX-04**: 좌석 선택 상태 전환 애니메이션
+- [x] **UX-05**: 미니맵 네비게이터 (줌 시 전체 뷰 위치)
+- [x] **UX-06**: 모바일 터치 타겟 44px 최소 보장
 
 ## v2 Requirements
 
@@ -123,12 +123,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ADM-04 | Phase 11 | Complete |
 | ADM-05 | Phase 11 | Complete |
 | ADM-06 | Phase 11 | Complete |
-| UX-01 | Phase 12 | Pending |
-| UX-02 | Phase 12 | Pending |
-| UX-03 | Phase 12 | Pending |
-| UX-04 | Phase 12 | Pending |
-| UX-05 | Phase 12 | Pending |
-| UX-06 | Phase 12 | Pending |
+| UX-01 | Phase 12 | Complete |
+| UX-02 | Phase 12 | Complete |
+| UX-03 | Phase 12 | Complete |
+| UX-04 | Phase 12 | Complete |
+| UX-05 | Phase 12 | Complete |
+| UX-06 | Phase 12 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 33 total
