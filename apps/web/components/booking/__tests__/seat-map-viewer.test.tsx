@@ -188,6 +188,90 @@ describe('SeatMapViewer', () => {
     expect(onSeatClick).toHaveBeenCalledWith('A-1');
   });
 
+  it('PR18-CR-MAXSELECT-LOCKED: maxSelect 도달 후에도 locked 좌석 클릭은 parent로 위임된다', async () => {
+    const onSeatClick = vi.fn();
+    const seatStates = new Map<string, SeatState>([
+      ['A-1', 'available'],
+      ['A-2', 'available'],
+      ['B-1', 'locked'],
+    ]);
+
+    const { container } = render(
+      <SeatMapViewer
+        svgUrl="https://example.com/seats.svg"
+        seatConfig={mockSeatConfig}
+        seatStates={seatStates}
+        selectedSeatIds={new Set(['A-1', 'A-2'])}
+        onSeatClick={onSeatClick}
+        maxSelect={2}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(container.querySelector('[data-seat-id="B-1"]')).toBeTruthy();
+    });
+
+    const seatB1 = container.querySelector('[data-seat-id="B-1"]')!;
+    fireEvent.click(seatB1);
+    expect(onSeatClick).toHaveBeenCalledWith('B-1');
+  });
+
+  it('PR18-CR-MAXSELECT-LOCKED 회귀 방지: maxSelect 도달 시 sold 좌석은 여전히 viewer에서 차단', async () => {
+    const onSeatClick = vi.fn();
+    const seatStates = new Map<string, SeatState>([
+      ['A-1', 'available'],
+      ['A-2', 'available'],
+      ['B-1', 'sold'],
+    ]);
+
+    const { container } = render(
+      <SeatMapViewer
+        svgUrl="https://example.com/seats.svg"
+        seatConfig={mockSeatConfig}
+        seatStates={seatStates}
+        selectedSeatIds={new Set(['A-1', 'A-2'])}
+        onSeatClick={onSeatClick}
+        maxSelect={2}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(container.querySelector('[data-seat-id="B-1"]')).toBeTruthy();
+    });
+
+    const seatB1 = container.querySelector('[data-seat-id="B-1"]')!;
+    fireEvent.click(seatB1);
+    expect(onSeatClick).not.toHaveBeenCalled();
+  });
+
+  it('PR18-CR-MAXSELECT-LOCKED 회귀 방지: maxSelect 도달 시 available 좌석은 viewer에서 차단 (WR-02 유지)', async () => {
+    const onSeatClick = vi.fn();
+    const seatStates = new Map<string, SeatState>([
+      ['A-1', 'available'],
+      ['A-2', 'available'],
+      ['B-1', 'available'],
+    ]);
+
+    const { container } = render(
+      <SeatMapViewer
+        svgUrl="https://example.com/seats.svg"
+        seatConfig={mockSeatConfig}
+        seatStates={seatStates}
+        selectedSeatIds={new Set(['A-1', 'A-2'])}
+        onSeatClick={onSeatClick}
+        maxSelect={2}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(container.querySelector('[data-seat-id="B-1"]')).toBeTruthy();
+    });
+
+    const seatB1 = container.querySelector('[data-seat-id="B-1"]')!;
+    fireEvent.click(seatB1);
+    expect(onSeatClick).not.toHaveBeenCalled();
+  });
+
   it('does NOT call onSeatClick when clicking a sold seat', async () => {
     const onSeatClick = vi.fn();
     const seatStates = new Map<string, SeatState>([
