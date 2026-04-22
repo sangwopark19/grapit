@@ -204,3 +204,19 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
 | 10. SMS 인증 실연동 | v1.1 | 9/9 | Complete    | 2026-04-16 |
 | 11. 어드민 대시보드 | v1.1 | 4/4 | Complete    | 2026-04-20 |
 | 12. UX 현대화 | v1.1 | 6/6 | Complete    | 2026-04-21 |
+
+## Backlog
+
+### Phase 999.1: 홈 HOT/신규 오픈 "더보기" 전 장르 라우트 신설 (BACKLOG)
+
+**Goal:** [Captured for future planning]
+**Requirements:** TBD
+**Plans:** 0 plans
+
+**Context (from Phase 12 code review IN-06):**
+- `apps/web/components/home/hot-section.tsx:22-27` 및 `new-section.tsx:18-23`의 "더보기" 링크가 `/genre/musical?sort=popular|latest`로 musical 장르에 하드코딩되어 있음.
+- HOT / 신규 오픈 섹션은 전 장르 큐레이션이므로 제품 의도와 불일치. 코드만으로는 의도 여부를 확정할 수 없어 Info 레벨 finding으로 남음.
+- 제품 결정 필요: (A) 전 장르 대상 `/performances?sort=popular|latest` 같은 통합 목록 라우트 신설 → 링크 교체, (B) MVP 주력이 musical인 의도적 제약 → 주석으로만 명시.
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
