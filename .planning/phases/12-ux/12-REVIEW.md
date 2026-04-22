@@ -1,6 +1,6 @@
 ---
 phase: 12-ux
-reviewed: 2026-04-21T00:00:00Z
+reviewed: 2026-04-22T00:00:00Z
 depth: standard
 files_reviewed: 14
 files_reviewed_list:
@@ -20,151 +20,231 @@ files_reviewed_list:
   - apps/web/vitest.config.ts
 findings:
   critical: 0
-  warning: 2
-  info: 5
-  total: 7
+  warning: 3
+  info: 6
+  total: 9
 status: issues_found
 ---
 
 # Phase 12: Code Review Report
 
-**Reviewed:** 2026-04-21
+**Reviewed:** 2026-04-22T00:00:00Z
 **Depth:** standard
 **Files Reviewed:** 14
 **Status:** issues_found
 
 ## Summary
 
-Phase 12 (UX 현대화)의 9개 action item이 모두 정상 반영된 상태로, reviews revision에서 이미 다룬 HIGH/MED/LOW 항목들은 재지적하지 않았다. 전반적으로 코드 품질은 양호하며, 특히 HIGH #1 per-seat timeout race guard, HIGH #2 unified `[data-stage]` parsing contract, LOW #6 prefixSvgDefsIds coverage, LOW #7 DOMParser try/catch 등은 적절히 구현·테스트되어 있다.
+Phase 12 UX 개선 범위(좌석맵 viewer/admin, useIsMobile hook, 홈 섹션, 테스트 harness) 전반을 standard depth로 점검했다. 전반적으로 코드 품질은 높고 Plan 12-03의 B-2 RESIDUAL-V2 / MED #4 D-13 BROADCAST PRIORITY / HIGH #1 race guard 등 리뷰 재귀 루프에서 논의된 엣지 케이스가 잘 반영되어 있다. 테스트 커버리지도 충실하다.
 
-새로 발견된 findings는 모두 LOW-severity 영역으로, 기능적 결함이 아닌 코드 품질·견고성 개선 포인트다:
+다만 `seat-map-viewer.tsx`에서 (1) `useEffect`가 자기 자신이 변경하는 상태(`pendingRemovals`)를 의존성으로 갖고 있어 불필요한 재실행이 일어나고, (2) 일부 `useCallback`에 실제로 사용되지 않는 의존성이 포함되어 있으며, (3) `maxSelect` prop이 interface에는 있으나 구조분해에서 누락되어 완전히 미사용 상태로 남아 있다. 또 viewer의 `DOMParser` 결과를 admin과 달리 `parsererror` 가드 없이 바로 사용하는 불일치가 있어 통일성이 떨어진다. 이 외에는 info 레벨의 미세 개선 제안만 남는다.
 
-- **W-1 (tracked)**: `dangerouslySetInnerHTML` 사용 — **PROJECT.md §Security Debt의 D-19에 이미 공식 기록된 tracked debt**이므로 CRITICAL이 아닌 tracked WARNING으로 분류. 이번 phase에서 추가 조치 불필요, 향후 security phase에서 DOMPurify + CSP로 해결 예정.
-- **W-2**: `text.match(/data-seat-id/g)` 정규식 기반 좌석 카운팅이 주석/CDATA까지 집계하여 부정확할 수 있음. 이미 파싱된 `doc.querySelectorAll('[data-seat-id]').length`로 대체 권장.
-- **Info 항목들**: useCallback 불필요 의존성, viewBox width/height 단위 suffix 미고려, early-return 대소문자, 핫 경로 재파싱 등. 모두 기존 테스트 통과·실행 경로에는 영향 없음.
+Critical/security 이슈는 발견되지 않았다. `dangerouslySetInnerHTML` 사용은 있으나 admin이 업로드하고 R2에서 fetch한 신뢰된 SVG에 한정되며, 서버 측 검증(D-06/D-07 unified contract + enum)이 선행되어 있어 현재 위협 모델에서 수용 가능하다.
 
 ## Warnings
 
-### WR-01: `dangerouslySetInnerHTML`로 R2 SVG 주입 — 서버측 재검증 없음 (tracked D-19)
+### WR-01: useEffect self-triggering dependency (pendingRemovals)
 
-**File:** `apps/web/components/booking/seat-map-viewer.tsx:501, 519`
-**Issue:**
-viewer가 R2에서 받은 SVG 문자열을 `dangerouslySetInnerHTML`로 두 곳에 주입한다 (메인 + MiniMap). admin 업로드 시 client-side DOMParser 검증만 수행하므로 API 우회·admin 계정 탈취·R2 버킷 직접 조작 시 `<script>`/이벤트 핸들러/외부 이미지 href 등 악성 페이로드가 뷰어에서 실행될 수 있다.
-**Tracked:** PROJECT.md §Security Debt → "Phase 12 admin SVG client-side validation only (2026-04-21, reviews revision D-19)" 항목에 이미 정식 기록됨. Phase 12 범위 외.
-**Fix (향후 security phase):**
-```ts
-// 1) 서버측 재검증 (NestJS admin seat-map DTO)
-// 2) DOMPurify SVG profile로 upload path + viewer render path 모두 sanitize
-import DOMPurify from 'isomorphic-dompurify';
-const clean = DOMPurify.sanitize(rawSvg, { USE_PROFILES: { svg: true, svgFilters: true } });
-// 3) CSP strict-dynamic + script-src 'self' (next.config headers)
-```
-**이번 phase 조치:** 없음 — tracked로 유지.
-
-### WR-02: `text.match(/data-seat-id/g)` 좌석 카운팅이 주석·CDATA·문자열 리터럴까지 집계
-
-**File:** `apps/web/components/admin/svg-preview.tsx:103`
-**Issue:**
-검증 블록에서 이미 `doc`을 DOMParser로 파싱했음에도 좌석 수 집계는 원본 텍스트에 대해 정규식을 돌린다 (`(text.match(/data-seat-id/g) || []).length`). 이 방식은:
-1. `<!-- TODO: data-seat-id=... -->` 같은 주석 안 출현도 카운트
-2. `<text>data-seat-id 설명</text>` 같은 텍스트 노드 내용도 카운트
-3. CDATA 섹션 `<![CDATA[data-seat-id]]>` 내부도 카운트
-
-결과적으로 UI에 표시되는 "감지된 좌석 수" (line 164)가 실제 `querySelectorAll('[data-seat-id]').length`보다 커질 수 있어 admin에게 오도된 피드백을 준다. 검증은 통과했으나 집계 숫자만 틀린 상황.
-
+**File:** `apps/web/components/booking/seat-map-viewer.tsx:47-95`
+**Issue:** `useEffect`의 의존성 배열에 `pendingRemovals`가 포함되어 있는데, effect 내부에서 `setPendingRemovals(...)`를 호출한다. 이 effect는 `selectedSeatIds` 변경 시 실행되는 것이 의도이지만, 자기 자신이 변경하는 상태도 의존성에 들어있어 재렌더 1회 추가 + `prevSelectedRef.current = new Set(curr)` 재할당이 매번 발생한다. 실행 2회차에는 `prev === curr`가 되어 no-op이지만 비용과 추론 혼란이 남는다. 실제 의도는 "`selectedSeatIds` 변경 시에만 diff 계산"이다.
 **Fix:**
-```ts
-// before (line 103):
-const seatCount = (text.match(/data-seat-id/g) || []).length;
+```tsx
+// pendingRemovals.has(id) 체크를 위해 값은 필요하되 effect 재실행 트리거로는 원하지 않음.
+// 해결: pendingRemovalsRef를 두고 set 시 ref도 동기화하거나, 이 effect 안에서
+// pendingRemovals 읽기 분기를 제거(재선택 로직은 setPendingRemovals 함수형 업데이트만으로 충분).
+useEffect(() => {
+  const prev = prevSelectedRef.current;
+  const curr = selectedSeatIds;
 
-// after: 이미 파싱된 doc 재사용 (정확 + 중복 파싱 회피)
-const seatCount = doc.querySelectorAll('[data-seat-id]').length;
+  curr.forEach((id) => {
+    if (!prev.has(id)) {
+      const existing = timeoutsRef.current.get(id);
+      if (existing !== undefined) {
+        clearTimeout(existing);
+        timeoutsRef.current.delete(id);
+      }
+      // 함수형 업데이트로 현재 값 확인 → pendingRemovals deps 제거 가능
+      setPendingRemovals((prevSet) => {
+        if (!prevSet.has(id)) return prevSet;
+        const next = new Set(prevSet);
+        next.delete(id);
+        return next;
+      });
+    }
+  });
+
+  prev.forEach((id) => {
+    if (!curr.has(id)) {
+      if (timeoutsRef.current.has(id)) return;
+      setPendingRemovals((prevSet) => {
+        const next = new Set(prevSet);
+        next.add(id);
+        return next;
+      });
+      const tid = window.setTimeout(() => {
+        setPendingRemovals((prevSet) => {
+          const next = new Set(prevSet);
+          next.delete(id);
+          return next;
+        });
+        timeoutsRef.current.delete(id);
+      }, 150);
+      timeoutsRef.current.set(id, tid);
+    }
+  });
+
+  prevSelectedRef.current = new Set(curr);
+}, [selectedSeatIds]); // pendingRemovals 제거
 ```
+함수형 업데이터 안에서 현재 값을 확인하면 의존성에서 `pendingRemovals`를 제거할 수 있다. eslint-plugin-react-hooks의 exhaustive-deps 규칙이 경고를 띄울 수 있는데, 이 경우 함수형 업데이트 패턴이 의도된 것임을 주석으로 남기는 것을 권장한다.
+
+### WR-02: `maxSelect` prop이 선언만 되고 완전히 미사용
+
+**File:** `apps/web/components/booking/seat-map-viewer.tsx:13-31`
+**Issue:** `SeatMapViewerProps` interface에 `maxSelect: number`가 정의되어 있고 테스트와 호출부에서 전달되지만, 함수 시그니처(line 25-31) 구조분해에서 제외되어 컴포넌트 내부에서 사용되지 않는다. Dead prop으로 남아 계약 의도가 모호하다 — 실제로 `onSeatClick` 전에 선택 개수 제한을 걸어야 하는지 아니면 상위에서 처리하는지 읽는 사람이 혼란스럽다.
+**Fix:** 정책을 먼저 확정한 뒤 둘 중 하나로 처리:
+```tsx
+// 옵션 A — 상위에서만 검사하고 viewer는 관심 없음: prop 제거
+interface SeatMapViewerProps {
+  svgUrl: string;
+  seatConfig: SeatMapConfig;
+  seatStates: Map<string, SeatState>;
+  selectedSeatIds: Set<string>;
+  onSeatClick: (seatId: string) => void;
+  // maxSelect 제거
+}
+
+// 옵션 B — viewer가 직접 가드: handleClick에서 early return
+const handleClick = useCallback(
+  (e: React.MouseEvent) => {
+    const target = (e.target as HTMLElement).closest<SVGElement>('[data-seat-id]');
+    if (!target) return;
+    const seatId = target.getAttribute('data-seat-id');
+    if (!seatId) return;
+    const state = seatStates.get(seatId) ?? 'available';
+    if (state === 'sold') return;
+    // maxSelect 체크: 이미 선택되지 않은 좌석을 새로 누를 때만 한도 검사
+    if (!selectedSeatIds.has(seatId) && selectedSeatIds.size >= maxSelect) return;
+    onSeatClick(seatId);
+  },
+  [seatStates, selectedSeatIds, onSeatClick, maxSelect],
+);
+```
+
+### WR-03: viewer의 DOMParser 결과에 parsererror 가드 누락
+
+**File:** `apps/web/components/booking/seat-map-viewer.tsx:142-145`
+**Issue:** `DOMParser.parseFromString()` 호출 직후 admin(`svg-preview.tsx:51-57`)과 `prefix-svg-defs-ids.ts:35`는 `doc.documentElement.tagName === 'parsererror'`를 체크하는데, viewer의 `processedSvg` useMemo는 체크 없이 바로 `querySelectorAll('[data-seat-id]')`를 수행한다. R2 fetch로 받은 SVG가 손상되었거나 CDN이 HTML 에러 페이지를 반환하는 엣지 케이스에서 viewer가 parsererror tagName의 문서를 그대로 rendering하여 빈 SVG + 깨진 STAGE 배지가 화면에 나올 수 있다.
+**Fix:**
+```tsx
+const processedSvg = useMemo(() => {
+  if (!rawSvg) return null;
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(rawSvg, 'image/svg+xml');
+  // admin/prefix-svg-defs-ids와 통일된 parsererror 가드
+  if (
+    doc.documentElement.tagName === 'parsererror' ||
+    doc.querySelector('parsererror')
+  ) {
+    return null; // 아래 render에서 "좌석 배치도가 준비되지 않았습니다" 분기로 fallback
+  }
+  const seats = doc.querySelectorAll('[data-seat-id]');
+  // ...
+}, [rawSvg, seatStates, selectedSeatIds, tierColorMap, pendingRemovals]);
+```
+또는 `useEffect`의 fetch 성공 분기에서 parse 결과를 검증하여 `setError`로 명확한 에러 상태를 표출하는 것도 동등한 선택지이다.
 
 ## Info
 
-### IN-01: `handleClick` / `handleMouseOut` useCallback 의존성에 미사용 변수 포함
+### IN-01: `handleClick` useCallback에 사용되지 않는 `selectedSeatIds` 의존성
 
-**File:** `apps/web/components/booking/seat-map-viewer.tsx:370, 443`
-**Issue:**
-- `handleClick` 콜백 내부는 `seatStates`, `onSeatClick`만 참조하지만 deps에 `selectedSeatIds`도 포함 (line 370).
-- `handleMouseOut` 콜백 내부는 `seatStates`, `selectedSeatIds`만 참조하지만 deps에 `tierColorMap`도 포함 (line 443).
-
-불필요한 deps로 인해 해당 변수가 바뀔 때마다 useCallback 캐시가 깨지고 자식 DOM에 새 리스너가 전달된다. 기능적 버그는 아니지만 이벤트 위임 최적화 의도(ref/memo 기반 constant handler)와 상충한다.
-
+**File:** `apps/web/components/booking/seat-map-viewer.tsx:356-371`
+**Issue:** `handleClick` 내부에서 `selectedSeatIds`를 직접 참조하지 않는데도 deps 배열에 포함되어 있다. `selectedSeatIds`가 바뀔 때마다 새 함수 레퍼런스가 만들어져 불필요한 자식 리렌더 유발 가능성이 있다.
 **Fix:**
-```ts
-// handleClick:
-}, [seatStates, onSeatClick]);
+```tsx
+const handleClick = useCallback(
+  (e: React.MouseEvent) => {
+    // ... 내부에서 selectedSeatIds 사용 없음 ...
+  },
+  [seatStates, onSeatClick], // selectedSeatIds 제거
+);
+```
+WR-02 옵션 B처럼 `maxSelect` 정책을 내부에 두기로 결정하면 `selectedSeatIds.size`와 `selectedSeatIds.has(...)`가 실제 사용되므로 deps에 유지해야 한다. 어느 쪽이든 "실제 사용 여부"와 "deps"를 일치시켜야 한다.
 
-// handleMouseOut:
-}, [seatStates, selectedSeatIds]);
+### IN-02: `handleMouseOut` useCallback에 사용되지 않는 `tierColorMap` 의존성
+
+**File:** `apps/web/components/booking/seat-map-viewer.tsx:421-444`
+**Issue:** `handleMouseOut` 내부에서 `tierColorMap`을 참조하지 않는데 deps 배열에 포함되어 있다. `tierColorMap`은 `seatConfig`에 따라 재생성되므로 seatConfig 변경 시 불필요하게 새 함수가 생긴다.
+**Fix:**
+```tsx
+const handleMouseOut = useCallback(
+  (e: React.MouseEvent) => {
+    // ... tierColorMap 미사용 ...
+  },
+  [seatStates, selectedSeatIds], // tierColorMap 제거
+);
 ```
 
-### IN-02: `processedSvg` useMemo 내 viewBox 폴백이 단위 suffix 미처리
+### IN-03: `svg-preview.tsx`의 좌석 수 카운팅이 문자열 정규식 기반
 
-**File:** `apps/web/components/booking/seat-map-viewer.tsx:220-223`
-**Issue:**
-viewBox 부재 시 `width`/`height` 속성을 그대로 사용해 `0 0 ${w} ${h}` 를 조립한다. 그런데 SVG width/height는 `"100"`, `"100px"`, `"50%"`, `"10cm"` 등 단위가 붙을 수 있다. 예컨대 `width="800px"` → viewBox `"0 0 800px 600"` → invalid SVG attribute → 브라우저가 viewBox를 무시하고 SVG가 사라지는 회귀 가능. 이후 LOW #8에서 이미 viewBox 파싱 시 split 로직을 정비한 것과 결이 다르다.
-
-현재 admin이 업로드하는 SVG는 대부분 viewBox를 이미 가지고 있어 이 코드 경로는 거의 타지 않지만, 방어적 처리가 빠져 있다.
-
+**File:** `apps/web/components/admin/svg-preview.tsx:103`
+**Issue:** `(text.match(/data-seat-id/g) || []).length`는 SVG 원문에 `data-seat-id`라는 문자열이 등장하는 횟수를 센다. 주석 내 문자열, 중복 속성, 다른 tag의 속성 이름에 우연히 포함된 substring까지 카운트될 수 있다. 이미 위에서 `DOMParser`로 파싱한 `doc`이 있으므로 동일한 파서로 카운트하는 편이 정확하고 의도도 명확하다.
 **Fix:**
-```ts
-if (!svgEl.getAttribute('viewBox')) {
-  const wRaw = svgEl.getAttribute('width') ?? '800';
-  const hRaw = svgEl.getAttribute('height') ?? '600';
-  // 숫자 prefix만 추출 ("800px" → "800", "50%" → "50")
-  const w = parseFloat(wRaw) || 800;
-  const h = parseFloat(hRaw) || 600;
-  svgEl.setAttribute('viewBox', `0 0 ${w} ${h}`);
-}
+```tsx
+// 위에서 이미 parse한 doc 재사용 (line 46-49의 doc을 useCallback scope에 보관)
+const seatCount = doc.querySelectorAll('[data-seat-id]').length;
+setTotalSeats(seatCount);
 ```
 
-### IN-03: `prefixSvgDefsIds` early-return이 대소문자·공백 변형에 취약
+### IN-04: `prefixSvgDefsIds` serialize 후 문자열 regex 치환이 예상 외 위치를 건드릴 수 있음
 
-**File:** `apps/web/components/booking/__utils__/prefix-svg-defs-ids.ts:31`
-**Issue:**
-`if (!svgString.includes('<defs')) return svgString;` 최적화 가드는 대문자 `<Defs ` 또는 self-closing 변형 `<defs/>`는 통과하지만, 속성이 붙은 `<defs xmlns:...>` 나 비정규 인코딩 (예: `<DEFS>`) 을 만나면 false-negative. SVG 스펙상 엘리먼트명은 case-sensitive이므로 소문자 `<defs`가 표준이지만, 실제 디자이너 툴 내보내기(XD, Illustrator 일부 버전)는 드물게 대문자를 섞는다.
-
-현재는 DOMParser가 실제 파싱을 하므로 fallback이 동작하지만 `<Defs>`가 들어오면 아예 파싱 단계로 가지 않고 원본을 반환한다 → MiniMap ID 충돌 발생 가능.
-
-영향 범위가 극히 작아 Info로 분류. 실제 admin 업로드 SVG가 이런 형태로 들어오는지 확인 후 선택적으로 수정.
-
-**Fix:**
+**File:** `apps/web/components/booking/__utils__/prefix-svg-defs-ids.ts:47-55`
+**Issue:** `XMLSerializer`로 전체 SVG를 string으로 만든 뒤 `url(#oldId)`를 regex로 전역 치환한다. 문서 내 주석, text node(예: `<text>url(#grad1)</text>`), CDATA 안에 동일 패턴이 리터럴로 들어 있으면 의도와 무관하게 치환된다. 현재 좌석맵 SVG에서는 거의 발생하지 않는 케이스지만, 향후 admin이 다양한 SVG를 업로드하기 시작하면 surprise가 될 수 있다. 더 안전한 대안은 DOM 기반으로 `fill`/`stroke` 속성과 `style` 속성의 `url(...)` 값만 덮어쓰는 것이다. 문서 주석에서 이미 `<use href="#id">` 미커버를 인지하고 있으므로 같은 섹션에 이 한계를 명시하는 것도 좋다.
+**Fix:** 당장은 문서 주석에 한계 추가 + 향후 케이스 발견 시 DOM 기반 치환으로 전환하는 것을 권장. 간단한 DOM 기반 예시:
 ```ts
-// 대소문자 무관 + 여백 허용
-if (!/<defs[\s>]/i.test(svgString)) return svgString;
+// fill/stroke 속성만 치환 — style 안의 url()은 별도 처리 필요
+idMap.forEach((newId, oldId) => {
+  const old = `url(#${oldId})`;
+  const neu = `url(#${newId})`;
+  doc.querySelectorAll(`[fill="${old}"]`).forEach((n) =>
+    n.setAttribute('fill', neu),
+  );
+  doc.querySelectorAll(`[stroke="${old}"]`).forEach((n) =>
+    n.setAttribute('stroke', neu),
+  );
+});
 ```
 
-### IN-04: `processedSvg` + `useEffect` 2-패스 렌더가 seatStates 변경마다 전체 SVG 재파싱
+### IN-05: `handleSvgUpload` useCallback deps에 state setter 누락 (명시 권장)
 
-**File:** `apps/web/components/booking/seat-map-viewer.tsx:139-308, 320-353`
-**Issue:**
-현재 구조는 `useMemo(processedSvg, [rawSvg, seatStates, selectedSeatIds, tierColorMap, pendingRemovals])` → 매번 DOMParser + XMLSerializer (암묵적 via outerHTML) 경로를 탄다. 좌석 하나 클릭마다 전체 SVG가 재파싱·재렌더·재마운트되는 구조.
+**File:** `apps/web/components/admin/svg-preview.tsx:111`
+**Issue:** `useCallback(..., [presignedUpload])`가 `setSvgUrl`, `setTotalSeats`를 참조하는데 deps에 없다. React의 setter는 stable identity라 동작상 문제는 없지만 exhaustive-deps rule에 따라 일부 ESLint 설정에서는 경고가 나올 수 있다. 또한 `presignedUpload` 객체 자체가 deps이면 hook이 내부적으로 새 객체 반환 시 매 렌더마다 함수가 재생성된다(`mutateAsync`는 stable일 확률이 높지만 `isPending` 변화로 객체 identity가 바뀔 수 있다).
+**Fix:** setter 명시는 취향 영역이지만, 다음과 같이 좁히면 불필요한 재생성을 막을 수 있다:
+```tsx
+const presignedUploadMutate = presignedUpload.mutateAsync;
+const handleSvgUpload = useCallback(
+  async (file: File) => {
+    // ... presignedUpload.mutateAsync → presignedUploadMutate 로 치환
+  },
+  [presignedUploadMutate],
+);
+```
 
-기능 정합성은 맞지만 (MED #4 D-13 broadcast priority도 이 기반 위에서 동작) 대형 좌석맵 (1,000석 이상) 에서는 UX 지연이 우려된다. 성능은 v1 리뷰 scope 밖이므로 info로만 기록.
+### IN-06: `hot-section.tsx` / `new-section.tsx` "더보기" 링크 하드코딩
 
-**관찰만, fix 없음:** Phase 12는 MVP 범위라 skip. 향후 좌석맵 규모가 커지면 `useMemo` 입력에서 `seatStates`/`selectedSeatIds`/`pendingRemovals`를 빼고 useEffect 기반 mutation만으로 업데이트하는 refactor 후보.
-
-### IN-05: `test-setup.ts` Blob.prototype 폴리필이 타 테스트에 전역 오염 가능
-
-**File:** `apps/web/test-setup.ts:10-36`
-**Issue:**
-`Blob.prototype.text`/`arrayBuffer`를 전역 프로토타입에 직접 주입한다. jsdom 환경에서 setupFiles로 한 번 실행되는 구조라 테스트 간 leak은 아니지만, 향후 `Blob.prototype.text`가 실제로 존재하는 Node 런타임 (Node 20+) 으로 옮기면 이 시임이 실행되지 않아 다행이다. 반면 `FileReader`를 prototype 안에서 `new FileReader()`로 사용하는데, jsdom의 FileReader는 동기 파일 없이 `readAsText`가 비동기 마이크로태스크에 걸리므로 동작. 문제 없음.
-
-다만 이 폴리필 자체의 필요성이 Plan 12-02의 `await file.text()` 테스트 경로 때문임이 주석에만 설명되어 있어, 나중에 해당 코드가 사라졌을 때 이 시임이 dead code가 될 위험이 있다. TODO 주석으로 sunset 조건을 명시하는 편이 이후 유지보수에 이롭다.
-
-**Fix (optional):**
-```ts
-/**
- * TODO (sunset): Node 20+ 또는 jsdom 24+에서 native Blob.prototype.text 제공 시 제거.
- * 유지 조건: apps/web/components/admin/svg-preview.tsx의 `await file.text()` 경로가 남아 있는 동안.
- */
+**File:** `apps/web/components/home/hot-section.tsx:22-27`, `apps/web/components/home/new-section.tsx:18-23`
+**Issue:** HOT/신규 오픈 섹션의 "더보기" 링크가 `/genre/musical?sort=popular` / `/genre/musical?sort=latest`로 musical 장르에 고정되어 있다. HOT과 신규 오픈은 모든 장르를 아우르는 섹션이므로 사용자가 "더보기"를 눌렀을 때 musical 장르로만 필터링되는 것은 의도와 어긋난다. Info 레벨로 남기는 이유는 제품 의도 여부가 코드만 봐서는 확정되지 않아서이다.
+**Fix:** 제품 의도가 "전체 장르의 HOT/신규"라면 `/search?sort=popular` 같은 전용 목록 페이지가 필요하다. Phase 외 이슈로 트래킹하거나 현재 링크가 의도된 것이라면 주석으로 명시하는 것을 권장.
+```tsx
+// 예: 전체 장르 목록이 존재할 때
+<Link href="/performances?sort=popular" className="text-sm text-gray-600 hover:text-gray-900">
+  더보기
+</Link>
 ```
 
 ---
 
-_Reviewed: 2026-04-21_
+_Reviewed: 2026-04-22T00:00:00Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
