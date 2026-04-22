@@ -580,28 +580,36 @@ env:
 | sed 치환이 `.planning/` 의 historical record 손상 | Tampering (internal) | glob exclude 강제 + CI의 SC-4 grep check |
 | CI secret `TEST_USER_EMAIL` 이 seed.mjs 와 비동기 갱신 | Functional failure (non-security) | gh secret set 을 P1 PR의 체크리스트에 포함 |
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> 2026-04-22 plan-phase에서 사용자 확인으로 해소됨. 각 항목에 RESOLVED 라인 추가.
 
 **1. Cloud Run service account `grapit-cloudrun@...` rename 여부?**
+   - **RESOLVED:** D-05 — **유지**. SA 이름은 `grapit-cloudrun@` 그대로. deploy.yml/provision-valkey.sh 내 SA 참조 변경 없음.
    - **What we know:** deploy.yml 81, 168 라인 + scripts/provision-valkey.sh 26, 86 라인에 `grapit-cloudrun@${PROJECT_ID}.iam.gserviceaccount.com` 하드코딩. Cloud SQL connect / Secret Manager accessor / AR reader 등 IAM 바인딩 다수.
    - **What's unclear:** SC-3("Cloud Run 서비스가 grabit 식별자로 정상 동작") 범위가 service account 이름까지 포함하는가?
    - **Recommendation:** **유지**를 plan-phase의 기본값으로 제안. 이유: (a) 서비스 계정 rename = IAM 바인딩 14~16개 재생성, 리스크 대비 가시적 이익 낮음, (b) CONTEXT.md D-02의 "함께 rename 대상" 목록에 service account 미포함 (의도적 누락일 가능성), (c) 서비스 계정 이름은 외부 지표(도메인/브랜드)에 노출되지 않음. plan-phase에서 user confirmation 받기.
 
 **2. `grapit_test` (CI Postgres DB) / `grapit` (container_name) / `grapit_dev` (password) 처리?**
+   - **RESOLVED:** D-06 — **전부 rename**. `grapit_test`→`grabit_test`, `container_name: grapit-postgres`→`grabit-postgres`, `POSTGRES_DB: grapit`→`grabit`. 단 `grapit_dev` password는 D-01의 연장으로 **유지**.
    - **What we know:** CONTEXT.md D-01이 prod DB rename은 제외지만, dev/CI는 명시 없음. docker-compose.yml의 `container_name: grapit-postgres` 와 `POSTGRES_DB: grapit`은 로컬 dev용. `.github/workflows/ci.yml`의 `POSTGRES_DB: grapit_test`는 CI 전용.
    - **What's unclear:** 이 셋이 "prod DB 제외" 원칙에 해당하는가, "코드/설정 rename" 원칙에 해당하는가?
    - **Recommendation:** (a) `docker-compose.yml` `POSTGRES_PASSWORD: grapit_dev`는 CONTEXT 명시로 **유지**, (b) `container_name: grapit-postgres`, `POSTGRES_DB: grapit`은 로컬 개발자 1회 `docker compose down` 으로 충분 → **변경 권장** (P1에 포함), (c) `grapit_test`는 CI 전용이라 CI secret 갱신 없이 자유롭게 **변경 가능** → **변경 권장** (P1에 포함, seed email과 함께). plan-phase에서 최종 확인.
 
 **3. Legal MD의 `support@grapit.com` / `privacy@grapit.com` 처리?**
+   - **RESOLVED:** D-07 — **`@heygrabit.com` 으로 전단 일괄 치환**. legal MD 4건(`support@`, `privacy@`) 모두 heygrabit 도메인. 실제 mailbox 개설은 사업자등록 후 별도 작업으로 deferred (P2 plan에 노트 포함).
    - **What we know:** `apps/web/content/legal/{privacy-policy,terms-of-service}.md`에 이메일 주소 4군데. 법적 문서에 명시된 컨택 포인트.
    - **What's unclear:** 실제 `@grapit.com` 도메인 이메일이 발송/수신 가능한 상태인가? `@heygrabit.com` 이메일은 런칭 시점에 준비되는가?
    - **Recommendation:** (a) 기본은 `@grabit.com` 혹은 `@heygrabit.com` 로 변경하되, (b) P2 plan에 "사업자등록 + 도메인 이메일 계정 생성 완료 후에만 변경" 전제 조건 명시. 만약 이메일 인프라가 아직 없다면 임시로 `@heygrabit.com`으로 치환 + `mailbox 개설 전까지 회신 불가` 플레이스홀더 처리. plan-phase에서 user confirm.
 
 **4. `@grapit.com` 이메일의 테스트 코드 내 사용(`no-reply@grapit.com`)은 실제 도메인 일치가 필요한가?**
+   - **RESOLVED:** D-07 — test fixture도 `@heygrabit.com` 으로 치환(`no-reply@heygrabit.com` 등). `email.service.spec.ts`의 `RESEND_FROM_EMAIL` fixture 갱신은 Plan 01 Task 2 범위. Resend verified sender 실제 설정은 P3 범위로 분리.  
+     `@social.grapit.com` (auth.service.ts fallback) 은 소셜 로그인 내부 합성 이메일이라 사용자 노출 없음 → D-07 예외로 `@social.grabit.com` 처리 (Plan 01 Task 2 decision_constraints에 예외 명시 필요).
    - **What we know:** `email.service.spec.ts`의 `RESEND_FROM_EMAIL: 'no-reply@grapit.com'`은 pure test fixture. 실제 Resend 설정은 Secret Manager에 별도.
    - **Recommendation:** fixture만 `no-reply@grabit.com` 으로 바꾸고, Resend verified sender 설정은 P3 범위로 분리. plan-phase에서 명확히.
 
 **5. 블루-그린 기간 중 `FRONTEND_URL` 환경변수 처리?**
+   - **RESOLVED:** D-08 — OAuth callback URL 3개 콘솔 재등록은 **P4 cutover 직전 HUMAN-UAT**에 편성. P3 단계에서는 새 callback 등록 없음(OAuth 테스트는 cutover 이후). `CLOUD_RUN_WEB_URL` GitHub variable은 새 `grabit-web` Cloud Run URL로 갱신하되 OAuth 콜백은 cutover 후 등록.
    - **What we know:** deploy.yml `FRONTEND_URL=${{ vars.CLOUD_RUN_WEB_URL }}` — `grabit-web` 배포 시 GitHub variable도 새 Cloud Run URL로 갱신 필요. OAuth callback URL들도 같은 이슈.
    - **What's unclear:** 블루-그린 기간 동안 구 서비스도 살아있어야 하는데, GitHub variable은 하나뿐.
    - **Recommendation:** P3 deploy는 구 서비스에도 계속 갈 필요 없이 **새 서비스만 deploy**. GitHub variable `CLOUD_RUN_WEB_URL`은 새 `grabit-web`의 `.run.app` URL로 갱신 (cutover 전에는 OAuth 콜백이 구 URL 기반이므로 OAuth 테스트는 cutover 후 HUMAN-UAT에서만). 구 서비스는 기존 배포 상태로 domain 매핑만 유지하다 cutover 때 domain 매핑 이전. plan-phase에서 OAuth 콜백 callback URL 목록 변경 타이밍을 명확히 (카카오/네이버/구글 개발자 콘솔에서 신 URL 등록).
