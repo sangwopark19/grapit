@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
-status: "Phase 12 shipped — PR #18"
+status: executing
 stopped_at: Phase 13 partial context updated — D-09~D-17
-last_updated: "2026-04-22T05:35:53.507Z"
-last_activity: "2026-04-22 - Completed quick task 260422-eya: PR #18 코드리뷰 maxSelect+locked regression 수정"
+last_updated: "2026-04-22T05:38:22.757Z"
+last_activity: 2026-04-22 -- Phase 13 execution started
 progress:
   total_phases: 11
   completed_phases: 8
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** 사용자가 원하는 공연을 발견하고, 좌석을 직접 선택하여, 안정적으로 예매를 완료할 수 있는 것
-**Current focus:** Phase 12 — ux
+**Current focus:** Phase 13 — grapit-grabit-rename
 
 ## Current Position
 
-Phase: 12
-Plan: Not started
-Status: Phase 12 shipped — PR #18
-Last activity: 2026-04-22 - Completed quick task 260422-eya: PR #18 코드리뷰 maxSelect+locked regression 수정
+Phase: 13 (grapit-grabit-rename) — EXECUTING
+Plan: 1 of 4
+Status: Executing Phase 13
+Last activity: 2026-04-22 -- Phase 13 execution started
 
 Progress: [██████████] 100%
 
