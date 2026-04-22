@@ -381,8 +381,12 @@ export function SeatMapViewer({
 
       const state = seatStates.get(seatId) ?? 'available';
       if (state === 'sold') return;
-      // 새로 선택하는 좌석이고 한도 초과면 무시 (해제는 항상 허용)
-      if (!selectedSeatIds.has(seatId) && selectedSeatIds.size >= maxSelect) {
+      // PR18-CR-MAXSELECT-LOCKED: locked는 maxSelect 우회하여 parent에 위임 (D-13 invariant), available 한도만 차단
+      if (
+        state !== 'locked' &&
+        !selectedSeatIds.has(seatId) &&
+        selectedSeatIds.size >= maxSelect
+      ) {
         return;
       }
       onSeatClick(seatId);
