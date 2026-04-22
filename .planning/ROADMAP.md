@@ -220,3 +220,19 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
 
 Plans:
 - [ ] TBD (promote with /gsd-review-backlog when ready)
+
+### Phase 13: 브랜드명 grapit → grabit 일괄 rename
+
+**Goal:** 코드/문서/설정/이메일·SMS 카피/DB/Cloud Run 서비스명을 `grapit`에서 `grabit`으로 일괄 전환하여 확정 도메인 heygrabit.com 런칭에 맞춘 브랜드 정합성 확보
+**Requirements**: TBD (discuss-phase에서 도출)
+**Depends on:** Phase 12
+**Canonical refs:** .planning/seeds/SEED-002-brand-rename-grapit-to-grabit.md
+**Success Criteria** (what must be TRUE):
+  1. 신규 코드/문서/설정이 `grabit`으로 통일되고 빌드·타입체크·린트 통과
+  2. 사용자 노출 문자열(이메일 템플릿/SMS 발신자/title/meta/UI 카피) 전부 `Grabit`
+  3. prod DB와 Cloud Run 서비스가 `grabit` 식별자로 정상 동작
+  4. 과거 milestone 기록·완료된 phase 폴더·commit message는 건드리지 않음
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 13 to break down; discuss-phase 권장)
