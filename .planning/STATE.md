@@ -4,14 +4,14 @@ milestone: v1.1
 milestone_name: 안정화 + 고도화
 status: executing
 stopped_at: Phase 13 partial context updated — D-09~D-17
-last_updated: "2026-04-22T14:55:00.000Z"
-last_activity: 2026-04-22 -- Phase 13 Wave 1 (13-01 code/config rename) complete
+last_updated: "2026-04-22T15:05:00.000Z"
+last_activity: 2026-04-22 -- Phase 13 Wave 2 (13-02 user-facing copy — no-op, absorbed by Wave 1 bulk rename) complete
 progress:
   total_phases: 11
   completed_phases: 8
   total_plans: 53
-  completed_plans: 45
-  percent: 85
+  completed_plans: 46
+  percent: 87
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 ## Current Position
 
 Phase: 13 (grapit-grabit-rename) — EXECUTING
-Plan: 2 of 4 (Wave 1 complete)
-Status: Executing Phase 13 — Wave 2 next
-Last activity: 2026-04-22 -- Phase 13 Wave 1 (13-01 code/config rename) complete
+Plan: 3 of 4 (Waves 1–2 complete)
+Status: Executing Phase 13 — Wave 3 next (non-autonomous: infra provisioning)
+Last activity: 2026-04-22 -- Phase 13 Wave 2 (13-02 user-facing copy) complete
 
 Progress: [██████████] 100%
 
