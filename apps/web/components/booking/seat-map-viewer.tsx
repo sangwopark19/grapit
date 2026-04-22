@@ -28,6 +28,7 @@ export function SeatMapViewer({
   seatStates,
   selectedSeatIds,
   onSeatClick,
+  maxSelect,
 }: SeatMapViewerProps) {
   const isMobile = useIsMobile();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -355,6 +356,10 @@ export function SeatMapViewer({
   }, [selectedSeatIds, pendingRemovals, tierColorMap, seatStates, processedSvg]);
 
   // Event delegation for seat clicks
+  // review WR-02 + IN-01: maxSelect prop을 viewer 내부에서 방어적으로 사용.
+  //   상위(booking-page)가 MAX_SEATS를 주요 검증하지만, viewer에서도 double-defense로
+  //   "선택되지 않은 좌석"을 새로 누를 때만 한도 검사를 건다. 선택된 좌석 해제는 항상 허용.
+  //   deps에 selectedSeatIds.size와 selectedSeatIds.has가 실제 사용되므로 유지.
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       const target = (e.target as HTMLElement).closest<SVGElement>(
@@ -367,9 +372,13 @@ export function SeatMapViewer({
 
       const state = seatStates.get(seatId) ?? 'available';
       if (state === 'sold') return;
+      // 새로 선택하는 좌석이고 한도 초과면 무시 (해제는 항상 허용)
+      if (!selectedSeatIds.has(seatId) && selectedSeatIds.size >= maxSelect) {
+        return;
+      }
       onSeatClick(seatId);
     },
-    [seatStates, selectedSeatIds, onSeatClick],
+    [seatStates, selectedSeatIds, onSeatClick, maxSelect],
   );
 
   // Hover tooltip — uses refs only, no state changes, no re-renders
