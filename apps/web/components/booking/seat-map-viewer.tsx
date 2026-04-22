@@ -460,7 +460,9 @@ export function SeatMapViewer({
         target.setAttribute('stroke-width', '0');
       }
     },
-    [seatStates, selectedSeatIds, tierColorMap],
+    // review IN-02: tierColorMap 미사용이므로 deps에서 제거.
+    //   seatConfig 변경 시 불필요한 함수 재생성 방지.
+    [seatStates, selectedSeatIds],
   );
 
   if (error) {
