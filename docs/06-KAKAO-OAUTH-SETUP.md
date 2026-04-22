@@ -16,7 +16,7 @@
 7. [Client Secret 발급](#7-client-secret-발급)
 8. [심사/검수 프로세스](#8-심사검수-프로세스)
 9. [주요 API 엔드포인트](#9-주요-api-엔드포인트)
-10. [Grapit 프로젝트 적용 가이드](#10-grapit-프로젝트-적용-가이드)
+10. [Grabit 프로젝트 적용 가이드](#10-grabit-프로젝트-적용-가이드)
 
 ---
 
@@ -45,7 +45,7 @@
 1. [카카오 디벨로퍼스 콘솔](https://developers.kakao.com/console/app) 접속
 2. **[애플리케이션 추가하기]** 클릭
 3. 앱 정보 입력:
-   - **앱 이름:** `Grapit` (서비스명)
+   - **앱 이름:** `Grabit` (서비스명)
    - **사업자명:** 사업자명 또는 개인 이름
 4. **[저장]** 클릭
 
@@ -53,7 +53,7 @@
 
 앱 생성 후 **[앱 설정]** > **[앱 키]** 에서 4종류의 키를 확인할 수 있다:
 
-| 키 종류 | 용도 | Grapit 사용 여부 |
+| 키 종류 | 용도 | Grabit 사용 여부 |
 |---------|------|-----------------|
 | **네이티브 앱 키** | Android/iOS SDK | 미사용 |
 | **JavaScript 키** | JavaScript SDK (프론트엔드) | 미사용 |
@@ -69,8 +69,8 @@
 1. **[Web 플랫폼 등록]** 클릭
 2. **사이트 도메인** 입력:
    - 개발: `http://localhost:3000`
-   - 스테이징: `https://staging.grapit.co.kr`
-   - 프로덕션: `https://grapit.co.kr`
+   - 스테이징: `https://staging.grabit.co.kr`
+   - 프로덕션: `https://grabit.co.kr`
 3. **[저장]** 클릭
 
 ---
@@ -93,7 +93,7 @@
 1. **상태** 토글을 **ON** 으로 변경
 2. 활성화 시 토큰 발급 응답에 `id_token` 포함
 
-> **Grapit 적용:** OpenID Connect는 선택사항. 프로젝트에서는 액세스 토큰으로 사용자 정보를 조회하는 방식을 사용하므로 필수는 아님.
+> **Grabit 적용:** OpenID Connect는 선택사항. 프로젝트에서는 액세스 토큰으로 사용자 정보를 조회하는 방식을 사용하므로 필수는 아님.
 
 ---
 
@@ -106,14 +106,14 @@
 1. **[Redirect URI 등록]** 클릭
 2. URI 입력 후 **[저장]**
 
-### 4-2. Grapit Redirect URI
+### 4-2. Grabit Redirect URI
 
 ```
 # 개발 환경
 http://localhost:4000/auth/kakao/callback
 
 # 프로덕션 환경
-https://api.grapit.co.kr/auth/kakao/callback
+https://api.grabit.co.kr/auth/kakao/callback
 ```
 
 ### 4-3. 설정 규칙
@@ -138,7 +138,7 @@ https://api.grapit.co.kr/auth/kakao/callback
 
 #### 개인정보 동의항목
 
-| 동의항목 | Scope ID | 비즈앱 필요 | Grapit 사용 | 비고 |
+| 동의항목 | Scope ID | 비즈앱 필요 | Grabit 사용 | 비고 |
 |---------|----------|------------|------------|------|
 | **닉네임** | `profile_nickname` | 불필요 | **필수 동의** | 기본 제공 |
 | **프로필 사진** | `profile_image` | 불필요 | **선택 동의** | 기본 제공 |
@@ -152,7 +152,7 @@ https://api.grapit.co.kr/auth/kakao/callback
 
 #### 접근권한 동의항목
 
-| 동의항목 | 비즈앱 필요 | Grapit 사용 |
+| 동의항목 | 비즈앱 필요 | Grabit 사용 |
 |---------|------------|------------|
 | 카카오톡 메시지 전송 | 불필요 | 미사용 |
 | 카카오톡 친구 목록 | **필요** | 미사용 |
@@ -173,7 +173,7 @@ https://api.grapit.co.kr/auth/kakao/callback
 4. **[저장]** 클릭
 5. **[동의 화면 미리보기]** 로 사용자에게 보이는 화면 확인
 
-### 5-5. Grapit 권장 설정
+### 5-5. Grabit 권장 설정
 
 ```
 닉네임          → 필수 동의 (회원 식별)
@@ -235,7 +235,7 @@ https://api.grapit.co.kr/auth/kakao/callback
 - **2년 이하 주기로 갱신** 권장
 - 환경변수로 관리 (`.env`에 저장, 코드에 하드코딩 금지)
 
-### 7-3. Grapit 환경변수 설정
+### 7-3. Grabit 환경변수 설정
 
 ```bash
 # .env (모노레포 루트)
@@ -290,7 +290,7 @@ KAKAO_CALLBACK_URL=http://localhost:4000/auth/kakao/callback
 - **반려 시:** [앱 설정] > [비즈니스]에서 반려 사유 확인 후 보완하여 재신청 가능
 - **재심사:** 보완 후 동일 절차로 신청 (영업일 3~5일)
 
-### 8-5. Grapit 검수 전략
+### 8-5. Grabit 검수 전략
 
 ```
 Phase 1 (개발/테스트):
@@ -512,7 +512,7 @@ Authorization: Bearer {access_token}
 
 ---
 
-## 10. Grapit 프로젝트 적용 가이드
+## 10. Grabit 프로젝트 적용 가이드
 
 ### 10-1. 환경변수
 
@@ -539,7 +539,7 @@ KAKAO_CALLBACK_URL=http://localhost:4000/auth/kakao/callback
 ### 10-3. 설정 체크리스트
 
 - [ ] 카카오 디벨로퍼스 계정 생성
-- [ ] 애플리케이션 생성 (앱 이름: Grapit)
+- [ ] 애플리케이션 생성 (앱 이름: Grabit)
 - [ ] Web 플랫폼 등록 (localhost:3000 + 프로덕션 도메인)
 - [ ] 카카오 로그인 활성화 (ON)
 - [ ] Redirect URI 등록 (localhost:4000/auth/kakao/callback)
