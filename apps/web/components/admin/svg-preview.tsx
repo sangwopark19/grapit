@@ -28,6 +28,12 @@ export function SvgPreview({
   const presignedUpload = usePresignedUpload();
   const saveSeatMap = useSaveSeatMap(performanceId);
 
+  // review IN-05: mutateAsync만 좁혀 deps로 사용.
+  //   presignedUpload 객체 전체를 deps로 쓰면 isPending 등 내부 상태 변화로 identity가 바뀌어
+  //   handleSvgUpload가 불필요하게 재생성된다. React setter(setSvgUrl/setTotalSeats)는 stable identity라
+  //   exhaustive-deps 규칙상 추가하지 않아도 된다 (React 컨벤션).
+  const presignedUploadMutate = presignedUpload.mutateAsync;
+
   const handleSvgUpload = useCallback(
     async (file: File) => {
       if (file.size > 10 * 1024 * 1024) {
@@ -87,7 +93,7 @@ export function SvgPreview({
 
       try {
         const { uploadUrl, publicUrl } =
-          await presignedUpload.mutateAsync({
+          await presignedUploadMutate({
             folder: 'seat-maps',
             contentType: 'image/svg+xml',
             extension: 'svg',
@@ -110,7 +116,7 @@ export function SvgPreview({
         toast.error('SVG 업로드에 실패했습니다.');
       }
     },
-    [presignedUpload],
+    [presignedUploadMutate],
   );
 
   function handleFileInput(e: React.ChangeEvent<HTMLInputElement>) {
