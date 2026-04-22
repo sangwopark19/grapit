@@ -99,8 +99,10 @@ export function SvgPreview({
         });
         setSvgUrl(publicUrl);
 
-        // Count seats in SVG (text 변수는 위 검증에서 이미 읽음)
-        const seatCount = (text.match(/data-seat-id/g) || []).length;
+        // review IN-03: 문자열 정규식 대신 이미 파싱한 `doc`으로 DOM 기반 카운트.
+        //   주석/CDATA/다른 tag 속성 이름 등에 'data-seat-id' substring이 우연히
+        //   포함된 경우의 false positive를 제거하여 의도와 실제 좌석 수가 일치하도록 보장.
+        const seatCount = doc.querySelectorAll('[data-seat-id]').length;
         setTotalSeats(seatCount);
 
         toast.success('좌석맵 SVG가 업로드되었습니다.');
