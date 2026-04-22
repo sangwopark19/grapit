@@ -57,6 +57,13 @@
   - **P4 — 도메인 cutover + 정리:** `heygrabit.com` 도메인을 새 서비스에 매핑 · 스모크 테스트 · 7일 후 구 `grapit-*` 서비스·Sentry 프로젝트 삭제 · HUMAN-UAT 체크리스트.
 - **근거:** P1~P2는 순수 코드/문자열 rename이라 PR 리뷰·롤백 단위로 깔끔하게 분리됨. P3는 GCP 콘솔·Sentry 대시보드에서 manual step이 섞이므로 독립 plan. P4는 배포 cutover라 별도 HUMAN-UAT 필요.
 
+### Open Question 해소 (2026-04-22 research 이후 결정)
+
+- **D-05 (Q1 해소) — Cloud Run service account는 유지.** `grapit-cloudrun@...`는 이름 그대로 두고, deploy.yml/provision-valkey.sh 내 SA 참조도 변경하지 않는다. 근거: IAM 바인딩 14~16개 재생성 리스크 > 외부 미노출 식별자 rename 이익.
+- **D-06 (Q2 해소) — dev/CI DB 식별자는 전부 rename.** `grapit_test`→`grabit_test`(ci.yml POSTGRES_DB + DATABASE_URL), `grapit-postgres`→`grabit-postgres`(docker-compose container_name), `POSTGRES_DB: grapit`→`grabit`(docker-compose, 있는 경우). **단 D-01의 `grapit_dev` password는 여전히 유지** (prod DB rename 제외 원칙의 연장).
+- **D-07 (Q3 해소) — `@grapit.com` 이메일은 `@heygrabit.com`으로 전단 일괄 치환.** legal MD 4건(`support@`, `privacy@`), test fixture(`no-reply@`, `admin@*.test`, `@e2e.*.dev`, `@social.*.com`) 모두 heygrabit 도메인. P2에 "실제 mailbox 개설은 사업자등록 후 별도 작업" 노트 포함. 운영 mailbox가 없는 상태에서 legal 문서에 이메일 주소가 남는 건 인지된 deferred 이슈.
+- **D-08 (Q4 해소) — OAuth callback URL 재등록은 P4 HUMAN-UAT에 포함.** 카카오/네이버/구글 개발자 콘솔에서 `https://heygrabit.com/auth/callback/{provider}` 를 신규 등록하는 작업을 P4 cutover 직전 수동 절차로 편성. P3 단계에서는 신규 callback 등록 없음(OAuth 테스트는 cutover 이후에만).
+
 ### Claude's Discretion
 
 - **Plan 내부 작업 단위, 커밋 단위, 파일별 순서 등 구현 세부사항** — planner가 판단.
