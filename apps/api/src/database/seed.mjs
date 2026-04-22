@@ -16,10 +16,10 @@ async function seed() {
     await client.query('BEGIN');
 
     // Clean existing seed admin user (FK-safe order)
-    await client.query("DELETE FROM refresh_tokens WHERE user_id IN (SELECT id FROM users WHERE email = 'admin@grapit.test')");
-    await client.query("DELETE FROM social_accounts WHERE user_id IN (SELECT id FROM users WHERE email = 'admin@grapit.test')");
-    await client.query("DELETE FROM terms_agreements WHERE user_id IN (SELECT id FROM users WHERE email = 'admin@grapit.test')");
-    await client.query("DELETE FROM users WHERE email = 'admin@grapit.test'");
+    await client.query("DELETE FROM refresh_tokens WHERE user_id IN (SELECT id FROM users WHERE email = 'admin@grabit.test')");
+    await client.query("DELETE FROM social_accounts WHERE user_id IN (SELECT id FROM users WHERE email = 'admin@grabit.test')");
+    await client.query("DELETE FROM terms_agreements WHERE user_id IN (SELECT id FROM users WHERE email = 'admin@grabit.test')");
+    await client.query("DELETE FROM users WHERE email = 'admin@grabit.test'");
 
     // Clean existing seed data (FK-safe order)
     await client.query('DELETE FROM payments');
@@ -46,9 +46,9 @@ async function seed() {
 
     await client.query(`
       INSERT INTO users (id, email, password_hash, name, phone, gender, country, birth_date, role, is_phone_verified, is_email_verified)
-      VALUES (gen_random_uuid(), 'admin@grapit.test', $1, '관리자', '010-0000-0000', 'unspecified', 'KR', '1990-01-01', 'admin', true, true)
+      VALUES (gen_random_uuid(), 'admin@grabit.test', $1, '관리자', '010-0000-0000', 'unspecified', 'KR', '1990-01-01', 'admin', true, true)
     `, [adminPasswordHash]);
-    console.log('Inserted admin user: admin@grapit.test');
+    console.log('Inserted admin user: admin@grabit.test');
 
     // Venues
     const venueRows = await client.query(`
