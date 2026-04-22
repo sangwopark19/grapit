@@ -44,11 +44,13 @@ export function SeatMapViewer({
   );
 
   // selectedSeatIds 변경 감지 → 해제/재선택 per-seat 처리
+  // review WR-01: pendingRemovals는 함수형 업데이트 안에서만 읽어 deps에서 제거.
+  //   self-triggering effect로 인한 불필요한 재실행(+ prevSelectedRef 재할당) 방지.
   useEffect(() => {
     const prev = prevSelectedRef.current;
     const curr = selectedSeatIds;
 
-    // 재선택: curr에 있고 prev에 없고 pendingRemovals에 있는 seat → 기존 timeout clear + pending 제거
+    // 재선택: curr에 있고 prev에 없는 seat → 기존 timeout clear + pending 제거
     curr.forEach((id) => {
       if (!prev.has(id)) {
         // 이 seat가 이전에 해제 중(pending)이었다면 즉시 취소
@@ -57,13 +59,13 @@ export function SeatMapViewer({
           clearTimeout(existing);
           timeoutsRef.current.delete(id);
         }
-        if (pendingRemovals.has(id)) {
-          setPendingRemovals((prevSet) => {
-            const next = new Set(prevSet);
-            next.delete(id);
-            return next;
-          });
-        }
+        // pendingRemovals 여부는 함수형 업데이트 안에서 체크 → deps 제거 가능
+        setPendingRemovals((prevSet) => {
+          if (!prevSet.has(id)) return prevSet;
+          const next = new Set(prevSet);
+          next.delete(id);
+          return next;
+        });
       }
     });
 
@@ -92,7 +94,7 @@ export function SeatMapViewer({
 
     // prevSelectedRef 동기 갱신 (diff 계산 직후)
     prevSelectedRef.current = new Set(curr);
-  }, [selectedSeatIds, pendingRemovals]);
+  }, [selectedSeatIds]);
 
   // 컴포넌트 unmount 시 남은 timeout 전부 clear
   useEffect(() => {
