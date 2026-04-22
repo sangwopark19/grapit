@@ -6,7 +6,7 @@ import { ReservationService } from './reservation.service.js';
 import { TossPaymentsClient } from '../payment/toss-payments.client.js';
 import type { BookingService } from '../booking/booking.service.js';
 import type { BookingGateway } from '../booking/booking.gateway.js';
-import type { SeatSelection } from '@grapit/shared';
+import type { SeatSelection } from '@grabit/shared';
 
 function createMockDb() {
   return {

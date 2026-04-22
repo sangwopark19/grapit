@@ -7,7 +7,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart';
-import type { DashboardRevenueDto } from '@grapit/shared';
+import type { DashboardRevenueDto } from '@grabit/shared';
 
 const chartConfig: ChartConfig = {
   revenue: { label: '매출', color: 'var(--chart-1)' },

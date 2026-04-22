@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { Ticket } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { StatusBadge } from './status-badge';
-import type { PerformanceCardData } from '@grapit/shared';
+import type { PerformanceCardData } from '@grabit/shared';
 
 function formatDate(iso: string): string {
   const d = new Date(iso);

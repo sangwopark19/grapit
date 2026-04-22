@@ -35,7 +35,7 @@ export function AdminSidebar() {
     <aside className="hidden w-[240px] shrink-0 border-r bg-white lg:block">
       <div className="flex h-16 items-center border-b px-6">
         <Link href="/admin" className="text-sm font-semibold">
-          Grapit Admin
+          Grabit Admin
         </Link>
       </div>
       <nav className="flex flex-col gap-1 p-4" aria-label="관리자 네비게이션">

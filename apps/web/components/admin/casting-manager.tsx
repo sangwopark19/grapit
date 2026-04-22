@@ -12,7 +12,7 @@ import type {
 import { useWatch } from 'react-hook-form';
 import { Plus, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
-import type { CreatePerformanceFormInput } from '@grapit/shared';
+import type { CreatePerformanceFormInput } from '@grabit/shared';
 import { usePresignedUpload } from '@/hooks/use-admin';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

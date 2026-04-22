@@ -26,7 +26,7 @@ import type {
   PaymentStatus,
   ReservationStatus,
   SeatSelection,
-} from '@grapit/shared';
+} from '@grabit/shared';
 
 @Injectable()
 export class AdminBookingService {

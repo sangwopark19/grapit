@@ -8,7 +8,7 @@ import type {
   RegisterStep2Input,
   RegisterStep3Input,
   AuthResponse,
-} from '@grapit/shared';
+} from '@grabit/shared';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/use-auth-store';
 import { StepIndicator } from '@/components/auth/step-indicator';

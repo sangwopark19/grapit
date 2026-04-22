@@ -13,7 +13,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, '.'),
-      '@grapit/shared': resolve(__dirname, '../../packages/shared/src'),
+      '@grabit/shared': resolve(__dirname, '../../packages/shared/src'),
     },
   },
 });

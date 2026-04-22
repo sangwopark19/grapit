@@ -1,7 +1,7 @@
 'use client';
 
 import { X } from 'lucide-react';
-import type { SeatSelection } from '@grapit/shared';
+import type { SeatSelection } from '@grabit/shared';
 
 interface SeatRowProps {
   seat: SeatSelection;

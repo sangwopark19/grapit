@@ -21,7 +21,7 @@ export function Footer() {
 
         {/* Copyright */}
         <p className="mt-4 text-sm text-gray-500">
-          &copy; 2026 Grapit. All rights reserved.
+          &copy; 2026 Grabit. All rights reserved.
         </p>
       </div>
     </footer>

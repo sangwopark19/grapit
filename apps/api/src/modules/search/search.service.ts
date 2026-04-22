@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { eq, desc, sql, and, ne } from 'drizzle-orm';
 import { DRIZZLE, type DrizzleDB } from '../../database/drizzle.provider.js';
 import { performances, venues } from '../../database/schema/index.js';
-import type { SearchResponse, SearchQuery } from '@grapit/shared';
+import type { SearchResponse, SearchQuery } from '@grabit/shared';
 
 @Injectable()
 export class SearchService {

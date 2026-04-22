@@ -2,7 +2,7 @@ import { Injectable, Inject } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { DRIZZLE, type DrizzleDB } from '../../database/drizzle.provider.js';
 import { payments } from '../../database/schema/index.js';
-import type { PaymentInfo, PaymentStatus } from '@grapit/shared';
+import type { PaymentInfo, PaymentStatus } from '@grabit/shared';
 
 @Injectable()
 export class PaymentService {

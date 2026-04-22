@@ -70,7 +70,7 @@ export class EmailService {
     const { data, error } = await this.resend!.emails.send({
       from: this.from,
       to,
-      subject: '[Grapit] 비밀번호 재설정',
+      subject: '[Grabit] 비밀번호 재설정',
       react: PasswordResetEmail({ resetLink }),
     });
 

@@ -36,7 +36,7 @@ import {
   GoogleAuthGuard,
 } from './guards/social-auth.guard.js';
 import type { SocialProfile } from './interfaces/social-profile.interface.js';
-import { AUTH_COOKIE_NAME } from '@grapit/shared/constants/index.js';
+import { AUTH_COOKIE_NAME } from '@grabit/shared/constants/index.js';
 
 @Controller('auth')
 export class AuthController {

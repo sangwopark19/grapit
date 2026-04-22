@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { UserRepository } from './user.repository.js';
-import type { UserProfile } from '@grapit/shared/types/user.types.js';
+import type { UserProfile } from '@grabit/shared/types/user.types.js';
 
 @Injectable()
 export class UserService {

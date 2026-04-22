@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { RegisterStep2Input } from '@grapit/shared';
+import type { RegisterStep2Input } from '@grabit/shared';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';

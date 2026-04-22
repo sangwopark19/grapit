@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Request, Response } from 'express';
 import { AuthController } from './auth.controller.js';
-import { AUTH_COOKIE_NAME } from '@grapit/shared/constants/index.js';
+import { AUTH_COOKIE_NAME } from '@grabit/shared/constants/index.js';
 
 describe('AuthController', () => {
   let controller: AuthController;

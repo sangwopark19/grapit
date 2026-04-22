@@ -1,5 +1,5 @@
 import { useAuthStore } from '@/stores/use-auth-store';
-import type { UserProfile } from '@grapit/shared';
+import type { UserProfile } from '@grabit/shared';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 

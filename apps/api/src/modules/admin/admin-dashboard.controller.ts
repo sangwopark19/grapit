@@ -1,6 +1,6 @@
 import { Controller, Get, Inject, Query, UseGuards } from '@nestjs/common';
-import { periodQuerySchema } from '@grapit/shared';
-import type { DashboardPeriod } from '@grapit/shared';
+import { periodQuerySchema } from '@grabit/shared';
+import type { DashboardPeriod } from '@grabit/shared';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';

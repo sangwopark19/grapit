@@ -14,8 +14,8 @@ ARG NEXT_PUBLIC_TOSS_CLIENT_KEY
 ENV NEXT_PUBLIC_TOSS_CLIENT_KEY=$NEXT_PUBLIC_TOSS_CLIENT_KEY
 COPY . .
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @grapit/shared build
-RUN pnpm --filter @grapit/web build
+RUN pnpm --filter @grabit/shared build
+RUN pnpm --filter @grabit/web build
 
 # Stage 2: Production
 FROM node:22-alpine AS runner

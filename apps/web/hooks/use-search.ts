@@ -1,7 +1,7 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
-import type { SearchResponse } from '@grapit/shared';
+import type { SearchResponse } from '@grabit/shared';
 
 export function useSearch() {
   const searchParams = useSearchParams();

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import type { SearchResponse } from '@grapit/shared';
+import type { SearchResponse } from '@grabit/shared';
 
 import { SearchService } from './search.service.js';
 

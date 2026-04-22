@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { DashboardTopDto } from '@grapit/shared';
+import type { DashboardTopDto } from '@grabit/shared';
 import { ChartPanelState } from './_state';
 
 interface Props {

@@ -11,7 +11,7 @@
     ],
     "paths": {
       "@/*": ["./*"],
-      "@grapit/shared": ["../../packages/shared/src"]
+      "@grabit/shared": ["../../packages/shared/src"]
     }
   },
   "include": [

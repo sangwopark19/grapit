@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ShowtimeChips } from '../showtime-chips';
-import type { Showtime } from '@grapit/shared';
+import type { Showtime } from '@grabit/shared';
 
 const mockShowtimes: Showtime[] = [
   { id: 'st-1', performanceId: 'p-1', dateTime: '2026-05-10T14:00:00Z' },

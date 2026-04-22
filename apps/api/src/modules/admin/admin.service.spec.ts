@@ -4,13 +4,13 @@ import type {
   Banner,
   SeatMap,
   PerformanceWithDetails,
-} from '@grapit/shared';
+} from '@grabit/shared';
 import type {
   CreatePerformanceInput,
   UpdatePerformanceInput,
   CreateBannerInput,
   SeatMapConfigInput,
-} from '@grapit/shared/schemas/performance.schema';
+} from '@grabit/shared/schemas/performance.schema';
 
 import { AdminService } from './admin.service.js';
 import { CacheService } from '../performance/cache.service.js';

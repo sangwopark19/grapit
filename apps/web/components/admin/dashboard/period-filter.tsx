@@ -1,7 +1,7 @@
 'use client';
 
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import type { DashboardPeriod } from '@grapit/shared';
+import type { DashboardPeriod } from '@grabit/shared';
 
 interface PeriodFilterProps {
   value: DashboardPeriod;
