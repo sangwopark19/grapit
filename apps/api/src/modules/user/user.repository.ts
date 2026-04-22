@@ -2,7 +2,7 @@ import { Injectable, Inject } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { DRIZZLE, type DrizzleDB } from '../../database/drizzle.provider.js';
 import * as schema from '../../database/schema/index.js';
-import type { UserProfile } from '@grapit/shared/types/user.types.js';
+import type { UserProfile } from '@grabit/shared/types/user.types.js';
 
 export interface NewUser {
   email: string;

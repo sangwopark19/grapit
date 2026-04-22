@@ -28,7 +28,7 @@ import { CacheService } from '../src/modules/performance/cache.service.js';
  * Plan 01 Wave 1: service는 skeleton → 두 테스트 모두 `Error: Not implemented`로 RED.
  * Plan 02 Task 02-01이 service를 구현하면 GREEN으로 전환.
  *
- * 실행: pnpm --filter @grapit/api test:integration -- admin-dashboard.integration
+ * 실행: pnpm --filter @grabit/api test:integration -- admin-dashboard.integration
  */
 describe('AdminDashboardService (integration)', () => {
   let pgContainer: StartedTestContainer;
@@ -44,7 +44,7 @@ describe('AdminDashboardService (integration)', () => {
       .withEnvironment({
         POSTGRES_PASSWORD: 'test',
         POSTGRES_USER: 'postgres',
-        POSTGRES_DB: 'grapit_test',
+        POSTGRES_DB: 'grabit_test',
       })
       .start();
 
@@ -57,7 +57,7 @@ describe('AdminDashboardService (integration)', () => {
       port: pgContainer.getMappedPort(5432),
       user: 'postgres',
       password: 'test',
-      database: 'grapit_test',
+      database: 'grabit_test',
     });
     db = drizzle(pool, { schema });
 

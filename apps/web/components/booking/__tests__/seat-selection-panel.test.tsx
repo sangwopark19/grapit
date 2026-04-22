@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SeatSelectionPanel } from '../seat-selection-panel';
-import type { SeatSelection, Showtime } from '@grapit/shared';
+import type { SeatSelection, Showtime } from '@grabit/shared';
 
 const mockShowtime: Showtime = {
   id: 'st-1',

@@ -1,7 +1,7 @@
 <!-- GSD:project-start source:PROJECT.md -->
 ## Project
 
-**Grapit**
+**Grabit**
 
 공연·전시·스포츠 등 라이브 엔터테인먼트 티켓 예매 플랫폼. NOL 티켓(인터파크)을 참조하여 장르별 큐레이션, SVG 기반 좌석 선택, 원스톱 예매 플로우를 제공한다. 실제 서비스 런칭을 목표로 1인 개발로 진행한다.
 
@@ -234,9 +234,9 @@
 - **drizzle-kit은 `process.cwd()` 기준으로 `.env`를 찾는다.** `pnpm --filter`는 cwd를 `apps/api/`로 바꾸므로 루트 `.env`를 못 찾는다. 반드시 `DOTENV_CONFIG_PATH`를 지정해야 한다:
   ```bash
   # 마이그레이션 (루트에서 실행)
-  DOTENV_CONFIG_PATH=../../.env pnpm --filter @grapit/api exec drizzle-kit migrate
+  DOTENV_CONFIG_PATH=../../.env pnpm --filter @grabit/api exec drizzle-kit migrate
   # 스키마 생성 (루트에서 실행)
-  DOTENV_CONFIG_PATH=../../.env pnpm --filter @grapit/api exec drizzle-kit generate
+  DOTENV_CONFIG_PATH=../../.env pnpm --filter @grabit/api exec drizzle-kit generate
   ```
 - `.env`는 `.gitignore`에 포함. `.env.example`은 커밋하되 실제 시크릿은 넣지 않는다.
 
@@ -248,7 +248,7 @@
   # GitHub Actions에서
   env:
     DATABASE_URL: ${{ secrets.DATABASE_URL }}
-  run: pnpm --filter @grapit/api exec drizzle-kit migrate
+  run: pnpm --filter @grabit/api exec drizzle-kit migrate
   ```
 - 필수 환경변수: `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`
 - 선택 환경변수: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID` (없으면 SMS dev mock 모드)

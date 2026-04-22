@@ -7,7 +7,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart';
-import type { DashboardPaymentDto } from '@grapit/shared';
+import type { DashboardPaymentDto } from '@grabit/shared';
 
 const chartConfig: ChartConfig = {
   count: { label: '건수', color: 'var(--chart-1)' },

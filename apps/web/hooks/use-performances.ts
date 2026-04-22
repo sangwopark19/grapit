@@ -6,7 +6,7 @@ import type {
   PerformanceWithDetails,
   PerformanceCardData,
   Banner,
-} from '@grapit/shared';
+} from '@grabit/shared';
 
 export function usePerformances(genre: string) {
   const searchParams = useSearchParams();

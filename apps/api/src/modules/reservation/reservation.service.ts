@@ -30,7 +30,7 @@ import type {
   ConfirmPaymentRequest,
   PrepareReservationRequest,
   PrepareReservationResponse,
-} from '@grapit/shared';
+} from '@grabit/shared';
 
 @Injectable()
 export class ReservationService {

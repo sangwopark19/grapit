@@ -1,7 +1,7 @@
 import {
   resetPasswordRequestSchema,
   resetPasswordSchema,
-} from '@grapit/shared/schemas/auth.schema.js';
+} from '@grabit/shared/schemas/auth.schema.js';
 
 export const resetPasswordRequestBodySchema = resetPasswordRequestSchema;
 export type ResetPasswordRequestBody = {

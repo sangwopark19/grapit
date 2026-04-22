@@ -36,8 +36,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { GENRE_LABELS } from '@grapit/shared';
-import type { Genre } from '@grapit/shared';
+import { GENRE_LABELS } from '@grabit/shared';
+import type { Genre } from '@grabit/shared';
 import { toast } from 'sonner';
 
 export default function AdminPerformancesPage() {

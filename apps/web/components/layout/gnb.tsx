@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-import { GENRE_LABELS, type Genre } from '@grapit/shared';
+import { GENRE_LABELS, type Genre } from '@grabit/shared';
 
 const MAIN_GENRE_TABS: { label: string; slug: Genre }[] = [
   { label: '뮤지컬', slug: 'musical' },
@@ -107,7 +107,7 @@ export function GNB() {
             href="/"
             className="mr-8 text-xl font-semibold text-primary"
           >
-            Grapit
+            Grabit
           </Link>
 
           {/* Genre tabs - hidden on mobile */}

@@ -2,7 +2,7 @@
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { registerStep1Schema, type RegisterStep1Input } from '@grapit/shared';
+import { registerStep1Schema, type RegisterStep1Input } from '@grabit/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {

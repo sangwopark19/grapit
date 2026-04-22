@@ -4,9 +4,9 @@ RUN corepack enable && corepack prepare pnpm@10.28.1 --activate
 WORKDIR /app
 COPY . .
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @grapit/shared build
-RUN pnpm --filter @grapit/api build
-RUN pnpm --filter @grapit/api deploy --prod --legacy /deploy
+RUN pnpm --filter @grabit/shared build
+RUN pnpm --filter @grabit/api build
+RUN pnpm --filter @grabit/api deploy --prod --legacy /deploy
 
 # Stage 2: Production
 FROM node:22-alpine AS runner

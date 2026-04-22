@@ -3,7 +3,7 @@
 import { SearchIcon } from 'lucide-react';
 import { PerformanceCardSkeleton } from '@/components/skeletons';
 import { PerformanceCard } from './performance-card';
-import type { PerformanceCardData } from '@grapit/shared';
+import type { PerformanceCardData } from '@grabit/shared';
 
 interface PerformanceGridProps {
   performances: PerformanceCardData[];

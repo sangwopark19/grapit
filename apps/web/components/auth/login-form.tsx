@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
-import { loginSchema, type LoginInput, type AuthResponse } from '@grapit/shared';
+import { loginSchema, type LoginInput, type AuthResponse } from '@grabit/shared';
 import { apiClient, ApiClientError } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/use-auth-store';
 import { Button } from '@/components/ui/button';

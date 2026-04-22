@@ -10,7 +10,7 @@ import type {
   UpdatePerformanceInput,
   CreateBannerInput,
   SeatMapConfigInput,
-} from '@grapit/shared';
+} from '@grabit/shared';
 
 // Performance list for admin table
 export function useAdminPerformances(params: {

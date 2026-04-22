@@ -13,7 +13,7 @@ import type {
   AdminBookingListItem,
   BookingStats,
   PaymentInfo,
-} from '@grapit/shared';
+} from '@grabit/shared';
 
 export function useMyReservations(status?: string) {
   return useQuery({

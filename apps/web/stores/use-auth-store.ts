@@ -1,7 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
-import type { UserProfile } from '@grapit/shared';
+import type { UserProfile } from '@grabit/shared';
 
 interface AuthState {
   accessToken: string | null;

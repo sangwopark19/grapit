@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ReservationListSkeleton } from '@/components/skeletons';
 import { ReservationCard } from '@/components/reservation/reservation-card';
-import type { ReservationListItem } from '@grapit/shared';
+import type { ReservationListItem } from '@grabit/shared';
 
 const FILTER_OPTIONS = [
   { value: 'all', label: '전체' },

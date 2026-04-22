@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Socket } from 'socket.io-client';
 import { toast } from 'sonner';
-import type { SeatUpdateEvent, SeatStatusResponse } from '@grapit/shared';
+import type { SeatUpdateEvent, SeatStatusResponse } from '@grabit/shared';
 import { createBookingSocket } from '@/lib/socket-client';
 import { useBookingStore } from '@/stores/use-booking-store';
 import { useAuthStore } from '@/stores/use-auth-store';

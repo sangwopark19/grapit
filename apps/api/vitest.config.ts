@@ -16,7 +16,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@grapit/shared': resolve(__dirname, '../../packages/shared/src'),
+      '@grabit/shared': resolve(__dirname, '../../packages/shared/src'),
     },
   },
 });

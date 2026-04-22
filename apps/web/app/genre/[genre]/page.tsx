@@ -3,7 +3,7 @@
 import { use } from 'react';
 import { notFound } from 'next/navigation';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { GENRES, GENRE_LABELS, type Genre } from '@grapit/shared';
+import { GENRES, GENRE_LABELS, type Genre } from '@grabit/shared';
 import { Switch } from '@/components/ui/switch';
 import { GenreChip } from '@/components/performance/genre-chip';
 import { SortToggle } from '@/components/performance/sort-toggle';

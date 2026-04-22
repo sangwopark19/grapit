@@ -1,6 +1,6 @@
 'use client';
 
-import type { Showtime } from '@grapit/shared';
+import type { Showtime } from '@grabit/shared';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib';
 

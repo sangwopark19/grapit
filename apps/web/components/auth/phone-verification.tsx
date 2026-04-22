@@ -6,7 +6,7 @@ import { isValidPhoneNumber } from 'react-phone-number-input';
 import {
   SMS_CODE_EXPIRY_SECONDS,
   SMS_RESEND_COOLDOWN_SECONDS,
-} from '@grapit/shared';
+} from '@grabit/shared';
 import { apiClient, ApiClientError } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

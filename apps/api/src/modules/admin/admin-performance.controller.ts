@@ -19,7 +19,7 @@ import {
   type CreatePerformanceInput,
   type UpdatePerformanceInput,
   type SeatMapConfigInput,
-} from '@grapit/shared';
+} from '@grabit/shared';
 import { AdminService } from './admin.service.js';
 import { UploadService } from './upload.service.js';
 import { PerformanceService } from '../performance/performance.service.js';

@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { Upload, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { SeatMapConfig } from '@grapit/shared';
+import type { SeatMapConfig } from '@grabit/shared';
 import { usePresignedUpload, useSaveSeatMap } from '@/hooks/use-admin';
 import { TierEditor } from '@/components/admin/tier-editor';
 import { Button } from '@/components/ui/button';

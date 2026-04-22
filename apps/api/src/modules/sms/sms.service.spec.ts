@@ -134,7 +134,7 @@ describe('SmsService', () => {
       // phone-axis counter (abuse mitigation), permanently draining quotas.
       process.env['NODE_ENV'] = 'production';
       const configService = createConfigService({
-        INFOBIP_SENDER: 'Grapit',
+        INFOBIP_SENDER: 'Grabit',
         NODE_ENV: 'production',
       });
 
@@ -296,7 +296,7 @@ describe('SmsService', () => {
       );
     });
 
-    it('메시지 본문이 [Grapit] 인증번호 XXXXXX (3분 이내 입력) 포맷으로 전송됨', async () => {
+    it('메시지 본문이 [Grabit] 인증번호 XXXXXX (3분 이내 입력) 포맷으로 전송됨', async () => {
       const configService = createConfigService();
       const service = new SmsService(configService, mockRedis as never);
       mockRedis.set.mockResolvedValueOnce('OK'); // cooldown NX pass
@@ -313,7 +313,7 @@ describe('SmsService', () => {
       await service.sendVerificationCode('+821012345678');
       expect(sendSmsSpy).toHaveBeenCalledWith(
         '+821012345678',
-        '[Grapit] 인증번호 654321 (3분 이내 입력)',
+        '[Grabit] 인증번호 654321 (3분 이내 입력)',
       );
     });
 

@@ -9,7 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
 import type { Server, Socket } from 'socket.io';
-import type { SeatState } from '@grapit/shared';
+import type { SeatState } from '@grabit/shared';
 
 @WebSocketGateway({
   namespace: '/booking',

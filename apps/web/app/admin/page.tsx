@@ -29,7 +29,7 @@ import {
   useDashboardPayment,
   useDashboardTop10,
 } from '@/hooks/use-admin-dashboard';
-import type { DashboardPeriod } from '@grapit/shared';
+import type { DashboardPeriod } from '@grabit/shared';
 
 const PERIOD_LABEL: Record<DashboardPeriod, string> = {
   '7d': '7일',

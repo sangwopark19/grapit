@@ -10,7 +10,7 @@ import {
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
-import { adminRefundSchema, type AdminRefundInput } from '@grapit/shared';
+import { adminRefundSchema, type AdminRefundInput } from '@grabit/shared';
 import { AdminBookingService } from './admin-booking.service.js';
 
 @Controller('admin')

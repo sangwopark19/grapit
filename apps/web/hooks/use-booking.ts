@@ -9,7 +9,7 @@ import type {
   SeatStatusResponse,
   LockSeatResponse,
   UnlockAllResponse,
-} from '@grapit/shared';
+} from '@grabit/shared';
 
 interface LockSeatRequest {
   showtimeId: string;

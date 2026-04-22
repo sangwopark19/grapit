@@ -16,7 +16,7 @@ import type {
   PerformanceWithDetails,
   Banner,
   PerformanceQuery,
-} from '@grapit/shared';
+} from '@grabit/shared';
 import { CacheService } from './cache.service.js';
 
 @Injectable()

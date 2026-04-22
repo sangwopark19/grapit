@@ -1,3 +1,3 @@
-import type { CancelReservationInput } from '@grapit/shared';
+import type { CancelReservationInput } from '@grabit/shared';
 
 export type CancelReservationDto = CancelReservationInput;

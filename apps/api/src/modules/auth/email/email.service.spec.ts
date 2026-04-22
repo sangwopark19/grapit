@@ -46,7 +46,7 @@ describe('EmailService', () => {
   it('PROD mode: RESEND_API_KEY + RESEND_FROM_EMAIL set + NODE_ENV=production → calls Resend.emails.send with react template and correct from', async () => {
     const config = makeConfig({
       RESEND_API_KEY: 're_test_key',
-      RESEND_FROM_EMAIL: 'no-reply@grapit.com',
+      RESEND_FROM_EMAIL: 'no-reply@heygrabit.com',
       NODE_ENV: 'production',
     });
     const mod = resendModule as unknown as { __sendMock: ReturnType<typeof vi.fn> };
@@ -57,7 +57,7 @@ describe('EmailService', () => {
 
     expect(mod.__sendMock).toHaveBeenCalledTimes(1);
     const callArg = mod.__sendMock.mock.calls[0]?.[0] as { from: string; to: string; subject: string; react: unknown };
-    expect(callArg.from).toBe('no-reply@grapit.com');
+    expect(callArg.from).toBe('no-reply@heygrabit.com');
     expect(callArg.to).toBe('user@example.com');
     expect(callArg.subject).toContain('비밀번호 재설정');
     expect(callArg.react).toBeDefined();
@@ -86,7 +86,7 @@ describe('EmailService', () => {
   it('PROD SDK error: Resend returns { error } → returns { success: false, error }', async () => {
     const config = makeConfig({
       RESEND_API_KEY: 're_test_key',
-      RESEND_FROM_EMAIL: 'no-reply@grapit.com',
+      RESEND_FROM_EMAIL: 'no-reply@heygrabit.com',
       NODE_ENV: 'production',
     });
     const mod = resendModule as unknown as { __sendMock: ReturnType<typeof vi.fn> };

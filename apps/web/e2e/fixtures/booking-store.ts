@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import type { SeatSelection } from '@grapit/shared';
+import type { SeatSelection } from '@grabit/shared';
 
 /**
  * Inject minimal booking store state into the window before page navigation so the

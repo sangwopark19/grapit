@@ -1,4 +1,4 @@
 export {
   performanceQuerySchema,
   type PerformanceQuery,
-} from '@grapit/shared';
+} from '@grabit/shared';

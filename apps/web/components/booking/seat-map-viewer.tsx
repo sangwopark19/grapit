@@ -3,7 +3,7 @@
 import { useRef, useState, useCallback, useMemo, useEffect } from 'react';
 import { TransformWrapper, TransformComponent, MiniMap } from 'react-zoom-pan-pinch';
 import { Loader2, RefreshCw } from 'lucide-react';
-import type { SeatMapConfig, SeatState } from '@grapit/shared';
+import type { SeatMapConfig, SeatState } from '@grabit/shared';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SeatMapControls } from './seat-map-controls';

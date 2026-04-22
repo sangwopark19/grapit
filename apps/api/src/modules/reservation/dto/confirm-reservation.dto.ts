@@ -1,3 +1,3 @@
-import type { ConfirmPaymentInput } from '@grapit/shared';
+import type { ConfirmPaymentInput } from '@grabit/shared';
 
 export type ConfirmPaymentDto = ConfirmPaymentInput;

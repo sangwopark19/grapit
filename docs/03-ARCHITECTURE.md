@@ -838,7 +838,7 @@ CMD ["node", "dist/main.js"]
 ```bash
 # API 서비스 배포 예시
 gcloud run deploy api \
-  --image asia-northeast3-docker.pkg.dev/PROJECT_ID/grapit/api:latest \
+  --image asia-northeast3-docker.pkg.dev/PROJECT_ID/grabit/api:latest \
   --region asia-northeast3 \
   --platform managed \
   --port 8080 \
@@ -850,7 +850,7 @@ gcloud run deploy api \
   --timeout 300 \
   --set-env-vars NODE_ENV=production \
   --set-secrets JWT_SECRET=jwt-secret:latest \
-  --add-cloudsql-instances PROJECT_ID:asia-northeast3:grapit-db \
+  --add-cloudsql-instances PROJECT_ID:asia-northeast3:grabit-db \
   --allow-unauthenticated
 ```
 
@@ -864,7 +864,7 @@ Cloud Run 서비스 간 통신은 HTTPS를 통해 이루어집니다. 같은 리
 | `api` | Cloud SQL | Cloud SQL Auth Proxy (Unix Socket) | TCP (VPC 내부) |
 | `api` | Upstash Redis | `REDIS_URL` (TLS) | TCP/TLS |
 
-> **Cloud SQL 연결:** Cloud Run에서 Cloud SQL로의 연결은 `--add-cloudsql-instances` 플래그로 Cloud SQL Auth Proxy를 자동 설정합니다. Unix Socket 경로: `/cloudsql/PROJECT:asia-northeast3:grapit-db`
+> **Cloud SQL 연결:** Cloud Run에서 Cloud SQL로의 연결은 `--add-cloudsql-instances` 플래그로 Cloud SQL Auth Proxy를 자동 설정합니다. Unix Socket 경로: `/cloudsql/PROJECT:asia-northeast3:grabit-db`
 
 ### 5.4 환경 변수 관리
 
@@ -872,7 +872,7 @@ GCP Secret Manager와 Cloud Run 환경 변수를 조합하여 관리합니다.
 
 ```bash
 # Cloud SQL 연결 (Cloud SQL Auth Proxy 사용)
-DATABASE_URL=postgresql://user:password@/grapit?host=/cloudsql/PROJECT_ID:asia-northeast3:grapit-db
+DATABASE_URL=postgresql://user:password@/grabit?host=/cloudsql/PROJECT_ID:asia-northeast3:grabit-db
 
 # Upstash Redis (Upstash 콘솔에서 발급)
 REDIS_URL=rediss://default:PASSWORD@HOST:PORT
@@ -920,7 +920,7 @@ on:
     paths: ['apps/api/**']
 
 env:
-  PROJECT_ID: grapit-project
+  PROJECT_ID: grabit-project
   REGION: asia-northeast3
   REGISTRY: asia-northeast3-docker.pkg.dev
   SERVICE_NAME: api
@@ -948,15 +948,15 @@ jobs:
 
       - name: Build and Push Image
         run: |
-          docker build -t ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/grapit/${{ env.SERVICE_NAME }}:${{ github.sha }} ./apps/api
-          docker push ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/grapit/${{ env.SERVICE_NAME }}:${{ github.sha }}
+          docker build -t ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/grabit/${{ env.SERVICE_NAME }}:${{ github.sha }} ./apps/api
+          docker push ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/grabit/${{ env.SERVICE_NAME }}:${{ github.sha }}
 
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
         with:
           service: ${{ env.SERVICE_NAME }}
           region: ${{ env.REGION }}
-          image: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/grapit/${{ env.SERVICE_NAME }}:${{ github.sha }}
+          image: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/grabit/${{ env.SERVICE_NAME }}:${{ github.sha }}
 ```
 
 **배포 흐름:**

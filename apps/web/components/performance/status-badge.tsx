@@ -2,8 +2,8 @@
 
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/cn';
-import type { PerformanceStatus } from '@grapit/shared';
-import { STATUS_LABELS } from '@grapit/shared';
+import type { PerformanceStatus } from '@grabit/shared';
+import { STATUS_LABELS } from '@grabit/shared';
 
 const STATUS_STYLES: Record<PerformanceStatus, string> = {
   selling: 'bg-success text-white hover:bg-success',

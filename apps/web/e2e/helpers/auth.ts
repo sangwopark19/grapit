@@ -39,7 +39,7 @@ interface LoginResponse {
 export async function loginAsTestUser(page: Page): Promise<void> {
   // Use `||` (not `??`) so empty strings — what GitHub Actions injects when a
   // secret is unset — also fall back to seed defaults. Phase 09.1 fix.
-  const email = process.env['TEST_USER_EMAIL'] || 'admin@grapit.test';
+  const email = process.env['TEST_USER_EMAIL'] || 'admin@grabit.test';
   const password = process.env['TEST_USER_PASSWORD'] || 'TestAdmin2026!';
 
   // Hit the API directly (bypass Next.js rewrites). Next.js 16 dev-mode
@@ -70,7 +70,7 @@ export async function loginAsTestUser(page: Page): Promise<void> {
         `  URL: ${loginURL}\n` +
         `  Response body: ${body}\n` +
         `  Response headers: ${JSON.stringify(resHeaders)}\n` +
-        `  Hint: Run 'pnpm --filter @grapit/api seed' and ensure TEST_USER_* env matches seed.mjs:39-50.`,
+        `  Hint: Run 'pnpm --filter @grabit/api seed' and ensure TEST_USER_* env matches seed.mjs:39-50.`,
     );
   }
   (await res.json()) as LoginResponse;

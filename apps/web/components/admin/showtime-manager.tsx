@@ -7,7 +7,7 @@ import type {
   UseFieldArrayRemove,
 } from 'react-hook-form';
 import { Plus, Trash2 } from 'lucide-react';
-import type { CreatePerformanceFormInput } from '@grapit/shared';
+import type { CreatePerformanceFormInput } from '@grabit/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {

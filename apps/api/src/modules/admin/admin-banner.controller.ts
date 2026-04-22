@@ -11,7 +11,7 @@ import {
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
-import { createBannerSchema, type CreateBannerInput } from '@grapit/shared';
+import { createBannerSchema, type CreateBannerInput } from '@grabit/shared';
 import { AdminService } from './admin.service.js';
 
 @Controller('admin')

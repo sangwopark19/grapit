@@ -9,7 +9,7 @@ import type {
   DashboardPaymentDto,
   DashboardTopDto,
   DashboardPeriod,
-} from '@grapit/shared';
+} from '@grabit/shared';
 
 const STALE_TIME = 30_000; // 서버 TTL 60s의 절반
 const FOCUS_REFETCH = false; // D-11/UI-SPEC UX: 스켈레톤 깜빡임 방지
