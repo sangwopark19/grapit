@@ -144,6 +144,15 @@ export function SeatMapViewer({
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(rawSvg, 'image/svg+xml');
+    // review WR-03: admin/prefix-svg-defs-ids와 통일된 parsererror 가드.
+    //   R2가 손상된 SVG 또는 CDN 에러 페이지(HTML)를 반환한 엣지 케이스에서
+    //   viewer가 parsererror 문서를 그대로 rendering하지 않도록 fallback 분기로 유도.
+    if (
+      doc.documentElement.tagName === 'parsererror' ||
+      doc.querySelector('parsererror')
+    ) {
+      return null;
+    }
     const seats = doc.querySelectorAll('[data-seat-id]');
 
     seats.forEach((el) => {
