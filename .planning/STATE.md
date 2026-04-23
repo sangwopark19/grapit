@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
-status: paused
-stopped_at: "Phase 13 Wave 3 — blocked on DNS migration (heygrabit.com nameserver access); Waves 1-2 + Wave 3 code commits preserved on branch, not merged"
-last_updated: "2026-04-23T00:00:00.000Z"
-last_activity: 2026-04-23 -- Phase 13 paused (DNS migration incomplete); AR repo grabit + D-11 IAM binding already provisioned on GCP side; resume via /gsd-execute-phase 13 --wave 3 after DNS transfer
+status: "Phase 13 Wave 3 shipped — api.heygrabit.com live via Global HTTPS LB; Wave 4 (apex cutover) pending"
+stopped_at: Phase 13 Plan 3 complete
+last_updated: "2026-04-23T07:51:00.000Z"
+last_activity: 2026-04-23 -- Phase 13 Wave 3 resumed + shipped: grabit-api/grabit-web Cloud Run 신규 기동, Global HTTPS LB + SSL ACTIVE, Sentry slug rename + D-12 event 수신 검증 (api + web 격리), CLOUD_RUN_API_URL=api.heygrabit.com, OAuth callbacks 3종 병행 등록
 progress:
   total_phases: 11
   completed_phases: 8
   total_plans: 53
-  completed_plans: 46
-  percent: 87
+  completed_plans: 47
+  percent: 89
 ---
 
 # Project State
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 
 ## Current Position
 
-Phase: 13 (grapit-grabit-rename) — PAUSED (DNS migration incomplete)
-Plan: 3 of 4 (Waves 1–2 complete; Wave 3 code-side committed, external actions blocked)
-Status: Paused — awaiting heygrabit.com DNS transfer. See .planning/phases/13-grapit-grabit-rename/.continue-here.md
-Last activity: 2026-04-23 -- Phase 13 safe pause (13 commits preserved on gsd/phase-13-grapit-grabit-rename branch; main untouched)
+Phase: 13 (grapit-grabit-rename) — Wave 3 SHIPPED
+Plan: 3 of 4 complete (Wave 4 apex cutover pending)
+Status: api.heygrabit.com live (Global HTTPS LB, SSL ACTIVE); D-12 Sentry 검증 green; D-13 second-deploy env refresh 완료
+Last activity: 2026-04-23 -- Phase 13 Wave 3 resumed + shipped (main f1a7759..ebaa317, +Wave 3 code + LB 스택 + Sentry slug rename + DNS A record 34.117.215.31)
 
 Progress: [██████████] 100%
 

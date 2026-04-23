@@ -237,5 +237,5 @@ Plans:
 Plans:
 - [x] 13-01-PLAN.md — P1 코드/설정 rename: 4 manifest + 92+ import + Dockerfile/docker-compose/ci.yml/provision-valkey.sh/seed/fixture/docs (D-01/D-03/D-05/D-06/D-07 exceptions)
 - [x] 13-02-PLAN.md — P2 사용자 노출 카피: UI 로고/footer/admin + email subject + SMS body + legal MD (D-07 @heygrabit.com)
-- [ ] 13-03-PLAN.md — P3 인프라 식별자 생성: AR grabit + Sentry 2프로젝트 + deploy.yml env + 새 Cloud Run 서비스 기동 (D-05 SA 유지)
+- [x] 13-03-PLAN.md — P3 인프라 식별자 생성: AR grabit + Sentry 2프로젝트 slug rename + deploy.yml env + 새 Cloud Run 서비스 기동 (D-05 SA 유지) + api.heygrabit.com via Global HTTPS LB (asia-northeast3 domain-mappings 미지원 → Plan 원안 경로 변경)
 - [ ] 13-04-PLAN.md — P4 도메인 cutover + 7일 유예 후 정리: heygrabit.com → grabit-web, OAuth 3종 재등록, rollback/cleanup 스크립트, HUMAN-UAT
