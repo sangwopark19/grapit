@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
-status: "Phase 13 Wave 3 shipped — api.heygrabit.com live via Global HTTPS LB; Wave 4 (apex cutover) pending"
-stopped_at: Phase 13 Plan 3 complete
-last_updated: "2026-04-23T07:51:00.000Z"
-last_activity: 2026-04-23 -- Phase 13 Wave 3 resumed + shipped: grabit-api/grabit-web Cloud Run 신규 기동, Global HTTPS LB + SSL ACTIVE, Sentry slug rename + D-12 event 수신 검증 (api + web 격리), CLOUD_RUN_API_URL=api.heygrabit.com, OAuth callbacks 3종 병행 등록
+status: "Phase 13 shipped (Waves 1-4) — heygrabit.com/www/api 모두 live; 7-day grace cleanup + HUMAN-UAT 수동 잔여"
+stopped_at: Phase 13 complete (code side)
+last_updated: "2026-04-23T09:00:00.000Z"
+last_activity: 2026-04-23 -- Phase 13 Wave 4 shipped: heygrabit.com + www → grabit-web via LB URL Map 확장 + grabit-web-cert SNI 공존, FRONTEND_URL=https://heygrabit.com, 3-host HTTPS 200 확인
 progress:
   total_phases: 11
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 53
-  completed_plans: 47
-  percent: 89
+  completed_plans: 48
+  percent: 91
 ---
 
 # Project State
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 
 ## Current Position
 
-Phase: 13 (grapit-grabit-rename) — Wave 3 SHIPPED
-Plan: 3 of 4 complete (Wave 4 apex cutover pending)
-Status: api.heygrabit.com live (Global HTTPS LB, SSL ACTIVE); D-12 Sentry 검증 green; D-13 second-deploy env refresh 완료
-Last activity: 2026-04-23 -- Phase 13 Wave 3 resumed + shipped (main f1a7759..ebaa317, +Wave 3 code + LB 스택 + Sentry slug rename + DNS A record 34.117.215.31)
+Phase: 13 (grapit-grabit-rename) — SHIPPED (code side)
+Plan: 4 of 4 complete
+Status: heygrabit.com apex/www + api live (LB SNI, 3-host HTTPS 200); 7-day grace cleanup + 실기기 HUMAN-UAT 수동 잔여
+Last activity: 2026-04-23 -- Phase 13 Wave 4 shipped (main ebaa317..0690397, +LB URL Map 확장 + grabit-web-cert SNI + CLOUD_RUN_WEB_URL apex)
 
 Progress: [██████████] 100%
 
