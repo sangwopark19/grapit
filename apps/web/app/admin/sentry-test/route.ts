@@ -4,9 +4,12 @@ import type { NextRequest } from 'next/server';
 import { randomUUID } from 'node:crypto';
 
 /**
- * GET /admin/_sentry-test — Phase 13 Plan 03 (D-12).
+ * GET /admin/sentry-test — Phase 13 Plan 03 (D-12).
  *
  * 새 Sentry 프로젝트(grabit-web) server-side 이벤트 수신 검증용 admin-only route.
+ * Next.js App Router treats leading-`_` folders as private (excluded from routing),
+ * so the directory is `sentry-test` without underscore; admin guard inside the handler
+ * preserves the intended non-public semantics.
  * 반환된 eventId 를 Sentry UI/API 에서 조회해 수신 여부를 확정한다.
  *
  * 인증 모델 (T-13-27 mitigation):
