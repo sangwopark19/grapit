@@ -176,3 +176,5 @@ jobs:
             --allow-unauthenticated
           env_vars: |
             NODE_ENV=production
+          secrets: |
+            SENTRY_DSN=sentry-dsn:latest
