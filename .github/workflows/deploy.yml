@@ -177,4 +177,4 @@ jobs:
           env_vars: |
             NODE_ENV=production
           secrets: |
-            SENTRY_DSN=sentry-dsn:latest
+            SENTRY_DSN=sentry-dsn-web:latest
