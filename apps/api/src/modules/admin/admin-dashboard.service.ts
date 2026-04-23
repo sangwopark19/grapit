@@ -7,7 +7,7 @@ import type {
   DashboardPaymentDto,
   DashboardTopDto,
   DashboardPeriod,
-} from '@grapit/shared';
+} from '@grabit/shared';
 import { DRIZZLE, type DrizzleDB } from '../../database/drizzle.provider.js';
 import {
   reservations,

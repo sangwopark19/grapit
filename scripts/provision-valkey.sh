@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Grapit - Google Memorystore for Valkey provisioning script
+# Grabit - Google Memorystore for Valkey provisioning script
 # Usage: ./scripts/provision-valkey.sh <GCP_PROJECT_ID>
+#
+# NOTE (Phase 13 rename): 이미 provision된 (구-브랜드) Valkey 인스턴스는 이름 immutable
+# 이므로 그대로 사용 중. 본 스크립트 변수는 `grabit-*`로 갱신했지만 **재실행 금지**
+# (Valkey 데이터 재생성 = 좌석 잠금 유실). 신규 프로젝트에서만 rerun.
 #
 # Prerequisites:
 #   - gcloud CLI installed and authenticated (gcloud auth login)
@@ -23,15 +27,15 @@ set -euo pipefail
 #        --data-file=- --project=<PROJECT_ID>
 #   3. Grant Cloud Run service account access to the secret:
 #      gcloud secrets add-iam-policy-binding redis-url \
-#        --member="serviceAccount:grapit-cloudrun@<PROJECT_ID>.iam.gserviceaccount.com" \
+#        --member="serviceAccount:grapit-cloudrun@<PROJECT_ID>.iam.gserviceaccount.com" \   # D-05: SA 유지
 #        --role="roles/secretmanager.secretAccessor" \
 #        --project=<PROJECT_ID>
 
 PROJECT_ID="${1:?Usage: $0 <GCP_PROJECT_ID>}"
 REGION="asia-northeast3"
-INSTANCE_NAME="grapit-valkey"
+INSTANCE_NAME="grabit-valkey"
 NETWORK="default"
-POLICY_NAME="grapit-valkey-policy"
+POLICY_NAME="grabit-valkey-policy"
 
 echo "=== Step 1: Enable required APIs ==="
 gcloud services enable \
@@ -83,7 +87,7 @@ echo "       echo -n 'redis://<IP>:<PORT>' | \\"
 echo "         gcloud secrets create redis-url --data-file=- --project=$PROJECT_ID"
 echo "  3. Grant Cloud Run service account access:"
 echo "       gcloud secrets add-iam-policy-binding redis-url \\"
-echo "         --member='serviceAccount:grapit-cloudrun@$PROJECT_ID.iam.gserviceaccount.com' \\"
+echo "         --member='serviceAccount:grapit-cloudrun@$PROJECT_ID.iam.gserviceaccount.com' \\"   # D-05: SA 유지
 echo "         --role='roles/secretmanager.secretAccessor' \\"
 echo "         --project=$PROJECT_ID"
 echo ""

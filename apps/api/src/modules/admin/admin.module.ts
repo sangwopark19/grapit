@@ -7,6 +7,7 @@ import { AdminBannerController } from './admin-banner.controller.js';
 import { AdminBookingController } from './admin-booking.controller.js';
 import { LocalUploadController } from './local-upload.controller.js';
 import { AdminDashboardController } from './admin-dashboard.controller.js';
+import { AdminDiagnosticsController } from './admin-diagnostics.controller.js';
 import { AdminService } from './admin.service.js';
 import { AdminBookingService } from './admin-booking.service.js';
 import { UploadService } from './upload.service.js';
@@ -20,6 +21,7 @@ import { AdminDashboardService } from './admin-dashboard.service.js';
     AdminBookingController,
     LocalUploadController,
     AdminDashboardController,
+    AdminDiagnosticsController,
   ],
   providers: [
     AdminService,

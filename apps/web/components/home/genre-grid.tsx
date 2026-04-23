@@ -11,8 +11,8 @@ import {
   Baby,
   Tent,
 } from 'lucide-react';
-import type { Genre } from '@grapit/shared';
-import { GENRE_LABELS } from '@grapit/shared';
+import type { Genre } from '@grabit/shared';
+import { GENRE_LABELS } from '@grabit/shared';
 import type { LucideIcon } from 'lucide-react';
 
 const GENRE_ICONS: Record<Genre, LucideIcon> = {

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import type { AuthResponse, RegisterStep2Input, RegisterStep3Input } from '@grapit/shared';
+import type { AuthResponse, RegisterStep2Input, RegisterStep3Input } from '@grabit/shared';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '@/stores/use-auth-store';
 import { StepIndicator } from '@/components/auth/step-indicator';

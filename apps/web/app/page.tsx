@@ -12,7 +12,7 @@ export default function HomePage() {
 
   return (
     <main>
-      <h1 className="sr-only">Grapit</h1>
+      <h1 className="sr-only">Grabit</h1>
 
       {/* Banner Carousel */}
       {bannersLoading ? (

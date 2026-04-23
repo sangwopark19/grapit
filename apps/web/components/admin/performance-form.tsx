@@ -13,7 +13,7 @@ import {
   type PerformanceWithDetails,
   GENRES,
   GENRE_LABELS,
-} from '@grapit/shared';
+} from '@grabit/shared';
 import {
   useCreatePerformance,
   useUpdatePerformance,

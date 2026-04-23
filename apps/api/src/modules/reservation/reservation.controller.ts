@@ -17,7 +17,7 @@ import {
   type ConfirmPaymentInput,
   type CancelReservationInput,
   type ReservationStatus,
-} from '@grapit/shared';
+} from '@grabit/shared';
 import { ReservationService } from './reservation.service.js';
 
 @Controller()

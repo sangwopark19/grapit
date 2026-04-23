@@ -16,13 +16,13 @@ import type {
   PerformanceWithDetails,
   PerformanceListResponse,
   SeatMapConfig,
-} from '@grapit/shared';
+} from '@grabit/shared';
 import type {
   CreatePerformanceInput,
   UpdatePerformanceInput,
   CreateBannerInput,
   SeatMapConfigInput,
-} from '@grapit/shared';
+} from '@grabit/shared';
 import { CacheService } from '../performance/cache.service.js';
 
 @Injectable()

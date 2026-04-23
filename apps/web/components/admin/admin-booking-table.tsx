@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { AdminBookingListItem, ReservationStatus } from '@grapit/shared';
+import type { AdminBookingListItem, ReservationStatus } from '@grabit/shared';
 
 const STATUS_CONFIG: Record<
   ReservationStatus,

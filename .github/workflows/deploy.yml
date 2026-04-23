@@ -8,9 +8,9 @@ on:
 env:
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   GCP_REGION: asia-northeast3
-  AR_REPO: grapit
-  WEB_SERVICE: grapit-web
-  API_SERVICE: grapit-api
+  AR_REPO: grabit
+  WEB_SERVICE: grabit-web
+  API_SERVICE: grabit-api
 
 jobs:
   deploy-api:
@@ -60,7 +60,7 @@ jobs:
       - name: Run migrations
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: pnpm --filter @grapit/api exec drizzle-kit migrate
+        run: pnpm --filter @grabit/api exec drizzle-kit migrate
 
       # Build & Push API image
       - name: Build API image
@@ -72,6 +72,7 @@ jobs:
         run: docker push ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.API_SERVICE }}:${{ github.sha }}
 
       # Deploy to Cloud Run (per D-16, D-18)
+      # D-05: --service-account 값은 grapit-cloudrun@ 그대로 유지 (Phase 13 rename 제외 — IAM 바인딩 재설정 리스크 회피)
       - uses: google-github-actions/deploy-cloudrun@v3
         with:
           service: ${{ env.API_SERVICE }}
@@ -159,6 +160,7 @@ jobs:
         run: docker push ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.WEB_SERVICE }}:${{ github.sha }}
 
       # Deploy to Cloud Run (per D-16, D-18)
+      # D-05: --service-account 값은 grapit-cloudrun@ 그대로 유지 (Phase 13 rename 제외 — IAM 바인딩 재설정 리스크 회피)
       - uses: google-github-actions/deploy-cloudrun@v3
         with:
           service: ${{ env.WEB_SERVICE }}

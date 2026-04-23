@@ -24,7 +24,7 @@ test.describe('회원가입 SMS 인증 (mock 모드)', () => {
 
     // Step 1: 이메일/비밀번호
     const timestamp = Date.now();
-    await page.getByPlaceholder('이메일을 입력해주세요').fill(`test${timestamp}@e2e.grapit.dev`);
+    await page.getByPlaceholder('이메일을 입력해주세요').fill(`test${timestamp}@e2e.grabit.dev`);
     await page.getByPlaceholder('비밀번호를 입력해주세요').fill('TestPass1!');
     await page.getByPlaceholder('비밀번호를 다시 입력해주세요').fill('TestPass1!');
     await page.getByRole('button', { name: '다음' }).click();

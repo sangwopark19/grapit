@@ -2,7 +2,7 @@
 
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
-import type { SeatSelection, Showtime } from '@grapit/shared';
+import type { SeatSelection, Showtime } from '@grabit/shared';
 import { Button } from '@/components/ui/button';
 import { SeatRow } from './seat-row';
 

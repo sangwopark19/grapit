@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAdminBookingDetail } from '@/hooks/use-reservations';
 import { formatDateTime } from '@/lib/format-datetime';
-import type { ReservationStatus } from '@grapit/shared';
+import type { ReservationStatus } from '@grabit/shared';
 
 const STATUS_CONFIG: Record<
   ReservationStatus,

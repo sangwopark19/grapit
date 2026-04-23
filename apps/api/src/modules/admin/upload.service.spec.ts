@@ -24,8 +24,8 @@ import { UploadService } from './upload.service.js';
 function createMockConfigService(overrides: Record<string, string> = {}) {
   const config: Record<string, string> = {
     R2_ACCOUNT_ID: 'test-account-id',
-    R2_BUCKET_NAME: 'grapit-uploads',
-    R2_PUBLIC_URL: 'https://cdn.grapit.kr',
+    R2_BUCKET_NAME: 'grabit-uploads',
+    R2_PUBLIC_URL: 'https://cdn.heygrabit.com',
     R2_ACCESS_KEY_ID: 'test-access-key',
     R2_SECRET_ACCESS_KEY: 'test-secret-key',
     API_URL: 'http://localhost:8080',
@@ -99,7 +99,7 @@ describe('UploadService', () => {
     it('should construct publicUrl from R2_PUBLIC_URL config + key', async () => {
       const result = await service.generatePresignedUrl('banners', 'image/png', 'png');
 
-      expect(result.publicUrl).toBe(`https://cdn.grapit.kr/${result.key}`);
+      expect(result.publicUrl).toBe(`https://cdn.heygrabit.com/${result.key}`);
     });
 
     it('should create S3Client with forcePathStyle: true for R2 compatibility', async () => {

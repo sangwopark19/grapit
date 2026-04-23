@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AdminDashboardService } from '../admin-dashboard.service.js';
-import type { DashboardPeriod } from '@grapit/shared';
+import type { DashboardPeriod } from '@grabit/shared';
 
 /**
  * RED unit tests for AdminDashboardService (Plan 11-01).

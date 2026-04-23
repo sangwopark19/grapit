@@ -12,12 +12,12 @@ import { loginAsTestUser } from './helpers/auth';
  * Wave 1(Plan 01): 페이지/컴포넌트 아직 없음 → 모든 테스트 FAIL. RED.
  * Wave 2(Plan 03): `/admin` page + dashboard components 구현 → GREEN.
  *
- * Login: `loginAsTestUser` defaults to `admin@grapit.test` / `TestAdmin2026!`
+ * Login: `loginAsTestUser` defaults to `admin@grabit.test` / `TestAdmin2026!`
  * (helpers/auth.ts:42 — seed.mjs에 이미 존재, STATE.md 260413-jw1 참조).
  */
 test.describe('Admin Dashboard E2E', () => {
   test('landing-smoke: /admin renders dashboard with KPI + charts + Top10', async ({ page }) => {
-    await loginAsTestUser(page); // admin@grapit.test
+    await loginAsTestUser(page); // admin@grabit.test
     await page.goto('/admin');
     await expect(page).toHaveURL(/\/admin$/);
 

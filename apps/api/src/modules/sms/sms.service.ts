@@ -112,10 +112,10 @@ export class SmsService {
     // [WR-03] In production, reject alphanumeric sender IDs. KR MNOs silently
     // rewrite non-numeric senders, which causes Infobip to return 4xx for every
     // send. Our rollback policy keeps the phone-axis counter on 4xx (abuse
-    // mitigation), so a sender-ID typo like `INFOBIP_SENDER=Grapit` would
+    // mitigation), so a sender-ID typo like `INFOBIP_SENDER=Grabit` would
     // permanently drain every user's 5/hour quota with zero delivery.
     // KISA-registered numeric senders (landline or pre-approved short codes)
-    // are typically 4-15 digits. If Grapit adds non-KR routes later, relax
+    // are typically 4-15 digits. If Grabit adds non-KR routes later, relax
     // this to "numeric OR <= 11 alphanumeric chars" per Infobip sender-ID docs.
     if (isProduction && sender && !/^[0-9]{4,15}$/.test(sender)) {
       // [WR-03] Always mask to first 2 chars + ***. Previous `length <= 3 ?
@@ -200,7 +200,7 @@ export class SmsService {
 
     // [Phase 10.1] Self-managed OTP generation + Valkey storage
     const otp = this.generateOtp();
-    const text = `[Grapit] 인증번호 ${otp} (3분 이내 입력)`;
+    const text = `[Grabit] 인증번호 ${otp} (3분 이내 입력)`;
 
     try {
       // Store OTP first -- SMS delivery only matters after user receives it.

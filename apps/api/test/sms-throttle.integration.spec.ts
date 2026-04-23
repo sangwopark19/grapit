@@ -18,7 +18,7 @@ import request from 'supertest';
  * 실제 Valkey 컨테이너를 구동하여 @nestjs/throttler + ThrottlerStorageRedisService가
  * Valkey에서 정확하게 rate limiting을 수행하는지 검증합니다.
  *
- * 실행: pnpm --filter @grapit/api test:integration sms-throttle -- --run
+ * 실행: pnpm --filter @grabit/api test:integration sms-throttle -- --run
  * Docker가 필수입니다.
  */
 

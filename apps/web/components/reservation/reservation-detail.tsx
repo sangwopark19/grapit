@@ -14,7 +14,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { CancelConfirmModal } from '@/components/reservation/cancel-confirm-modal';
-import type { ReservationDetail as ReservationDetailType, ReservationStatus } from '@grapit/shared';
+import type { ReservationDetail as ReservationDetailType, ReservationStatus } from '@grabit/shared';
 
 const STATUS_CONFIG: Record<
   ReservationStatus,

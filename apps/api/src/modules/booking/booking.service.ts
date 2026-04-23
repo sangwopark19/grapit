@@ -6,7 +6,7 @@ import { DRIZZLE } from '../../database/drizzle.provider.js';
 import type { DrizzleDB } from '../../database/drizzle.provider.js';
 import { seatInventories } from '../../database/schema/seat-inventories.js';
 import { BookingGateway } from './booking.gateway.js';
-import type { LockSeatResponse, SeatState, SeatStatusResponse, UnlockAllResponse } from '@grapit/shared';
+import type { LockSeatResponse, SeatState, SeatStatusResponse, UnlockAllResponse } from '@grabit/shared';
 
 /** Maximum number of seats a user can lock per showtime (D-03) */
 const MAX_SEATS = 4;

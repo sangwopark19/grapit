@@ -3,7 +3,7 @@ import type {
   PerformanceCardData,
   PerformanceListResponse,
   PerformanceWithDetails,
-} from '@grapit/shared';
+} from '@grabit/shared';
 
 import { PerformanceService } from './performance.service.js';
 import { CacheService } from './cache.service.js';

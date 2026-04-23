@@ -7,7 +7,7 @@ import { GenreChip } from '@/components/performance/genre-chip';
 import { PerformanceGrid } from '@/components/performance/performance-grid';
 import { PaginationNav } from '@/components/performance/pagination-nav';
 import { useSearch } from '@/hooks/use-search';
-import { GENRES, GENRE_LABELS } from '@grapit/shared';
+import { GENRES, GENRE_LABELS } from '@grabit/shared';
 
 const GENRE_FILTER_CHIPS = [
   { label: '전체', value: '' },

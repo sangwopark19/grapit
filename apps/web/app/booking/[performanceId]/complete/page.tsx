@@ -8,7 +8,7 @@ import { AuthGuard } from '@/components/auth/auth-guard';
 import { BookingComplete } from '@/components/booking/booking-complete';
 import { useConfirmPayment, useReservationByOrderId } from '@/hooks/use-booking';
 import { useBookingStore } from '@/stores/use-booking-store';
-import type { ReservationDetail } from '@grapit/shared';
+import type { ReservationDetail } from '@grabit/shared';
 
 function CompleteSkeleton() {
   return (

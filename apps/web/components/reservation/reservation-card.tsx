@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
-import type { ReservationListItem, ReservationStatus } from '@grapit/shared';
+import type { ReservationListItem, ReservationStatus } from '@grabit/shared';
 
 const STATUS_CONFIG: Record<
   ReservationStatus,

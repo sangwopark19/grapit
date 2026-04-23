@@ -5,7 +5,7 @@ interface PasswordResetEmailProps {
 }
 
 /**
- * PasswordResetEmail — React Email template for Grapit password reset flow.
+ * PasswordResetEmail — React Email template for Grabit password reset flow.
  * Phase 9 DEBT-01: replaces the console.log stub in auth.service.ts.
  *
  * Resend SDK accepts the JSX element via `react` param (no render() call).

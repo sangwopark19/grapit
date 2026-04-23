@@ -220,3 +220,22 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
 
 Plans:
 - [ ] TBD (promote with /gsd-review-backlog when ready)
+
+### Phase 13: 브랜드명 grapit → grabit 일괄 rename
+
+**Goal:** 코드/문서/설정/이메일·SMS 카피/DB/Cloud Run 서비스명을 `grapit`에서 `grabit`으로 일괄 전환하여 확정 도메인 heygrabit.com 런칭에 맞춘 브랜드 정합성 확보
+**Requirements**: SC-1, SC-2, SC-3, SC-4 (Success Criteria를 REQ-ID proxy로 사용)
+**Depends on:** Phase 12
+**Canonical refs:** .planning/seeds/SEED-002-brand-rename-grapit-to-grabit.md
+**Success Criteria** (what must be TRUE):
+  1. 신규 코드/문서/설정이 `grabit`으로 통일되고 빌드·타입체크·린트 통과 (SC-1)
+  2. 사용자 노출 문자열(이메일 템플릿/SMS 발신자/title/meta/UI 카피) 전부 `Grabit` (SC-2)
+  3. prod DB와 Cloud Run 서비스가 `grabit` 식별자로 정상 동작 (SC-3)
+  4. 과거 milestone 기록·완료된 phase 폴더·commit message는 건드리지 않음 (SC-4)
+**Plans:** 4 plans
+
+Plans:
+- [x] 13-01-PLAN.md — P1 코드/설정 rename: 4 manifest + 92+ import + Dockerfile/docker-compose/ci.yml/provision-valkey.sh/seed/fixture/docs (D-01/D-03/D-05/D-06/D-07 exceptions)
+- [x] 13-02-PLAN.md — P2 사용자 노출 카피: UI 로고/footer/admin + email subject + SMS body + legal MD (D-07 @heygrabit.com)
+- [ ] 13-03-PLAN.md — P3 인프라 식별자 생성: AR grabit + Sentry 2프로젝트 + deploy.yml env + 새 Cloud Run 서비스 기동 (D-05 SA 유지)
+- [ ] 13-04-PLAN.md — P4 도메인 cutover + 7일 유예 후 정리: heygrabit.com → grabit-web, OAuth 3종 재등록, rollback/cleanup 스크립트, HUMAN-UAT

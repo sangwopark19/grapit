@@ -40,7 +40,7 @@ const nextConfig: NextConfig = {
   allowedDevOrigins,
   output: 'standalone',
   outputFileTracingRoot: resolve(__dirname, '../../'),
-  transpilePackages: ['@grapit/shared'],
+  transpilePackages: ['@grabit/shared'],
   turbopack: {
     root: resolve(__dirname, '../../'),
     rules: {

@@ -1,7 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
-import type { SeatSelection } from '@grapit/shared';
+import type { SeatSelection } from '@grabit/shared';
 
 interface BookingState {
   selectedDate: Date | null;

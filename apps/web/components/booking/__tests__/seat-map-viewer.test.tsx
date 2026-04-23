@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { SeatMapViewer } from '../seat-map-viewer';
-import type { SeatMapConfig, SeatState } from '@grapit/shared';
+import type { SeatMapConfig, SeatState } from '@grabit/shared';
 
 // B-3: vi.hoisted로 mock factory가 참조할 const들을 hoist-safe하게 선언
 const { transformWrapperSpy, mockUseIsMobile, miniMapSpy } = vi.hoisted(() => ({

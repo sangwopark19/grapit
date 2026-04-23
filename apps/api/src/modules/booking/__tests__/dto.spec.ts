@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { lockSeatSchema } from '../dto/lock-seat.dto.js';
-import type { SeatState } from '@grapit/shared';
+import type { SeatState } from '@grabit/shared';
 
 describe('LockSeatRequest zod schema', () => {
   it('validates valid {showtimeId: uuid, seatId: string}', () => {

@@ -19,7 +19,7 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: grapit_test
+          POSTGRES_DB: grabit_test
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 10s
@@ -29,7 +29,7 @@ jobs:
           - 5432:5432
     env:
       # Wired at job level so migrate/seed/api-dev-server all resolve identically.
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/grapit_test
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/grabit_test
       # Test-only secrets — never use in production. NestJS main.ts only hard-fails
       # FRONTEND_URL https when NODE_ENV=production, so NODE_ENV=test keeps CORS
       # origin as http://localhost:3000 for Playwright.
@@ -53,17 +53,17 @@ jobs:
       # drizzle-kit migrate reads DATABASE_URL from env (CLAUDE.md convention:
       # DOTENV_CONFIG_PATH only needed when .env is the source; CI injects via env).
       - name: Run DB migrations
-        run: pnpm --filter @grapit/api exec drizzle-kit migrate
+        run: pnpm --filter @grabit/api exec drizzle-kit migrate
 
-      - name: Seed test data (admin@grapit.test)
-        run: pnpm --filter @grapit/api run seed
+      - name: Seed test data (admin@grabit.test)
+        run: pnpm --filter @grabit/api run seed
 
       - name: Verify seed — admin user present in DB (debug aid)
         env:
           PGPASSWORD: postgres
         run: |
-          psql -h localhost -U postgres -d grapit_test -c \
-            "SELECT email, role, is_email_verified, is_phone_verified, length(password_hash) AS pw_len FROM users WHERE email='admin@grapit.test';"
+          psql -h localhost -U postgres -d grabit_test -c \
+            "SELECT email, role, is_email_verified, is_phone_verified, length(password_hash) AS pw_len FROM users WHERE email='admin@grabit.test';"
 
       # REVIEWS.md HIGH-02: Hard-gate on non-fork events.
       # main push / schedule / workflow_dispatch / same-repo PR MUST have Toss test secrets.
@@ -87,13 +87,13 @@ jobs:
           echo "Toss test secrets present."
 
       - name: Install Playwright browsers
-        run: pnpm --filter @grapit/web exec playwright install --with-deps chromium
+        run: pnpm --filter @grabit/web exec playwright install --with-deps chromium
 
       # Build the API (nest build → dist/main.js) so startup is fast + deterministic.
       # `nest start --watch` (the dev script) takes too long in CI due to TSC init
       # and didn't finish listening within 60s in the previous run.
       - name: Build API
-        run: pnpm --filter @grapit/api build
+        run: pnpm --filter @grabit/api build
 
       # API server in background — separate step (not Playwright webServer) so
       # logs land in api.log for post-mortem + env propagation is trivial.
@@ -133,7 +133,7 @@ jobs:
           echo "--- POST /api/v1/auth/login ---"
           curl -sS -X POST http://localhost:8080/api/v1/auth/login \
             -H "Content-Type: application/json" \
-            -d '{"email":"admin@grapit.test","password":"TestAdmin2026!"}' \
+            -d '{"email":"admin@grabit.test","password":"TestAdmin2026!"}' \
             -w "\nHTTP %{http_code}\n" || true
 
       - name: E2E tests (Toss Payments)
@@ -145,7 +145,7 @@ jobs:
           # to seed.mjs defaults when unset, which matches local developer flow).
           TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
           TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
-        run: pnpm --filter @grapit/web test:e2e
+        run: pnpm --filter @grabit/web test:e2e
 
       - name: Dump API log (on failure)
         if: failure()

@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
-status: "Phase 12 shipped — PR #18"
-stopped_at: Phase 12 UI-SPEC approved
-last_updated: "2026-04-22T01:55:00.000Z"
-last_activity: 2026-04-22
+status: paused
+stopped_at: "Phase 13 Wave 3 — blocked on DNS migration (heygrabit.com nameserver access); Waves 1-2 + Wave 3 code commits preserved on branch, not merged"
+last_updated: "2026-04-23T00:00:00.000Z"
+last_activity: 2026-04-23 -- Phase 13 paused (DNS migration incomplete); AR repo grabit + D-11 IAM binding already provisioned on GCP side; resume via /gsd-execute-phase 13 --wave 3 after DNS transfer
 progress:
-  total_phases: 9
+  total_phases: 11
   completed_phases: 8
-  total_plans: 45
-  completed_plans: 44
-  percent: 98
+  total_plans: 53
+  completed_plans: 46
+  percent: 87
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** 사용자가 원하는 공연을 발견하고, 좌석을 직접 선택하여, 안정적으로 예매를 완료할 수 있는 것
-**Current focus:** Phase 12 — ux
+**Current focus:** Phase 13 — grapit-grabit-rename
 
 ## Current Position
 
-Phase: 12
-Plan: Not started
-Status: Phase 12 shipped — PR #18
-Last activity: 2026-04-22 - Completed quick task 260422-eya: PR #18 코드리뷰 maxSelect+locked regression 수정
+Phase: 13 (grapit-grabit-rename) — PAUSED (DNS migration incomplete)
+Plan: 3 of 4 (Waves 1–2 complete; Wave 3 code-side committed, external actions blocked)
+Status: Paused — awaiting heygrabit.com DNS transfer. See .planning/phases/13-grapit-grabit-rename/.continue-here.md
+Last activity: 2026-04-23 -- Phase 13 safe pause (13 commits preserved on gsd/phase-13-grapit-grabit-rename branch; main untouched)
 
 Progress: [██████████] 100%
 
@@ -73,6 +73,7 @@ Progress: [██████████] 100%
 
 - Phase 09.1 inserted after Phase 09: CI-login-E2E — Playwright login helper 의 POST /auth/login 401 이슈 조사 (URGENT)
 - Phase 10.1 inserted after Phase 10: SMS API v3 전환 — 2FA PIN API(/2fa/2/pin)에서 일반 SMS API(/sms/3/messages)로 리팩토링, applicationId/messageId 의존 제거, PIN 생성·검증 자체 구현 (URGENT)
+- Phase 13 added: 브랜드명 grapit → grabit 일괄 rename (SEED-002 surfaced after Phase 12 ship, 2026-04-22)
 
 ### Decisions
 
@@ -114,7 +115,7 @@ None.
 ## Session Continuity
 
 Last session: --stopped-at
-Stopped at: Phase 12 UI-SPEC approved
+Stopped at: Phase 13 partial context updated — D-09~D-17
 Resume file: --resume-file
 
-**Planned Phase:** 12 (UX 현대화) — 6 plans — 2026-04-21T05:44:46.922Z
+**Planned Phase:** 13 (브랜드명 grapit → grabit 일괄 rename) — 4 plans — 2026-04-22T05:35:53.504Z

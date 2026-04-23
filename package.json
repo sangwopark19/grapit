@@ -1,5 +1,5 @@
 {
-  "name": "@grapit/root",
+  "name": "@grabit/root",
   "private": true,
   "scripts": {
     "dev": "turbo dev",

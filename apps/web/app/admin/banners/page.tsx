@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import type { Banner } from '@grapit/shared';
+import type { Banner } from '@grabit/shared';
 
 export default function AdminBannersPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);

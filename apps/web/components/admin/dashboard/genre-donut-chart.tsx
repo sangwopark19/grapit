@@ -9,7 +9,7 @@ import {
   ChartLegendContent,
   type ChartConfig,
 } from '@/components/ui/chart';
-import type { DashboardGenreDto } from '@grapit/shared';
+import type { DashboardGenreDto } from '@grabit/shared';
 
 const PALETTE = [
   'var(--chart-1)',

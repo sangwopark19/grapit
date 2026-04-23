@@ -1,17 +1,17 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: grapit-postgres
+    container_name: grabit-postgres
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: grapit
-      POSTGRES_USER: grapit
-      POSTGRES_PASSWORD: grapit_dev
+      POSTGRES_DB: grabit
+      POSTGRES_USER: grabit
+      POSTGRES_PASSWORD: grapit_dev   # ← D-01: 비밀번호 유지 (prod DB rename 제외 원칙의 연장)
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U grapit"]
+      test: ["CMD-SHELL", "pg_isready -U grabit"]
       interval: 5s
       timeout: 5s
       retries: 5

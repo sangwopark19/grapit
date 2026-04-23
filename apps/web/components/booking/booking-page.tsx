@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
-import type { SeatSelection, SeatState, SeatMapConfig } from '@grapit/shared';
+import type { SeatSelection, SeatState, SeatMapConfig } from '@grabit/shared';
 import { usePerformanceDetail } from '@/hooks/use-performances';
 import {
   useSeatStatus,

@@ -19,11 +19,11 @@ import { EmailService } from './email/email.service.js';
 import type { RegisterBody } from './dto/register.dto.js';
 import type { SocialRegisterBody } from './dto/social-register.dto.js';
 import type { SocialProfile } from './interfaces/social-profile.interface.js';
-import type { UserProfile } from '@grapit/shared/types/user.types.js';
-import type { SocialAuthResult } from '@grapit/shared/types/auth.types.js';
+import type { UserProfile } from '@grabit/shared/types/user.types.js';
+import type { SocialAuthResult } from '@grabit/shared/types/auth.types.js';
 import {
   REFRESH_TOKEN_EXPIRY_DAYS,
-} from '@grapit/shared/constants/index.js';
+} from '@grabit/shared/constants/index.js';
 
 // UUID v4 형식 검증용 regex. resetPassword 경로에서 DB lookup 전
 // sub 클레임이 실제 UUID임을 보장하여 payload-amplification DoS와
@@ -415,7 +415,7 @@ export class AuthService {
     }
 
     // 2. Check if user with that email already exists (account linking)
-    const email = payload.email ?? `${payload.provider}_${payload.providerId}@social.grapit.com`;
+    const email = payload.email ?? `${payload.provider}_${payload.providerId}@social.grabit.com`;
     const existingUser = await this.userRepository.findByEmail(email);
 
     let userId: string;

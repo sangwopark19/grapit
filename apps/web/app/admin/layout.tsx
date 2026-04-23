@@ -56,7 +56,7 @@ export default function AdminLayout({
               </SheetContent>
             </Sheet>
           </div>
-          <span className="text-lg font-semibold lg:hidden">Grapit Admin</span>
+          <span className="text-lg font-semibold lg:hidden">Grabit Admin</span>
           <div className="ml-auto flex items-center gap-3">
             <span className="text-sm text-gray-600">{user.name}</span>
             <Button
