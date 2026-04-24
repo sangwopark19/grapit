@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
-status: "Phase 13 shipped (Waves 1-4) — heygrabit.com/www/api 모두 live; 7-day grace cleanup + HUMAN-UAT 수동 잔여"
-stopped_at: Phase 13 complete (code side)
-last_updated: "2026-04-23T09:00:00.000Z"
-last_activity: 2026-04-23 -- Phase 13 Wave 4 shipped: heygrabit.com + www → grabit-web via LB URL Map 확장 + grabit-web-cert SNI 공존, FRONTEND_URL=https://heygrabit.com, 3-host HTTPS 200 확인
+status: heygrabit.com apex/www + api live (LB SNI, 3-host HTTPS 200); 7-day grace cleanup + 실기기 HUMAN-UAT 수동 잔여
+stopped_at: Phase 13 partial context updated — D-09~D-17
+last_updated: "2026-04-24T03:46:27.197Z"
+last_activity: 2026-04-23 -- Phase 13 Wave 4 shipped (main ebaa317..0690397, +LB URL Map 확장 + grabit-web-cert SNI + CLOUD_RUN_WEB_URL apex)
 progress:
-  total_phases: 11
+  total_phases: 15
   completed_phases: 9
   total_plans: 53
   completed_plans: 48
@@ -122,4 +122,4 @@ Last session: --stopped-at
 Stopped at: Phase 13 partial context updated — D-09~D-17
 Resume file: --resume-file
 
-**Planned Phase:** 13 (브랜드명 grapit → grabit 일괄 rename) — 4 plans — 2026-04-22T05:35:53.504Z
+**Planned Phase:** 14 (sms-otp-crossslot-fix-sms-valkey-cluster-hash-tag) — 4 plans — 2026-04-24T03:46:27.193Z
