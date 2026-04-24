@@ -40,16 +40,18 @@ created: 2026-04-24
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
 | 15-01-01 | 01 | 1 | CUTOVER-04 | T-15-01 | Resend 발송 실패 시 Sentry 에 err 1회 보고, PII masking (domain only) | unit + typecheck + lint | `pnpm --filter @grabit/api test -- email.service.spec && pnpm --filter @grabit/api typecheck && pnpm --filter @grabit/api lint --no-fix apps/api/src/modules/auth/email/email.service.ts` | ✅ | ⬜ pending |
 | 15-01-02 | 01 | 1 | CUTOVER-06 | T-15-02 | 기존 6 spec 회귀 없음 + Sentry mock 검증 2 신규 spec pass | unit | `pnpm --filter @grabit/api test -- email.service.spec` | ✅ | ⬜ pending |
-| 15-02-01 | 02 | 2 | CUTOVER-01 | T-15-06 | Resend 콘솔 heygrabit.com 등록 (운영자 수동) | manual (checkpoint:human-action) | — 외부 SaaS 콘솔, API 자동 검증 불가. Pre-condition of Task 3 dig | n/a | ⬜ pending |
-| 15-02-02 | 02 | 2 | CUTOVER-01 | T-15-07/08 | 후이즈 DNS SPF/DKIM/DMARC 레코드 저장 (Resend 발급값 그대로) | manual (checkpoint:human-action) | — 외부 DNS 콘솔. Pre-condition of Task 3 dig | n/a | ⬜ pending |
-| 15-02-03 | 02 | 2 | CUTOVER-01 | T-15-09 | dig 으로 DNS 전파 확인 + Resend Verified 상태 | mixed (automated dig + manual Resend) | `dig +short TXT send.heygrabit.com ; dig +short CNAME resend._domainkey.heygrabit.com ; dig +short TXT _dmarc.heygrabit.com ; dig +short MX send.heygrabit.com` (모두 non-empty) | ✅ | ⬜ pending |
-| 15-02-04 | 02 | 2 | CUTOVER-01 | T-15-10 | 15-HUMAN-UAT.md 생성 (6개 섹션) | automated | `test -f .planning/phases/15-*/15-HUMAN-UAT.md && grep -c '^## ' .planning/phases/15-*/15-HUMAN-UAT.md` (≥6) | ⬜ | ⬜ pending |
-| 15-03-01 | 03 | 3 | CUTOVER-02 | T-15-12 | Secret Manager 신규 version payload = `no-reply@heygrabit.com`, 구 version 유지 | automated | `gcloud secrets versions access latest --secret=resend-from-email --project=grapit-491806` → `no-reply@heygrabit.com` exact match | ✅ | ⬜ pending |
-| 15-03-02 | 03 | 3 | CUTOVER-03 | T-15-13/14 | Cloud Run 신규 revision traffic 100%, 구 version 참조 없음 | automated | `gcloud run services describe grabit-api --region=asia-northeast3 --project=grapit-491806 --format='value(status.traffic[0].percent)'` → `100` | ✅ | ⬜ pending |
-| 15-03-03 | 03 | 3 | CUTOVER-05 | T-15-15/16 | 3사 (Gmail/Naver/Daum) inbox 수신, spam 미분류, from `no-reply@heygrabit.com` | manual (checkpoint:human-verify, gate=blocking) | — 실기기 UAT, 자동화 불가. Cross-validate with Task 4 logging empty | n/a | ⬜ pending |
-| 15-03-04 | 03 | 3 | CUTOVER-05 | T-15-17 | Cloud Logging 에서 "Resend send failed" 최근 24h empty | automated | `gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="grabit-api" AND (textPayload:"Resend send failed" OR jsonPayload.message:"Resend send failed")' --project=grapit-491806 --freshness=24h --limit=10` (empty) | ✅ | ⬜ pending |
-| 15-03-05 | 03 | 3 | CUTOVER-01 | T-15-18 | Resend 대시보드에서 grapit.com 제거 (Task 3/4 PASS 이후만) | manual (checkpoint:human-action) | — 외부 SaaS, API 자동 검증 불가. Pre-gated by Task 3 + Task 4 PASS | n/a | ⬜ pending |
-| 15-03-06 | 03 | 3 | CUTOVER-01..06 | T-15-19 | 15-HUMAN-UAT.md Wave 3 섹션 fill-in, placeholder 0 개 | automated | `remaining=$(grep -c '__________' .planning/phases/15-*/15-HUMAN-UAT.md 2>/dev/null || echo 0); test "$remaining" -eq 0` | ✅ | ⬜ pending |
+| 15-02-00 | 02 | 1 | CUTOVER-01 | T-15-10 | 15-HUMAN-UAT.md shell 생성 (6개 섹션, Task 1~3 의 실시간 기록용) | automated | `test -f .planning/phases/15-*/15-HUMAN-UAT.md && grep -c '^## ' .planning/phases/15-*/15-HUMAN-UAT.md` (≥6) | ⬜ | ⬜ pending |
+| 15-02-01 | 02 | 1 | CUTOVER-01 | T-15-06 | Resend 콘솔 heygrabit.com 등록 (운영자 수동) | manual (checkpoint:human-action) | — 외부 SaaS 콘솔, API 자동 검증 불가. Pre-condition of Task 3 dig | n/a | ⬜ pending |
+| 15-02-02 | 02 | 1 | CUTOVER-01 | T-15-07/08 | 후이즈 DNS SPF/DKIM/DMARC 레코드 저장 (Resend 발급값 그대로) | manual (checkpoint:human-action) | — 외부 DNS 콘솔. Pre-condition of Task 3 dig | n/a | ⬜ pending |
+| 15-02-03 | 02 | 1 | CUTOVER-01 | T-15-09 | dig 으로 DNS 전파 확인 + Resend Verified 상태 | mixed (automated dig + manual Resend) | `dig +short TXT send.heygrabit.com ; dig +short CNAME resend._domainkey.heygrabit.com ; dig +short TXT _dmarc.heygrabit.com ; dig +short MX send.heygrabit.com` (모두 non-empty) | ✅ | ⬜ pending |
+| 15-03-00 | 03 | 2 | CUTOVER-04 | T-15-21 | Plan 01 배포 pre-gate — Cloud Run 현재 serving revision 이 Plan 01 merge commit 빌드로 생성됨 (REVIEWS H1) | automated | `gcloud run services describe grabit-api --region=asia-northeast3 --project=grapit-491806 --format='value(status.traffic[0].revisionName,metadata.creationTimestamp)'` (revision 이름 + 배포 시각을 Plan 01 merge commit 과 비교) | ✅ | ⬜ pending |
+| 15-03-01 | 03 | 2 | CUTOVER-02 | T-15-12 | Secret Manager 신규 version payload = `no-reply@heygrabit.com`, 구 version 유지 | automated | `gcloud secrets versions access latest --secret=resend-from-email --project=grapit-491806` → `no-reply@heygrabit.com` exact match | ✅ | ⬜ pending |
+| 15-03-02 | 03 | 2 | CUTOVER-03 | T-15-13/14 | Cloud Run 신규 revision traffic 100%, 구 version 참조 없음 | automated | `gcloud run services describe grabit-api --region=asia-northeast3 --project=grapit-491806 --format='value(status.traffic[0].percent)'` → `100` | ✅ | ⬜ pending |
+| 15-03-03 | 03 | 2 | CUTOVER-05 | T-15-15/16 | 3사 (Gmail/Naver/Daum) inbox 수신, spam 미분류, from `no-reply@heygrabit.com` | manual (checkpoint:human-verify, gate=blocking) | — 실기기 UAT, 자동화 불가. Cross-validate with Task 4 logging empty | n/a | ⬜ pending |
+| 15-03-04 | 03 | 2 | CUTOVER-05 | T-15-17 | Cloud Logging 에서 "Resend send failed" 가 신규 revision 범위에서 empty | automated | `gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="grabit-api" AND resource.labels.revision_name="<NEW_REVISION_NAME>" AND (textPayload:"Resend send failed" OR jsonPayload.message:"Resend send failed")' --project=grapit-491806 --limit=50 --format=json` (empty, `<NEW_REVISION_NAME>` = Task 2 resume-signal 값) | ✅ | ⬜ pending |
+| 15-03-05 | 03 | 2 | CUTOVER-01 | T-15-18 | Resend 대시보드에서 grapit.com 제거 (Task 3/4 PASS + 48h 안정 window 이후만) | manual (checkpoint:human-action) | — 외부 SaaS, API 자동 검증 불가. Pre-gated by Task 3 + Task 4 + 안정 window | n/a | ⬜ pending |
+| 15-03-06 | 03 | 2 | CUTOVER-01..06 | T-15-19 | 15-HUMAN-UAT.md Wave 3 섹션 fill-in, placeholder 0 개 | automated | `remaining=$(grep -c '__________' .planning/phases/15-*/15-HUMAN-UAT.md 2>/dev/null || echo 0); test "$remaining" -eq 0` | ✅ | ⬜ pending |
+| 15-03-07 | 03 | 2 | CUTOVER-01..06 | — | STATE.md Phase 15 상태 shipped + ROADMAP.md 체크박스 `[x]` (REVIEWS L2 — audit trail 완결) | automated | `grep -q 'Phase 15.*shipped' .planning/STATE.md && grep -q 'Phase 15.*\[x\]' .planning/ROADMAP.md` (두 파일 AND 조건) | ✅ | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -84,7 +86,7 @@ created: 2026-04-24
 ## Validation Sign-Off
 
 - [x] 모든 코드 변경 task 에 `<automated>` verify (email.service.spec.ts) 연결 — 15-01-01/02
-- [x] 운영 task (DNS/Secret/Redeploy/UAT) 는 HUMAN-UAT.md 에 실행 로그 축적으로 검증 — 15-02-04 (create) + 15-03-06 (fill-in)
+- [x] 운영 task (DNS/Secret/Redeploy/UAT) 는 HUMAN-UAT.md 에 실행 로그 축적으로 검증 — 15-02-00 (create) + 15-03-06 (fill-in)
 - [x] Wave 0 생략 이유 명시 (기존 test infra 재사용)
 - [ ] 15-HUMAN-UAT.md 에 manual verification 결과 전부 기록 (실행 중 execute-phase 가 채움)
 - [x] Feedback latency < 90s
