@@ -112,15 +112,18 @@ describe('redisProvider factory', () => {
 
     it('set(key, value, "PX", ms, "NX") honors NX + TTL (ioredis variadic)', async () => {
       const redis = createMock();
-      const first = await redis.set('sms:resend:+821012345678', '1', 'PX', 30_000, 'NX');
+      // [Phase 14 / WR-01] Illustrative fixture uses the unified hash-tag key
+      // scheme (`{sms:<e164>}:resend`) that SmsService actually produces.
+      const key = '{sms:+821012345678}:resend';
+      const first = await redis.set(key, '1', 'PX', 30_000, 'NX');
       expect(first).toBe('OK');
 
       // Second NX call must fail while key is live
-      const second = await redis.set('sms:resend:+821012345678', '1', 'PX', 30_000, 'NX');
+      const second = await redis.set(key, '1', 'PX', 30_000, 'NX');
       expect(second).toBeNull();
 
       // pttl returns remaining milliseconds for a key with TTL
-      const ttl = await redis.pttl('sms:resend:+821012345678');
+      const ttl = await redis.pttl(key);
       expect(ttl).toBeGreaterThan(0);
       expect(ttl).toBeLessThanOrEqual(30_000);
     });
@@ -134,9 +137,12 @@ describe('redisProvider factory', () => {
 
     it('decr() decrements and can go below zero (rollback parity with real Redis)', async () => {
       const redis = createMock();
-      await redis.set('sms:phone:send:+821012345678', '3');
-      expect(await redis.decr('sms:phone:send:+821012345678')).toBe(2);
-      expect(await redis.decr('sms:phone:send:+821012345678')).toBe(1);
+      // [Phase 14 / WR-01] Illustrative fixture uses the unified hash-tag key
+      // scheme (`{sms:<e164>}:send-count`) that SmsService actually produces.
+      const key = '{sms:+821012345678}:send-count';
+      await redis.set(key, '3');
+      expect(await redis.decr(key)).toBe(2);
+      expect(await redis.decr(key)).toBe(1);
     });
 
     it('pttl returns -2 for missing key, -1 for key without TTL', async () => {

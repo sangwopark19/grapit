@@ -80,15 +80,31 @@ end
 return {'WRONG', max - attempts}
 `;
 
-// [Phase 14 / D-01 D-02 D-13] Hash-tag keyed OTP storage keys.
-// All 3 keys MUST share the `{sms:${e164}}` hash tag so CRC16 maps them
+// [Phase 14 / D-01 D-02 D-13] Hash-tag keyed SMS storage keys.
+// All keys MUST share the `{sms:${e164}}` hash tag so CRC16 maps them
 // to the same Redis Cluster slot — otherwise `VERIFY_AND_INCREMENT_LUA`
 // (multi-key EVAL) raises `CROSSSLOT Keys in request don't hash to the same slot`
 // on cluster-mode Valkey / Memorystore. Pattern lifted from
 // booking.service.ts (commit b382e39).
-export const smsOtpKey      = (e164: string): string => `{sms:${e164}}:otp`;
-export const smsAttemptsKey = (e164: string): string => `{sms:${e164}}:attempts`;
-export const smsVerifiedKey = (e164: string): string => `{sms:${e164}}:verified`;
+//
+// [Phase 14 / WR-01] Counter/cooldown siblings (resend, send-count,
+// verify-count) were historically un-hash-tagged because each is only ever
+// touched by single-key commands (SET/DECR/Lua EVAL with a single KEY/DEL/
+// PTTL). That is safe today, but leaves the cluster invariant visibly split
+// (`{sms:...}:otp` vs. `sms:phone:send:...`) and means the rollback path
+// (`Promise.allSettled([DEL cooldown, DECR counter])`) would immediately
+// resurrect CROSSSLOT if a future change pipelines it with the OTP keys or
+// wraps it in a MULTI/EXEC. Unifying every per-phone SMS key under the same
+// hash tag makes the contract uniform and future-proof.
+//
+// NOTE: changing key names is a deploy-time counter reset; old keys expire
+// naturally via TTL (cooldown 30s, send-count 1h, verify-count 15m).
+export const smsOtpKey           = (e164: string): string => `{sms:${e164}}:otp`;
+export const smsAttemptsKey      = (e164: string): string => `{sms:${e164}}:attempts`;
+export const smsVerifiedKey      = (e164: string): string => `{sms:${e164}}:verified`;
+export const smsResendKey        = (e164: string): string => `{sms:${e164}}:resend`;
+export const smsSendCounterKey   = (e164: string): string => `{sms:${e164}}:send-count`;
+export const smsVerifyCounterKey = (e164: string): string => `{sms:${e164}}:verify-count`;
 
 export interface SendResult { success: boolean; message: string }
 export interface VerifyResult { verified: boolean; message?: string }
@@ -185,7 +201,7 @@ export class SmsService {
     }
 
     // D-11: 30s resend cooldown via Valkey SET NX
-    const cooldownKey = `sms:resend:${e164}`;
+    const cooldownKey = smsResendKey(e164);
     const acquired = await this.redis.set(cooldownKey, '1', 'PX', RESEND_COOLDOWN_MS, 'NX');
     if (acquired === null) {
       const ttl = await this.redis.pttl(cooldownKey);
@@ -198,7 +214,7 @@ export class SmsService {
 
     // D-06: phone axis send 5/3600s -- Lua atomic INCR+EXPIRE
     const sendCount = await this.atomicIncr(
-      `sms:phone:send:${e164}`, SEND_PHONE_WINDOW_SEC,
+      smsSendCounterKey(e164), SEND_PHONE_WINDOW_SEC,
     );
     if (sendCount > SEND_PHONE_LIMIT) {
       this.logger.warn({
@@ -268,7 +284,7 @@ export class SmsService {
         // their phone-axis slot with zero observability.
         const rollbackResults = await Promise.allSettled([
           this.redis.del(cooldownKey),
-          this.redis.decr(`sms:phone:send:${e164}`),
+          this.redis.decr(smsSendCounterKey(e164)),
         ]);
         rollbackResults.forEach((r, i) => {
           if (r.status === 'rejected') {
@@ -335,7 +351,7 @@ export class SmsService {
     // would not increment and an attacker could probe unlimited phones to
     // distinguish "verified within last 10 min" vs not.
     const verifyCount = await this.atomicIncr(
-      `sms:phone:verify:${e164}`, VERIFY_PHONE_WINDOW_SEC,
+      smsVerifyCounterKey(e164), VERIFY_PHONE_WINDOW_SEC,
     );
     if (verifyCount > VERIFY_PHONE_LIMIT) {
       this.logger.warn({
@@ -407,7 +423,7 @@ export class SmsService {
       // failures. Without this, each Valkey blip burns one of the user's
       // 10/15min verify attempts without producing any result.
       await this.redis
-        .decr(`sms:phone:verify:${e164}`)
+        .decr(smsVerifyCounterKey(e164))
         .catch((rollbackErr: unknown) => {
           this.logger.warn({
             event: 'sms.rollback_failed',

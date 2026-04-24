@@ -15,6 +15,9 @@ import {
   smsOtpKey,
   smsAttemptsKey,
   smsVerifiedKey,
+  smsResendKey,
+  smsSendCounterKey,
+  smsVerifyCounterKey,
 } from './sms.service.js';
 import { InfobipClient, InfobipApiError } from './infobip-client.js';
 
@@ -353,7 +356,7 @@ describe('SmsService', () => {
       await expect(service.sendVerificationCode('+821012345678')).rejects.toThrow();
 
       expect(mockRedis.del).toHaveBeenCalledWith(
-        expect.stringContaining('sms:resend:'),
+        smsResendKey('+821012345678'),
       );
     });
 
@@ -370,15 +373,16 @@ describe('SmsService', () => {
       await expect(service.sendVerificationCode('+821012345678')).rejects.toThrow();
 
       expect(mockRedis.del).not.toHaveBeenCalledWith(
-        expect.stringContaining('sms:resend:'),
+        smsResendKey('+821012345678'),
       );
     });
 
     // ---------- Issue 2 (PR #16 review): phone-axis send counter rollback ----------
-    it('Infobip sendSms 5xx 시 sms:phone:send:{e164} 카운터도 DECR rollback', async () => {
-      // sms:phone:send:{e164} (5/3600s) was INCR'd before calling Infobip but
-      // never decremented when the call failed transiently. A series of 5xx
-      // errors could exhaust the user's hourly quota despite no SMS delivery.
+    it('Infobip sendSms 5xx 시 send-count 카운터도 DECR rollback', async () => {
+      // {sms:{e164}}:send-count (5/3600s) was INCR'd before calling Infobip
+      // but never decremented when the call failed transiently. A series of
+      // 5xx errors could exhaust the user's hourly quota despite no SMS
+      // delivery.
       const configService = createConfigService();
       const service = new SmsService(configService, mockRedis as never);
       mockRedis.set.mockResolvedValueOnce('OK'); // cooldown NX pass
@@ -393,11 +397,11 @@ describe('SmsService', () => {
       await expect(service.sendVerificationCode('+821012345678')).rejects.toThrow();
 
       expect(mockRedis.decr).toHaveBeenCalledWith(
-        'sms:phone:send:+821012345678',
+        smsSendCounterKey('+821012345678'),
       );
     });
 
-    it('Infobip sendSms 4xx 시 sms:phone:send: 카운터 유지 (DECR 미호출, 악용 방지)', async () => {
+    it('Infobip sendSms 4xx 시 send-count 카운터 유지 (DECR 미호출, 악용 방지)', async () => {
       // 4xx (incl. groupId=5 REJECTED converted by InfobipClient) is a
       // permanent rejection. Keep the counter so an abuser can't rapid-fire
       // REJECTED responses to drain real users' quotas.
@@ -413,11 +417,11 @@ describe('SmsService', () => {
       await expect(service.sendVerificationCode('+821012345678')).rejects.toThrow();
 
       expect(mockRedis.decr).not.toHaveBeenCalledWith(
-        expect.stringContaining('sms:phone:send:'),
+        smsSendCounterKey('+821012345678'),
       );
     });
 
-    it('non-InfobipApiError (network down 등) 시 sms:phone:send: 카운터 DECR rollback', async () => {
+    it('non-InfobipApiError (network down 등) 시 send-count 카운터 DECR rollback', async () => {
       // Matches existing shouldRollback logic: !(err instanceof InfobipApiError)
       // || err.status >= 500. Network/timeout errors should release the slot.
       const configService = createConfigService();
@@ -434,7 +438,7 @@ describe('SmsService', () => {
       await expect(service.sendVerificationCode('+821012345678')).rejects.toThrow();
 
       expect(mockRedis.decr).toHaveBeenCalledWith(
-        'sms:phone:send:+821012345678',
+        smsSendCounterKey('+821012345678'),
       );
     });
 
@@ -450,7 +454,7 @@ describe('SmsService', () => {
       );
     });
 
-    it('phone axis send counter Lua에 sms:phone:send: prefix 키 전달', async () => {
+    it('phone axis send counter Lua에 send-count hash-tag 키 전달', async () => {
       const configService = createConfigService();
       const service = new SmsService(configService, mockRedis as never);
       mockRedis.set.mockResolvedValue('OK'); // cooldown NX pass
@@ -468,7 +472,7 @@ describe('SmsService', () => {
       expect(mockRedis.eval).toHaveBeenCalledWith(
         expect.stringContaining('INCR'),
         expect.any(Number),
-        expect.stringContaining('sms:phone:send:'),
+        smsSendCounterKey('+821012345678'),
         expect.any(Number),
       );
     });
@@ -510,7 +514,7 @@ describe('SmsService', () => {
       );
       // Success path must NOT release the cooldown (handled separately)
       expect(mockRedis.del).not.toHaveBeenCalledWith(
-        expect.stringContaining('sms:resend:'),
+        smsResendKey('+821012345678'),
       );
     });
 
@@ -641,7 +645,7 @@ describe('SmsService', () => {
     });
 
     // ---------- WR-04: verify-counter rollback on Valkey eval failure ----------
-    it('[WR-04] Lua eval 실패 시 sms:phone:verify: 카운터 DECR rollback', async () => {
+    it('[WR-04] Lua eval 실패 시 verify-count 카운터 DECR rollback', async () => {
       // Transient Valkey failure (network blip, eval error) must release the
       // phone-axis verify slot that atomicIncr consumed before the Lua call.
       // Without this, each failure burns one of the user's 10/15min attempts
@@ -658,7 +662,7 @@ describe('SmsService', () => {
 
       expect(result.verified).toBe(false);
       expect(mockRedis.decr).toHaveBeenCalledWith(
-        'sms:phone:verify:+821012345678',
+        smsVerifyCounterKey('+821012345678'),
       );
     });
 
@@ -677,7 +681,7 @@ describe('SmsService', () => {
 
       // DECR must NOT have been called — this is a legitimate verify outcome.
       expect(mockRedis.decr).not.toHaveBeenCalledWith(
-        'sms:phone:verify:+821012345678',
+        smsVerifyCounterKey('+821012345678'),
       );
     });
 
@@ -704,7 +708,7 @@ describe('SmsService', () => {
         1,
         expect.stringContaining('INCR'),
         expect.any(Number),
-        'sms:phone:verify:+821012345678',
+        smsVerifyCounterKey('+821012345678'),
         expect.any(Number),
       );
     });
