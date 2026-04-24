@@ -132,7 +132,7 @@ export function PhoneVerification({
     setIsVerifying(true);
     setVerifyError(null);
     try {
-      const res = await apiClient.post<{ verified: boolean; message: string }>(
+      const res = await apiClient.post<{ verified: boolean; message?: string }>(
         '/api/v1/sms/verify-code',
         { phone, code },
       );
@@ -140,7 +140,18 @@ export function PhoneVerification({
         clearTimer();
         onVerified(code);
       } else {
-        setVerifyError('인증번호가 일치하지 않습니다');
+        // [D-07] 서버가 system error context 를 message 로 내려준 경우 (예: Valkey EVAL
+        // 장애 → '인증번호 확인에 실패했습니다. 잠시 후 다시 시도해주세요.') 하드코드 대신
+        // 서버 문구를 우선 표시해 "틀린 OTP" vs "시스템 에러" 를 사용자 관점에서 구분.
+        // [D-08] 빈 문자열 방어: res.message 가 undefined 이거나 길이 0 이면 fallback.
+        // [REVIEWS.md LOW#6] generic 이 message?: string 이므로 typeof-string 가드가
+        // 타입 narrowing 도 겸한다 (undefined 제거 + length 확인).
+        const fallback = '인증번호가 일치하지 않습니다';
+        const serverMessage =
+          typeof res.message === 'string' && res.message.length > 0
+            ? res.message
+            : null;
+        setVerifyError(serverMessage ?? fallback);
       }
     } catch (err) {
       const copy = mapErrorToCopy(err);
