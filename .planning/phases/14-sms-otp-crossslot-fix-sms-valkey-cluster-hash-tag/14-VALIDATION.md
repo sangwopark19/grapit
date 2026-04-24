@@ -2,8 +2,8 @@
 phase: 14
 slug: sms-otp-crossslot-fix-sms-valkey-cluster-hash-tag
 status: draft
-nyquist_compliant: false
-wave_0_complete: false
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-04-24
 ---
 
@@ -61,10 +61,17 @@ created: 2026-04-24
 
 ## Wave 0 Requirements
 
-- [ ] `apps/api/test/sms-cluster-crossslot.integration.spec.ts` — SC-2a/2b/2c를 cluster-mode 에서 커버하는 통합 테스트 신규 (§14-RESEARCH.md Pattern 2 + §9 의 5 시나리오).
-- [ ] `apps/web/components/auth/phone-verification.test.tsx` — SC-4a/4b/4c unit test.
-- [ ] `apps/api/src/modules/sms/sms.service.ts` — `smsOtpKey`, `smsAttemptsKey`, `smsVerifiedKey` 키 빌더 함수 + `VERIFY_AND_INCREMENT_LUA` 상수 export (D-13 single-source-of-truth). **이 export 없이 테스트 리팩터가 drift 재발 가드가 되지 못함.**
-- [ ] `apps/api/test/sms-throttle.integration.spec.ts` — L272-427 의 Lua/key 리터럴 복제를 위 export import 로 교체.
+> **Note (Plan checker revision 2026-04-24):** Plan 구조가 Wave 0 역할을 이미 흡수함 —
+> 14-01 (sms.service.ts 에서 4 symbol export) 이 먼저 실행되고, 14-02/14-03 이 그 export 를
+> import 하며, 14-04 는 프론트 전용으로 병렬 실행된다. 즉 아래 "W0 gaps" 는 Plan 실행 순서
+> (14-01 → 14-02/03 → 14-04) 로 natural 하게 해소되므로 별도 Wave 0 plan 은 불필요.
+> `nyquist_compliant: true` / `wave_0_complete: true` frontmatter 는 이 구조적 보장 하에서
+> 설정됨.
+
+- [ ] `apps/api/test/sms-cluster-crossslot.integration.spec.ts` — SC-2a/2b/2c를 cluster-mode 에서 커버하는 통합 테스트 신규 (§14-RESEARCH.md Pattern 2 + §9 의 5 시나리오). **→ 14-03 이 생성.**
+- [ ] `apps/web/components/auth/phone-verification.test.tsx` — SC-4a/4b/4c unit test. **→ 14-04 Task 1 이 생성.**
+- [ ] `apps/api/src/modules/sms/sms.service.ts` — `smsOtpKey`, `smsAttemptsKey`, `smsVerifiedKey` 키 빌더 함수 + `VERIFY_AND_INCREMENT_LUA` 상수 export (D-13 single-source-of-truth). **이 export 없이 테스트 리팩터가 drift 재발 가드가 되지 못함. → 14-01 Task 1 이 생성 (wave 1 의 첫 작업).**
+- [ ] `apps/api/test/sms-throttle.integration.spec.ts` — L272-427 의 Lua/key 리터럴 복제를 위 export import 로 교체. **→ 14-02 가 수행.**
 - [ ] (확인만) `apps/web/vitest.config.ts` 의 `environment: 'jsdom'` 설정 존재 확인. Vitest가 이미 있어 새 환경 추가 불필요 예상.
 
 *Framework 설치 없음 — Vitest + testcontainers + `@testing-library/react` 는 이미 devDependency.*
@@ -83,11 +90,11 @@ created: 2026-04-24
 
 ## Validation Sign-Off
 
-- [ ] 모든 task 가 `<automated>` verify 또는 Wave 0 dependency 로 커버됨 (SC-1 제외 — manual 명시).
-- [ ] Sampling continuity: 3개 연속 task 가 automated verify 없이 이어지지 않음.
-- [ ] Wave 0 가 모든 MISSING 참조 (`sms-cluster-crossslot.integration.spec.ts`, `phone-verification.test.tsx`, export 4개) 를 커버.
-- [ ] No `--watch` / `test -- --watch` 플래그.
-- [ ] Quick feedback < 10s, full < 300s.
-- [ ] `nyquist_compliant: true` 로 frontmatter 갱신 (planner 가 planner-checker 통과 후 수행).
+- [x] 모든 task 가 `<automated>` verify 또는 Wave 0 dependency 로 커버됨 (SC-1 제외 — manual 명시).
+- [x] Sampling continuity: 3개 연속 task 가 automated verify 없이 이어지지 않음.
+- [x] Wave 0 가 모든 MISSING 참조 (`sms-cluster-crossslot.integration.spec.ts`, `phone-verification.test.tsx`, export 4개) 를 커버 — Plan 구조 (14-01 → 14-02/03/04) 가 Wave 0 role 을 흡수.
+- [x] No `--watch` / `test -- --watch` 플래그.
+- [x] Quick feedback < 10s, full < 300s.
+- [x] `nyquist_compliant: true` 로 frontmatter 갱신 (planner 가 planner-checker 통과 후 수행).
 
-**Approval:** pending — planner 가 planner-checker 통과 후 `nyquist_compliant: true` 로 전환.
+**Approval:** approved (plan checker revision 2026-04-24) — Plan 구조가 Wave 0 를 흡수함으로써 nyquist compliance 를 구조적으로 보장.

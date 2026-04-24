@@ -801,7 +801,9 @@ Optional (원한다면 plan 에서 채택): 기존 signup E2E (Playwright) 에 `
 
 **If this table is empty:** 해당 없음 — 6개 가정이 존재하므로 plan 단계에서 A1, A3 는 task 로 변환(A1 → "cluster-mode smoke test 먼저 작성하여 A1 증명", A3 → "기존 유닛 테스트 회귀 점검").
 
-## Open Questions / Risks
+## Open Questions / Risks (RESOLVED)
+
+> All 6 questions resolved during planning — see individual items below.
 
 1. **Lua 상수 / 키 빌더를 `sms.service.ts` 에 export 만 할지, 신규 `sms.lua.ts` 파일로 분리할지 (D-13 discretion).**
    - 알려진 것: `sms.service.ts` 가 유일한 consumer (테스트 파일까지 합쳐 2곳).
