@@ -104,9 +104,11 @@ return {'WRONG', max - attempts}
 // builder asserts ITU-T E.164 (`/^\+\d{6,15}$/`) on its input. Redis Cluster
 // uses only the content between the first `{` and the next `}` for slot
 // mapping, so a payload like `}x:"+"+821012345678` would split the tag and
-// silently resurrect CROSSSLOT. parseE164() already rejects `{`/`}`, but
-// formalizing the invariant here means any caller that forgets to route
-// through parseE164() fails fast instead of corrupting cluster placement.
+// silently resurrect CROSSSLOT. parseE164() already strips `{`/`}` during
+// digit normalization and then re-validates via libphonenumber, so its
+// output is always bare E.164. Formalizing the invariant at each builder
+// means any caller that forgets to route through parseE164() fails fast
+// instead of corrupting cluster placement.
 const E164_RE = /^\+\d{6,15}$/;
 function assertE164(s: string): void {
   if (!E164_RE.test(s)) {
