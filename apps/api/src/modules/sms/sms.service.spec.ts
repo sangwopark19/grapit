@@ -785,4 +785,90 @@ describe('SmsService', () => {
       );
     });
   });
+
+  // ---------- WR-02: Hash-tag key builders assert E.164 at the boundary ----------
+  describe('[WR-02] hash-tag key builders reject non-E.164 input', () => {
+    // Redis Cluster hashes on the content between the first `{` and the next
+    // `}`. If a caller bypasses parseE164() and passes a malformed string,
+    // characters like `}` or `{` would terminate the hash-tag early, splitting
+    // the 3-key OTP set across slots and silently resurrecting CROSSSLOT.
+    // The per-builder assertion turns that into a loud, local failure.
+
+    it.each([
+      ['empty string', ''],
+      ['missing plus', '821012345678'],
+      ['curly-brace injection', '}x:+821012345678'],
+      ['letters', '+821ABCDEFGH'],
+      ['too short', '+12345'],
+      ['too long', '+1234567890123456'],
+      ['whitespace', '+82 10 1234 5678'],
+      ['hyphens', '+82-10-1234-5678'],
+    ])('smsOtpKey throws on %s', (_label, bad) => {
+      expect(() => smsOtpKey(bad)).toThrow(/non-E164 key input/);
+    });
+
+    it.each([
+      ['empty string', ''],
+      ['curly-brace injection', '}x:+821012345678'],
+    ])('smsAttemptsKey throws on %s', (_label, bad) => {
+      expect(() => smsAttemptsKey(bad)).toThrow(/non-E164 key input/);
+    });
+
+    it.each([
+      ['empty string', ''],
+      ['curly-brace injection', '}x:+821012345678'],
+    ])('smsVerifiedKey throws on %s', (_label, bad) => {
+      expect(() => smsVerifiedKey(bad)).toThrow(/non-E164 key input/);
+    });
+
+    it.each([
+      ['empty string', ''],
+      ['missing plus', '821012345678'],
+    ])('smsResendKey throws on %s', (_label, bad) => {
+      expect(() => smsResendKey(bad)).toThrow(/non-E164 key input/);
+    });
+
+    it.each([
+      ['empty string', ''],
+      ['missing plus', '821012345678'],
+    ])('smsSendCounterKey throws on %s', (_label, bad) => {
+      expect(() => smsSendCounterKey(bad)).toThrow(/non-E164 key input/);
+    });
+
+    it.each([
+      ['empty string', ''],
+      ['missing plus', '821012345678'],
+    ])('smsVerifyCounterKey throws on %s', (_label, bad) => {
+      expect(() => smsVerifyCounterKey(bad)).toThrow(/non-E164 key input/);
+    });
+
+    it('error message masks the subscriber number (keeps only country-code prefix)', () => {
+      // +821012345678 → first 4 chars "+821" leak as triage context, rest is
+      // "***". The full number must never appear in the error text (it lands
+      // in Cloud Logging via logger.error / Sentry).
+      try {
+        // Force a failure by passing a value that fails the regex (too short)
+        // so we can inspect the mask shape.
+        smsOtpKey('+8210xBAD');
+        expect.fail('should throw');
+      } catch (err) {
+        const msg = (err as Error).message;
+        expect(msg).toContain('+821***');
+        expect(msg).not.toContain('xBAD');
+      }
+    });
+
+    it.each([
+      ['KR mobile', '+821012345678'],
+      ['US number', '+13125551234'],
+      ['HK number', '+85212345678'],
+    ])('valid E.164 input (%s) passes through', (_label, good) => {
+      expect(() => smsOtpKey(good)).not.toThrow();
+      expect(() => smsAttemptsKey(good)).not.toThrow();
+      expect(() => smsVerifiedKey(good)).not.toThrow();
+      expect(() => smsResendKey(good)).not.toThrow();
+      expect(() => smsSendCounterKey(good)).not.toThrow();
+      expect(() => smsVerifyCounterKey(good)).not.toThrow();
+    });
+  });
 });

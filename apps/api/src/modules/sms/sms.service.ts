@@ -99,12 +99,29 @@ return {'WRONG', max - attempts}
 //
 // NOTE: changing key names is a deploy-time counter reset; old keys expire
 // naturally via TTL (cooldown 30s, send-count 1h, verify-count 15m).
-export const smsOtpKey           = (e164: string): string => `{sms:${e164}}:otp`;
-export const smsAttemptsKey      = (e164: string): string => `{sms:${e164}}:attempts`;
-export const smsVerifiedKey      = (e164: string): string => `{sms:${e164}}:verified`;
-export const smsResendKey        = (e164: string): string => `{sms:${e164}}:resend`;
-export const smsSendCounterKey   = (e164: string): string => `{sms:${e164}}:send-count`;
-export const smsVerifyCounterKey = (e164: string): string => `{sms:${e164}}:verify-count`;
+//
+// [Phase 14 / WR-02] Defend the hash-tag contract at the boundary: every
+// builder asserts ITU-T E.164 (`/^\+\d{6,15}$/`) on its input. Redis Cluster
+// uses only the content between the first `{` and the next `}` for slot
+// mapping, so a payload like `}x:"+"+821012345678` would split the tag and
+// silently resurrect CROSSSLOT. parseE164() already rejects `{`/`}`, but
+// formalizing the invariant here means any caller that forgets to route
+// through parseE164() fails fast instead of corrupting cluster placement.
+const E164_RE = /^\+\d{6,15}$/;
+function assertE164(s: string): void {
+  if (!E164_RE.test(s)) {
+    // Mask all but first 4 chars (country code prefix) to keep PII out of
+    // error messages / Sentry. `+82` + 1 digit is enough to triage KR
+    // vs. foreign without leaking the subscriber number.
+    throw new Error(`[sms] non-E164 key input: ${s.slice(0, 4)}***`);
+  }
+}
+export const smsOtpKey           = (e164: string): string => { assertE164(e164); return `{sms:${e164}}:otp`; };
+export const smsAttemptsKey      = (e164: string): string => { assertE164(e164); return `{sms:${e164}}:attempts`; };
+export const smsVerifiedKey      = (e164: string): string => { assertE164(e164); return `{sms:${e164}}:verified`; };
+export const smsResendKey        = (e164: string): string => { assertE164(e164); return `{sms:${e164}}:resend`; };
+export const smsSendCounterKey   = (e164: string): string => { assertE164(e164); return `{sms:${e164}}:send-count`; };
+export const smsVerifyCounterKey = (e164: string): string => { assertE164(e164); return `{sms:${e164}}:verify-count`; };
 
 export interface SendResult { success: boolean; message: string }
 export interface VerifyResult { verified: boolean; message?: string }
