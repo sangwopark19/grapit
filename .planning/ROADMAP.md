@@ -255,13 +255,15 @@ Plans:
 
 ### Phase 15: Resend heygrabit.com cutover — transactional email 발송 도메인 전환 + Secret Manager 값 교체
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** 프로덕션 grabit-api 의 transactional email 발송을 `no-reply@heygrabit.com` 으로 cutover 하고 (Resend 도메인 verification + 후이즈 DNS SPF/DKIM/DMARC + Secret Manager + Cloud Run redeploy + 3사 UAT), silent failure 관측성 확보를 위해 email.service.ts 의 Resend error branch 에 Sentry.captureException 을 삽입한다. Phase 13 UAT gap 9 (.planning/debug/password-reset-email-not-delivered-prod.md) 의 Resolution 을 실행하는 운영 중심 phase.
+**Requirements**: CUTOVER-01 (Resend heygrabit.com Verified), CUTOVER-02 (Secret Manager resend-from-email=no-reply@heygrabit.com), CUTOVER-03 (Cloud Run 신규 revision 100% traffic), CUTOVER-04 (email.service.ts Sentry.captureException), CUTOVER-05 (3사 inbox 수신 spam 아님), CUTOVER-06 (email.service.spec 회귀 없음)
 **Depends on:** Phase 14
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 15 to break down)
+- [ ] 15-01-PLAN.md — Wave 1 code: email.service.ts Sentry.withScope + captureException 삽입 (D-11) + email.service.spec.ts 8 테스트 (기존 6 + Sentry 호출 / PII masking 신규 2)
+- [ ] 15-02-PLAN.md — Wave 2 ops: Resend heygrabit.com Add Domain + 후이즈 DNS 등록 (SPF/DKIM/DMARC — Resend 발급값 그대로) + dig 전파 확인 + Resend Verified 대기 + 15-HUMAN-UAT.md 생성
+- [ ] 15-03-PLAN.md — Wave 3 cutover: Secret Manager 신규 version 추가 + Cloud Run --update-secrets 재배포 + 100% traffic 확인 + 3사 UAT (Gmail/Naver/Daum) + gcloud logging empty 확인 (D-13) + Resend grapit.com 제거 (D-02) + 15-HUMAN-UAT.md Wave 3 fill-in
 
 ### Phase 16: Legal pages launch — 이용약관/개인정보처리방침/마케팅동의 공개 URL 구현 (개보법·정통망법 런칭 요건)
 
