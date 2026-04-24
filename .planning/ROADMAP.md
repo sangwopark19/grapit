@@ -242,13 +242,16 @@ Plans:
 
 ### Phase 14: SMS OTP CROSSSLOT fix — 프로덕션 회원가입 SMS 인증 정상화 (Valkey Cluster hash tag 적용)
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** 프로덕션 heygrabit.com 회원가입 3단계 SMS OTP 인증이 Valkey Cluster 에서 CROSSSLOT 없이 성공하고, cluster-mode 회귀 테스트가 CI 에 편입되며, 프론트가 서버 message 를 우선 표시해 시스템 에러와 오타 실패를 UX 상 구분한다
+**Requirements**: SC-1, SC-2, SC-3, SC-4 (14-CONTEXT.md D-20 에서 Success Criteria 를 REQ-ID proxy 로 사용)
 **Depends on:** Phase 13
-**Plans:** 0 plans
+**Plans:** 4 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 14 to break down)
+- [ ] 14-01-PLAN.md — Wave 1: sms.service.ts hash-tag 적용 + 4개 심볼 (smsOtpKey/smsAttemptsKey/smsVerifiedKey/VERIFY_AND_INCREMENT_LUA) export (D-01/D-02/D-05/D-13)
+- [ ] 14-02-PLAN.md — Wave 2: sms-throttle.integration.spec.ts drift 제거 — Plan 01 export 를 import 해서 키 리터럴/Lua 복제 소거 (D-13 SoT)
+- [ ] 14-03-PLAN.md — Wave 2: sms-cluster-crossslot.integration.spec.ts 신규 — testcontainers cluster-mode + CLUSTER ADDSLOTSRANGE + 5 시나리오 (negative guard + 4분기 + KEYSLOT + pipeline + e164 variation) (D-10/D-11/D-12)
+- [ ] 14-04-PLAN.md — Wave 1 (병렬): phone-verification.tsx server-message 우선 패치 + 4 unit tests (D-07/D-08) + 14-HUMAN-UAT.md (SC-1 실기기 + D-17 Sentry 72h + D-19 overlap 관측) + checkpoint
 
 ### Phase 15: Resend heygrabit.com cutover — transactional email 발송 도메인 전환 + Secret Manager 값 교체
 
