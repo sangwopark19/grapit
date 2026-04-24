@@ -49,6 +49,14 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
 
+      # [Phase 14 / SC-2 / REVIEWS.md HIGH#1] Integration tests — testcontainers-based
+      # Valkey Cluster + Postgres smokes. Docker daemon on ubuntu-latest is sufficient
+      # (testcontainers uses /var/run/docker.sock). This step makes SC-2 "CI 편입" 실체화:
+      # sms-cluster-crossslot.integration.spec.ts 가 PR/push 에서 자동 실행되어 cluster
+      # CROSSSLOT 회귀를 영구 차단.
+      - name: Integration tests (testcontainers — SC-2 Valkey Cluster CROSSSLOT guard)
+        run: pnpm --filter @grabit/api test:integration
+
       # DB readiness + schema + seed data for E2E runs.
       # drizzle-kit migrate reads DATABASE_URL from env (CLAUDE.md convention:
       # DOTENV_CONFIG_PATH only needed when .env is the source; CI injects via env).

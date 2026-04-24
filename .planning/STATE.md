@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
-status: "Phase 13 shipped (Waves 1-4) — heygrabit.com/www/api 모두 live; 7-day grace cleanup + HUMAN-UAT 수동 잔여"
-stopped_at: Phase 13 complete (code side)
-last_updated: "2026-04-23T09:00:00.000Z"
-last_activity: 2026-04-23 -- Phase 13 Wave 4 shipped: heygrabit.com + www → grabit-web via LB URL Map 확장 + grabit-web-cert SNI 공존, FRONTEND_URL=https://heygrabit.com, 3-host HTTPS 200 확인
+status: "Phase 14 shipped — PR #19"
+stopped_at: Phase 13 partial context updated — D-09~D-17
+last_updated: "2026-04-24T06:17:47.666Z"
+last_activity: 2026-04-24
 progress:
-  total_phases: 11
-  completed_phases: 9
+  total_phases: 15
+  completed_phases: 10
   total_plans: 53
-  completed_plans: 48
-  percent: 91
+  completed_plans: 52
+  percent: 98
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** 사용자가 원하는 공연을 발견하고, 좌석을 직접 선택하여, 안정적으로 예매를 완료할 수 있는 것
-**Current focus:** Phase 13 — grapit-grabit-rename
+**Current focus:** Phase 14 — sms-otp-crossslot-fix-sms-valkey-cluster-hash-tag
 
 ## Current Position
 
-Phase: 13 (grapit-grabit-rename) — SHIPPED (code side)
-Plan: 4 of 4 complete
-Status: heygrabit.com apex/www + api live (LB SNI, 3-host HTTPS 200); 7-day grace cleanup + 실기기 HUMAN-UAT 수동 잔여
-Last activity: 2026-04-23 -- Phase 13 Wave 4 shipped (main ebaa317..0690397, +LB URL Map 확장 + grabit-web-cert SNI + CLOUD_RUN_WEB_URL apex)
+Phase: 15
+Plan: Not started
+Status: Phase 14 shipped — PR #19
+Last activity: 2026-04-24
 
 Progress: [██████████] 100%
 
@@ -36,7 +36,7 @@ Progress: [██████████] 100%
 
 **Velocity:**
 
-- Total plans completed: 65 (v1.0)
+- Total plans completed: 69 (v1.0)
 - Average duration: ~10min
 - Total execution time: ~3 hours
 
@@ -55,6 +55,7 @@ Progress: [██████████] 100%
 | 10.1 | 6 | - | - |
 | 11 | 4 | - | - |
 | 12 | 6 | - | - |
+| 14 | 4 | - | - |
 
 **Recent Trend:**
 
@@ -74,6 +75,10 @@ Progress: [██████████] 100%
 - Phase 09.1 inserted after Phase 09: CI-login-E2E — Playwright login helper 의 POST /auth/login 401 이슈 조사 (URGENT)
 - Phase 10.1 inserted after Phase 10: SMS API v3 전환 — 2FA PIN API(/2fa/2/pin)에서 일반 SMS API(/sms/3/messages)로 리팩토링, applicationId/messageId 의존 제거, PIN 생성·검증 자체 구현 (URGENT)
 - Phase 13 added: 브랜드명 grapit → grabit 일괄 rename (SEED-002 surfaced after Phase 12 ship, 2026-04-22)
+- Phase 14 added (2026-04-24): SMS OTP CROSSSLOT fix — Phase 13 UAT Gap test 10. Valkey Cluster mode 에서 sms.service.ts 3개 key 공통 hash tag 없이 EVAL → CROSSSLOT. phone-verification.tsx 가 res.message 를 UX 에서 마스킹하여 "틀린 인증번호" 로 오표시. Reference: .planning/debug/signup-sms-otp-verify-wrong.md + commit b382e39 (booking.service.ts 동일 패턴 선례)
+- Phase 15 added (2026-04-24): Resend heygrabit.com cutover — Phase 13 UAT Gap test 9. Plan 03/04 가 명시적으로 deferred 처리한 RESEND_FROM_EMAIL secret 값 교체 + Resend 콘솔 heygrabit.com 도메인 verification + DNS SPF/DKIM/DMARC 후이즈 등록. Reference: .planning/debug/password-reset-email-not-delivered-prod.md
+- Phase 16 added (2026-04-24): Legal pages launch — Phase 13 UAT Gap test 11 (pre-existing feature gap). apps/web/app/legal/{terms,privacy,marketing} 신규 구현 + Footer href="#" 플레이스홀더 교체. 한국 개보법·정통망법 상시 공개 URL 런칭 요건. Reference: .planning/debug/legal-pages-404-heygrabit.md
+- Phase 17 added (2026-04-24): Local dev health indicator fix — Phase 13 UAT Gap test 1 (pre-existing Phase 7-05 버그). InMemoryRedis mock 에 ping() 미구현 → Terminus 503. InMemoryRedis.ping() 추가 + capability probe. Reference: .planning/debug/local-api-health-503-no-redis.md
 
 ### Decisions
 
@@ -111,6 +116,7 @@ None.
 | 260420-ci-toss-secrets-restore | CI 복구: 260420-cd7 에서 오판 제거된 TOSS_CLIENT_KEY_TEST / TOSS_SECRET_KEY_TEST 재등록 (D-13 격리 설계상 ci.yml 전용 — deploy.yml 기준 orphan 검사 false positive) | 2026-04-20 | a7ee3d1 | [260420-ci-toss-secrets-restore](./quick/260420-ci-toss-secrets-restore/) |
 | 260420-oxe | PR #17 코드리뷰 수정: kstTodayBoundaryUtc() empty-range 버그로 오늘 KPI 3종 항상 0 반환 → kstBoundaryToUtc(1) 로 교체 + 회귀 테스트 10건 추가 | 2026-04-20 | 84a1594 | [260420-oxe-code-review-fix](./quick/260420-oxe-code-review-fix/) |
 | 260422-eya | PR #18 코드리뷰 수정: seat-map-viewer handleClick maxSelect 가드가 locked 좌석 클릭을 차단해 parent toast 미발화 → state !== 'locked' 가드 추가 + 회귀 테스트 3건 (commit 45b884e invariant 복원) | 2026-04-22 | fcc6a7b | [260422-eya-seat-map-viewer-maxselect-locked](./quick/260422-eya-seat-map-viewer-maxselect-locked/) |
+| 260424-l23 | Phase 14 pre-existing TTL 2건 수정: sms-throttle.integration.spec.ts 의 throttler key filter 를 실제 라이브러리 format (`{<tracker>:<throttlerName>}:hits`) 에 맞춰 `.endsWith(':hits')` 로 전환 → 28/30 → 30/30 green, Phase 14 ci.yml `test:integration` PR green 블로커 해소 | 2026-04-24 | e65fa99 | [260424-l23-sms-throttle-integration-spec-ts-l220-27](./quick/260424-l23-sms-throttle-integration-spec-ts-l220-27/) |
 
 ## Session Continuity
 
@@ -118,4 +124,4 @@ Last session: --stopped-at
 Stopped at: Phase 13 partial context updated — D-09~D-17
 Resume file: --resume-file
 
-**Planned Phase:** 13 (브랜드명 grapit → grabit 일괄 rename) — 4 plans — 2026-04-22T05:35:53.504Z
+**Planned Phase:** 14 (sms-otp-crossslot-fix-sms-valkey-cluster-hash-tag) — 4 plans — 2026-04-24T03:46:27.193Z

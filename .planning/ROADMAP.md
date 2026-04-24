@@ -239,3 +239,46 @@ Plans:
 - [x] 13-02-PLAN.md — P2 사용자 노출 카피: UI 로고/footer/admin + email subject + SMS body + legal MD (D-07 @heygrabit.com)
 - [x] 13-03-PLAN.md — P3 인프라 식별자 생성: AR grabit + Sentry 2프로젝트 slug rename + deploy.yml env + 새 Cloud Run 서비스 기동 (D-05 SA 유지) + api.heygrabit.com via Global HTTPS LB (asia-northeast3 domain-mappings 미지원 → Plan 원안 경로 변경)
 - [x] 13-04-PLAN.md — P4 도메인 cutover: heygrabit.com + www → grabit-web via LB URL Map host-rule 확장 + grabit-web-cert SNI 공존 (asia-northeast3 domain-mappings 미지원 → Wave 3 LB 전략 승계), rollback/cleanup 스크립트, HUMAN-UAT (7일 유예 cleanup + 실기기 로그인 테스트는 수동)
+
+### Phase 14: SMS OTP CROSSSLOT fix — 프로덕션 회원가입 SMS 인증 정상화 (Valkey Cluster hash tag 적용)
+
+**Goal:** 프로덕션 heygrabit.com 회원가입 3단계 SMS OTP 인증이 Valkey Cluster 에서 CROSSSLOT 없이 성공하고, cluster-mode 회귀 테스트가 CI 에 편입되며, 프론트가 서버 message 를 우선 표시해 시스템 에러와 오타 실패를 UX 상 구분한다
+**Requirements**: SC-1, SC-2, SC-3, SC-4 (14-CONTEXT.md D-20 에서 Success Criteria 를 REQ-ID proxy 로 사용)
+**Depends on:** Phase 13
+**Plans:** 4/4 plans complete
+
+Plans:
+- [x] 14-01-PLAN.md — Wave 1: sms.service.ts hash-tag 적용 + 4개 심볼 (smsOtpKey/smsAttemptsKey/smsVerifiedKey/VERIFY_AND_INCREMENT_LUA) export (D-01/D-02/D-05/D-13)
+- [x] 14-02-PLAN.md — Wave 2: sms-throttle.integration.spec.ts drift 제거 — Plan 01 export 를 import 해서 키 리터럴/Lua 복제 소거 (D-13 SoT)
+- [x] 14-03-PLAN.md — Wave 2: sms-cluster-crossslot.integration.spec.ts 신규 — testcontainers cluster-mode + CLUSTER ADDSLOTSRANGE + 5 시나리오 (negative guard + 4분기 + KEYSLOT + pipeline + e164 variation) (D-10/D-11/D-12)
+- [x] 14-04-PLAN.md — Wave 1 (병렬): phone-verification.tsx server-message 우선 패치 + 4 unit tests (D-07/D-08) + 14-HUMAN-UAT.md (SC-1 실기기 + D-17 Sentry 72h + D-19 overlap 관측) + checkpoint
+
+### Phase 15: Resend heygrabit.com cutover — transactional email 발송 도메인 전환 + Secret Manager 값 교체
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 14
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 15 to break down)
+
+### Phase 16: Legal pages launch — 이용약관/개인정보처리방침/마케팅동의 공개 URL 구현 (개보법·정통망법 런칭 요건)
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 15
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 16 to break down)
+
+### Phase 17: Local dev health indicator fix — InMemoryRedis.ping() 구현 + capability probe 추가로 REDIS_URL unset 시 /health 200
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 16
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 17 to break down)

@@ -8,6 +8,12 @@ import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis'
 import { APP_GUARD } from '@nestjs/core';
 import IORedis from 'ioredis';
 import request from 'supertest';
+import {
+  VERIFY_AND_INCREMENT_LUA,
+  smsOtpKey,
+  smsAttemptsKey,
+  smsVerifiedKey,
+} from '../src/modules/sms/sms.service.js';
 
 // Phase 10.1: Infobip env 3종(INFOBIP_API_KEY, INFOBIP_BASE_URL, INFOBIP_SENDER) 체계.
 // 레거시 APPLICATION_ID/MESSAGE_ID env는 v3 API 전환으로 제거됨.
@@ -222,11 +228,11 @@ describe('SMS Throttle Integration (testcontainers + Valkey)', () => {
         .send({ phone: '+82010099998888' })
         .expect(HttpStatus.OK);
 
-      // Find throttler keys in Valkey
+      // Find throttler hit keys in Valkey.
+      // @nest-lab/throttler-storage-redis stores keys as `{<tracker>:<throttlerName>}:hits`
+      // (and `:blocked`) — no "throttler" substring in the key itself.
       const keys = await redis.keys('*');
-      const throttlerKeys = keys.filter(
-        (k) => k.includes('throttler') || k.includes('Throttler'),
-      );
+      const throttlerKeys = keys.filter((k) => k.endsWith(':hits'));
 
       // At least one throttler key should exist
       expect(throttlerKeys.length).toBeGreaterThan(0);
@@ -254,9 +260,7 @@ describe('SMS Throttle Integration (testcontainers + Valkey)', () => {
         .expect(HttpStatus.OK);
 
       const keys = await redis.keys('*');
-      const throttlerKeys = keys.filter(
-        (k) => k.includes('throttler') || k.includes('Throttler'),
-      );
+      const throttlerKeys = keys.filter((k) => k.endsWith(':hits'));
 
       expect(throttlerKeys.length).toBeGreaterThan(0);
 
@@ -282,37 +286,13 @@ describe('VERIFY_AND_INCREMENT_LUA atomic script (Valkey EVAL)', () => {
   let container: StartedTestContainer;
   let redis: IORedis;
 
-  // Must match sms.service.ts VERIFY_AND_INCREMENT_LUA exactly
-  const VERIFY_AND_INCREMENT_LUA = `
-local stored = redis.call('GET', KEYS[1])
-if stored == false then
-  return {'EXPIRED', 0}
-end
-
-local attempts = redis.call('INCR', KEYS[2])
-if attempts == 1 then
-  redis.call('EXPIRE', KEYS[2], 900)
-end
-
-local max = tonumber(ARGV[2])
-if attempts > max then
-  redis.call('DEL', KEYS[1], KEYS[2])
-  return {'NO_MORE_ATTEMPTS', 0}
-end
-
-if stored == ARGV[1] then
-  redis.call('DEL', KEYS[1], KEYS[2])
-  redis.call('SETEX', KEYS[3], tonumber(ARGV[3]), '1')
-  return {'VERIFIED', attempts}
-end
-
-return {'WRONG', max - attempts}
-`;
+  // D-13 SoT: Lua body + key builders are imported from sms.service.ts (top of file).
+  // No local duplicate here -- any future key-scheme change propagates automatically.
 
   const keys = (phone: string) => [
-    `sms:otp:${phone}`,
-    `sms:attempts:${phone}`,
-    `sms:verified:${phone}`,
+    smsOtpKey(phone),
+    smsAttemptsKey(phone),
+    smsVerifiedKey(phone),
   ];
 
   beforeAll(async () => {
@@ -336,29 +316,29 @@ return {'WRONG', max - attempts}
 
   it('정답 코드 → VERIFIED, verified 플래그 저장, otp/attempts DEL', async () => {
     const phone = '+821099990001';
-    await redis.set(`sms:otp:${phone}`, '123456', 'PX', 180_000);
+    await redis.set(smsOtpKey(phone), '123456', 'PX', 180_000);
 
     const result = await redis.eval(
       VERIFY_AND_INCREMENT_LUA, 3,
       ...keys(phone), '123456', '5', '600',
     );
     expect(result).toEqual(['VERIFIED', 1]);
-    expect(await redis.get(`sms:otp:${phone}`)).toBeNull();
-    expect(await redis.get(`sms:attempts:${phone}`)).toBeNull();
-    expect(await redis.get(`sms:verified:${phone}`)).toBe('1');
+    expect(await redis.get(smsOtpKey(phone))).toBeNull();
+    expect(await redis.get(smsAttemptsKey(phone))).toBeNull();
+    expect(await redis.get(smsVerifiedKey(phone))).toBe('1');
   });
 
   it('오답 코드 → WRONG, attempts INCR만', async () => {
     const phone = '+821099990001';
-    await redis.set(`sms:otp:${phone}`, '123456', 'PX', 180_000);
+    await redis.set(smsOtpKey(phone), '123456', 'PX', 180_000);
 
     const result = await redis.eval(
       VERIFY_AND_INCREMENT_LUA, 3,
       ...keys(phone), '999999', '5', '600',
     );
     expect(result).toEqual(['WRONG', 4]);
-    expect(await redis.get(`sms:otp:${phone}`)).toBe('123456');
-    expect(await redis.get(`sms:attempts:${phone}`)).toBe('1');
+    expect(await redis.get(smsOtpKey(phone))).toBe('123456');
+    expect(await redis.get(smsAttemptsKey(phone))).toBe('1');
   });
 
   it('otp 없음 → EXPIRED', async () => {
@@ -373,7 +353,7 @@ return {'WRONG', max - attempts}
 
   it('attempts 5회 초과 시 NO_MORE_ATTEMPTS + otp/attempts DEL', async () => {
     const phone = '+821099990001';
-    await redis.set(`sms:otp:${phone}`, '123456', 'PX', 180_000);
+    await redis.set(smsOtpKey(phone), '123456', 'PX', 180_000);
 
     // 먼저 4번 틀리게 호출 (attempts=4)
     for (let i = 0; i < 4; i++) {
@@ -395,32 +375,32 @@ return {'WRONG', max - attempts}
       ...keys(phone), '999999', '5', '600',
     );
     expect(r6).toEqual(['NO_MORE_ATTEMPTS', 0]);
-    expect(await redis.get(`sms:otp:${phone}`)).toBeNull();
-    expect(await redis.get(`sms:attempts:${phone}`)).toBeNull();
+    expect(await redis.get(smsOtpKey(phone))).toBeNull();
+    expect(await redis.get(smsAttemptsKey(phone))).toBeNull();
   });
 
   it('attempts EXPIRE 900s 설정 확인', async () => {
     const phone = '+821099990001';
-    await redis.set(`sms:otp:${phone}`, '123456', 'PX', 180_000);
+    await redis.set(smsOtpKey(phone), '123456', 'PX', 180_000);
 
     await redis.eval(
       VERIFY_AND_INCREMENT_LUA, 3,
       ...keys(phone), '999999', '5', '600',
     );
-    const ttl = await redis.ttl(`sms:attempts:${phone}`);
+    const ttl = await redis.ttl(smsAttemptsKey(phone));
     expect(ttl).toBeGreaterThan(800);
     expect(ttl).toBeLessThanOrEqual(900);
   });
 
   it('verified 플래그 TTL 600s 설정 확인', async () => {
     const phone = '+821099990001';
-    await redis.set(`sms:otp:${phone}`, '123456', 'PX', 180_000);
+    await redis.set(smsOtpKey(phone), '123456', 'PX', 180_000);
 
     await redis.eval(
       VERIFY_AND_INCREMENT_LUA, 3,
       ...keys(phone), '123456', '5', '600',
     );
-    const ttl = await redis.ttl(`sms:verified:${phone}`);
+    const ttl = await redis.ttl(smsVerifiedKey(phone));
     expect(ttl).toBeGreaterThan(550);
     expect(ttl).toBeLessThanOrEqual(600);
   });

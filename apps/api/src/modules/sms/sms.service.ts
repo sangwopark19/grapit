@@ -37,11 +37,11 @@ return count
 `;
 
 /**
- * [Phase 10.1 NEW] Atomic OTP verify + attempt counter + verified flag.
+ * [Phase 10.1 / hash-tag 적용 Phase 14] Atomic OTP verify + attempt counter + verified flag.
  * KEYS:
- *   [1] sms:otp:{e164}
- *   [2] sms:attempts:{e164}
- *   [3] sms:verified:{e164}
+ *   [1] {sms:{e164}}:otp        — 6-digit OTP body (TTL 180s)
+ *   [2] {sms:{e164}}:attempts   — wrong-attempt counter (TTL 900s on first INCR)
+ *   [3] {sms:{e164}}:verified   — verified flag (SETEX on VERIFIED, TTL 600s)
  * ARGV:
  *   [1] user-provided code (6 digits)
  *   [2] max attempts (e.g. '5')
@@ -51,8 +51,10 @@ return count
  *   {'WRONG', remaining}          -- wrong. attempts INCR(+EXPIRE if first).
  *   {'EXPIRED', 0}                -- otp expired/missing.
  *   {'NO_MORE_ATTEMPTS', 0}       -- exceeded. otp/attempts DEL.
+ *
+ * Hash tag `{sms:{e164}}` ensures all 3 keys hash to the same Redis Cluster slot.
  */
-const VERIFY_AND_INCREMENT_LUA = `
+export const VERIFY_AND_INCREMENT_LUA = `
 local stored = redis.call('GET', KEYS[1])
 if stored == false then
   return {'EXPIRED', 0}
@@ -77,6 +79,51 @@ end
 
 return {'WRONG', max - attempts}
 `;
+
+// [Phase 14 / D-01 D-02 D-13] Hash-tag keyed SMS storage keys.
+// All keys MUST share the `{sms:${e164}}` hash tag so CRC16 maps them
+// to the same Redis Cluster slot — otherwise `VERIFY_AND_INCREMENT_LUA`
+// (multi-key EVAL) raises `CROSSSLOT Keys in request don't hash to the same slot`
+// on cluster-mode Valkey / Memorystore. Pattern lifted from
+// booking.service.ts (commit b382e39).
+//
+// [Phase 14 / WR-01] Counter/cooldown siblings (resend, send-count,
+// verify-count) were historically un-hash-tagged because each is only ever
+// touched by single-key commands (SET/DECR/Lua EVAL with a single KEY/DEL/
+// PTTL). That is safe today, but leaves the cluster invariant visibly split
+// (`{sms:...}:otp` vs. `sms:phone:send:...`) and means the rollback path
+// (`Promise.allSettled([DEL cooldown, DECR counter])`) would immediately
+// resurrect CROSSSLOT if a future change pipelines it with the OTP keys or
+// wraps it in a MULTI/EXEC. Unifying every per-phone SMS key under the same
+// hash tag makes the contract uniform and future-proof.
+//
+// NOTE: changing key names is a deploy-time counter reset; old keys expire
+// naturally via TTL (cooldown 30s, send-count 1h, verify-count 15m).
+//
+// [Phase 14 / WR-02] Defend the hash-tag contract at the boundary: every
+// builder asserts ITU-T E.164 (`/^\+\d{6,15}$/`) on its input. Redis Cluster
+// uses only the content between the first `{` and the next `}` for slot
+// mapping, so a payload like `}x:"+"+821012345678` would split the tag and
+// silently resurrect CROSSSLOT. parseE164() already strips `{`/`}` during
+// digit normalization and then re-validates via libphonenumber, so its
+// output is always bare E.164. Formalizing the invariant at each builder
+// means any caller that forgets to route through parseE164() fails fast
+// instead of corrupting cluster placement.
+const E164_RE = /^\+\d{6,15}$/;
+function assertE164(s: string): void {
+  if (!E164_RE.test(s)) {
+    // Mask all but first 4 chars (country code prefix) to keep PII out of
+    // error messages / Sentry. `+82` + 1 digit is enough to triage KR
+    // vs. foreign without leaking the subscriber number.
+    throw new Error(`[sms] non-E164 key input: ${s.slice(0, 4)}***`);
+  }
+}
+export const smsOtpKey           = (e164: string): string => { assertE164(e164); return `{sms:${e164}}:otp`; };
+export const smsAttemptsKey      = (e164: string): string => { assertE164(e164); return `{sms:${e164}}:attempts`; };
+export const smsVerifiedKey      = (e164: string): string => { assertE164(e164); return `{sms:${e164}}:verified`; };
+export const smsResendKey        = (e164: string): string => { assertE164(e164); return `{sms:${e164}}:resend`; };
+export const smsSendCounterKey   = (e164: string): string => { assertE164(e164); return `{sms:${e164}}:send-count`; };
+export const smsVerifyCounterKey = (e164: string): string => { assertE164(e164); return `{sms:${e164}}:verify-count`; };
 
 export interface SendResult { success: boolean; message: string }
 export interface VerifyResult { verified: boolean; message?: string }
@@ -173,7 +220,7 @@ export class SmsService {
     }
 
     // D-11: 30s resend cooldown via Valkey SET NX
-    const cooldownKey = `sms:resend:${e164}`;
+    const cooldownKey = smsResendKey(e164);
     const acquired = await this.redis.set(cooldownKey, '1', 'PX', RESEND_COOLDOWN_MS, 'NX');
     if (acquired === null) {
       const ttl = await this.redis.pttl(cooldownKey);
@@ -186,7 +233,7 @@ export class SmsService {
 
     // D-06: phone axis send 5/3600s -- Lua atomic INCR+EXPIRE
     const sendCount = await this.atomicIncr(
-      `sms:phone:send:${e164}`, SEND_PHONE_WINDOW_SEC,
+      smsSendCounterKey(e164), SEND_PHONE_WINDOW_SEC,
     );
     if (sendCount > SEND_PHONE_LIMIT) {
       this.logger.warn({
@@ -207,7 +254,7 @@ export class SmsService {
       // On sendSms failure, OTP naturally expires via TTL 180s. Next send overwrites.
       //
       // [Issue 1 / PR #16 review] Reset attempts counter atomically with new
-      // OTP storage. sms:attempts:{e164} TTL is 900s (set inside
+      // OTP storage. {sms:{e164}}:attempts TTL is 900s (set inside
       // VERIFY_AND_INCREMENT_LUA on first INCR), longer than OTP TTL 180s.
       // Without this DEL, a user who failed N attempts on OTP#1 and then
       // re-sends would start OTP#2 with attempts=N already counted in Valkey
@@ -218,8 +265,8 @@ export class SmsService {
       // The verify path reads OTP first (KEYS[1]), so a Lua script is not
       // required — pipeline ordering is observably atomic for the consumer.
       const pipeline = this.redis.pipeline();
-      pipeline.set(`sms:otp:${e164}`, otp, 'PX', OTP_TTL_MS);
-      pipeline.del(`sms:attempts:${e164}`);
+      pipeline.set(smsOtpKey(e164), otp, 'PX', OTP_TTL_MS);
+      pipeline.del(smsAttemptsKey(e164));
       const results = await pipeline.exec();
       // ioredis pipeline.exec returns Array<[Error|null, unknown]> | null.
       // Treat any op error as a failed send — flow into the catch below so the
@@ -256,7 +303,7 @@ export class SmsService {
         // their phone-axis slot with zero observability.
         const rollbackResults = await Promise.allSettled([
           this.redis.del(cooldownKey),
-          this.redis.decr(`sms:phone:send:${e164}`),
+          this.redis.decr(smsSendCounterKey(e164)),
         ]);
         rollbackResults.forEach((r, i) => {
           if (r.status === 'rejected') {
@@ -318,12 +365,12 @@ export class SmsService {
     }
 
     // [WR-02] D-07 rate limit MUST run before any short-circuit — it is the
-    // only signal that resists enumeration of the `sms:verified:{e164}` flag.
+    // only signal that resists enumeration of the `{sms:{e164}}:verified` flag.
     // If we checked the verified flag first and returned early, the counter
     // would not increment and an attacker could probe unlimited phones to
     // distinguish "verified within last 10 min" vs not.
     const verifyCount = await this.atomicIncr(
-      `sms:phone:verify:${e164}`, VERIFY_PHONE_WINDOW_SEC,
+      smsVerifyCounterKey(e164), VERIFY_PHONE_WINDOW_SEC,
     );
     if (verifyCount > VERIFY_PHONE_LIMIT) {
       this.logger.warn({
@@ -336,7 +383,7 @@ export class SmsService {
     }
 
     // [CR-01] SECURITY: previously we short-circuited to `{ verified: true }`
-    // whenever `sms:verified:{e164}` was '1', regardless of the submitted code.
+    // whenever `{sms:{e164}}:verified` was '1', regardless of the submitted code.
     // During the 600s flag TTL, any caller who knew a recently-verified phone
     // could pass verification with `code: "000000"` (or anything). This was an
     // impersonation primitive against every downstream consumer of verifyCode
@@ -348,7 +395,7 @@ export class SmsService {
     // because the OTP was DEL'd — downstream consumers should treat that as
     // "already verified" via explicit check OR re-send.
     //
-    // The `sms:verified:{e164}` flag is still SETEX'd inside the Lua script on
+    // The `{sms:{e164}}:verified` flag is still SETEX'd inside the Lua script on
     // VERIFIED; it remains available for downstream consumers to query
     // explicitly if they need an idempotency signal, but it no longer gates
     // the verify-response. Long-term plan (WR-02 follow-up): issue a
@@ -360,9 +407,9 @@ export class SmsService {
       const result = (await this.redis.eval(
         VERIFY_AND_INCREMENT_LUA,
         3,
-        `sms:otp:${e164}`,
-        `sms:attempts:${e164}`,
-        `sms:verified:${e164}`,
+        smsOtpKey(e164),
+        smsAttemptsKey(e164),
+        smsVerifiedKey(e164),
         code,
         String(OTP_MAX_ATTEMPTS),
         String(VERIFIED_FLAG_TTL_SEC),
@@ -395,7 +442,7 @@ export class SmsService {
       // failures. Without this, each Valkey blip burns one of the user's
       // 10/15min verify attempts without producing any result.
       await this.redis
-        .decr(`sms:phone:verify:${e164}`)
+        .decr(smsVerifyCounterKey(e164))
         .catch((rollbackErr: unknown) => {
           this.logger.warn({
             event: 'sms.rollback_failed',

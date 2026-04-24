@@ -65,6 +65,8 @@
 - **테스트 (phase 12 시점):** 백엔드 63+, 프론트엔드 vitest 136/136 GREEN (20 files), typecheck 0 errors, lint 0 errors
 - **알려진 기술 부채:** D-19 admin SVG client-side validation only → §Security Debt로 공식 tracked. 추후 별도 security phase에서 해소 예정
 - **Phase 12 잔여 UAT:** 12-HUMAN-UAT.md 3건 (admin/dashboard 시각 톤앤매너 · 실 모바일 터치 오탭 · hydration warning 0건) — 자동 검증 PASS + plan 12-03.5 smoke test 간접 증거 완비, 추후 prod smoke로 최종 close
+- **Phase 13 완료 (2026-04-23):** 브랜드 `grapit → grabit` 일괄 rename + heygrabit.com apex/www + api 라이브 (LB SNI 3-host HTTPS 200). 7-day grace cleanup + 실기기 HUMAN-UAT 수동 잔여
+- **Phase 14 완료 (2026-04-24):** SMS OTP CROSSSLOT fix — `{sms:${e164}}:<role>` hash-tag 스킴으로 전환, 4-심볼 module export(smsOtpKey/smsAttemptsKey/smsVerifiedKey/VERIFY_AND_INCREMENT_LUA)를 Plan 02/03 통합 테스트의 single source of truth 로 확정, cluster-mode CROSSSLOT 회귀 가드(`sms-cluster-crossslot.integration.spec.ts`) + ci.yml `test:integration` step 추가, phone-verification server-message-priority(D-07/D-08) UX 분기. 자동 검증 8/9 (api 283/283 + web 143/143 green, typecheck 0 errors, code review 0 critical). 잔여 HUMAN-UAT 3건: SC-1 실기기 프로덕션 SMS 인증 · ci.yml integration step PR green · pre-existing `sms-throttle.integration.spec.ts` TTL 2건 (@grabit rename 여파 — deferred-items.md)
 
 ### 참조 사이트
 NOL 티켓(nol.interpark.com/ticket)을 상세 분석한 5개 문서가 docs/에 있음:
@@ -137,4 +139,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-21 — Phase 12 UX 현대화 완료 (UX-01~06 전부 code-level PASS, vitest 136/136 GREEN, reviews revision 9/9 closed, prod smoke 3건은 12-HUMAN-UAT로 유예). v1.1 milestone complete.*
+*Last updated: 2026-04-24 — Phase 14 SMS OTP CROSSSLOT fix 완료 (hash-tag 키 스킴 전환 + cluster-mode 회귀 가드 + phone-verification server-message 분기). 자동 검증 8/9, HUMAN-UAT 3건 지속 추적. Phase 13/14 모두 v1.1 안정화 연장선.*
