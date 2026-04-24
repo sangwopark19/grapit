@@ -264,4 +264,103 @@ describe('PhoneVerification', () => {
       });
     });
   });
+
+  // ---------- D-07 server message priority ----------
+  describe('서버 message 우선 (D-07)', () => {
+    it('SC-4a: verified=false + message 존재 → 서버 메시지 표시', async () => {
+      const { apiClient } = await import('@/lib/api-client');
+      (apiClient.post as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce({ success: true })
+        .mockResolvedValueOnce({
+          verified: false,
+          message: '인증번호 확인에 실패했습니다. 잠시 후 다시 시도해주세요.',
+        });
+
+      render(<PhoneVerification {...defaultProps} />);
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      await user.click(screen.getByRole('button', { name: /인증번호 발송/ }));
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText(/인증번호 6자리/)).toBeInTheDocument();
+      });
+
+      await user.type(screen.getByPlaceholderText(/인증번호 6자리/), '123456');
+      await user.click(screen.getByRole('button', { name: /확인/ }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('alert')).toHaveTextContent(
+          '인증번호 확인에 실패했습니다. 잠시 후 다시 시도해주세요.',
+        );
+      });
+    });
+
+    it('SC-4b-1: verified=false + message undefined → 하드코드 fallback', async () => {
+      const { apiClient } = await import('@/lib/api-client');
+      (apiClient.post as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce({ success: true })
+        .mockResolvedValueOnce({ verified: false }); // message undefined
+
+      render(<PhoneVerification {...defaultProps} />);
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      await user.click(screen.getByRole('button', { name: /인증번호 발송/ }));
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText(/인증번호 6자리/)).toBeInTheDocument();
+      });
+
+      await user.type(screen.getByPlaceholderText(/인증번호 6자리/), '999999');
+      await user.click(screen.getByRole('button', { name: /확인/ }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('alert')).toHaveTextContent('인증번호가 일치하지 않습니다');
+      });
+    });
+
+    it('SC-4b-2: verified=false + message 빈 문자열 → 하드코드 fallback (D-08)', async () => {
+      const { apiClient } = await import('@/lib/api-client');
+      (apiClient.post as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce({ success: true })
+        .mockResolvedValueOnce({ verified: false, message: '' });
+
+      render(<PhoneVerification {...defaultProps} />);
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      await user.click(screen.getByRole('button', { name: /인증번호 발송/ }));
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText(/인증번호 6자리/)).toBeInTheDocument();
+      });
+
+      await user.type(screen.getByPlaceholderText(/인증번호 6자리/), '999999');
+      await user.click(screen.getByRole('button', { name: /확인/ }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('alert')).toHaveTextContent('인증번호가 일치하지 않습니다');
+      });
+    });
+
+    it('SC-4c: verified=true → onVerified 호출 + alert 미표시 (회귀 가드)', async () => {
+      const { apiClient } = await import('@/lib/api-client');
+      const onVerified = vi.fn();
+      (apiClient.post as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce({ success: true })
+        .mockResolvedValueOnce({ verified: true });
+
+      render(<PhoneVerification {...defaultProps} onVerified={onVerified} />);
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      await user.click(screen.getByRole('button', { name: /인증번호 발송/ }));
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText(/인증번호 6자리/)).toBeInTheDocument();
+      });
+
+      await user.type(screen.getByPlaceholderText(/인증번호 6자리/), '123456');
+      await user.click(screen.getByRole('button', { name: /확인/ }));
+
+      await waitFor(() => {
+        expect(onVerified).toHaveBeenCalledWith('123456');
+      });
+      // 성공 분기에서는 에러 alert 가 없어야 함 (D-07 regression guard)
+      expect(screen.queryByRole('alert')).toBeNull();
+    });
+  });
 });
