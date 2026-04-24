@@ -4,7 +4,9 @@ Pre-existing issues discovered during Phase 14 execution that are out of scope f
 
 ---
 
-## Pre-existing failure: `apps/api/test/sms-throttle.integration.spec.ts` TTL unit tests
+## Pre-existing failure: `apps/api/test/sms-throttle.integration.spec.ts` TTL unit tests — **RESOLVED 2026-04-24**
+
+**Status:** Resolved by quick task `260424-l23` (commit `e65fa99`). Actual root cause: the filter matched `.includes('throttler')` but `@nest-lab/throttler-storage-redis` stores keys as `{<tracker>:<throttlerName>}:hits` — no "throttler" substring. Fixed by switching to `.endsWith(':hits')` matching. Unrelated to the Phase 13 `@grabit` namespace rename originally suspected. Integration suite now 30/30 green; Phase 14 ci.yml `test:integration` step PR green blocker cleared.
 
 **Discovered by:** Plan 02 (2026-04-24) and independently by Plan 03 (2026-04-24)
 
