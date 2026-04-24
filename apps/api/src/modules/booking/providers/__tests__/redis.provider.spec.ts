@@ -2,6 +2,14 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { ConfigService } from '@nestjs/config';
 import IORedis from 'ioredis';
 import { redisProvider, REDIS_CLIENT } from '../redis.provider.js';
+import {
+  smsAttemptsKey,
+  smsOtpKey,
+  smsResendKey,
+  smsSendCounterKey,
+} from '../../../sms/sms.service.js';
+
+const TEST_PHONE = '+821012345678';
 
 /**
  * redisProvider factory tests (Phase 07-04 review fix).
@@ -112,9 +120,9 @@ describe('redisProvider factory', () => {
 
     it('set(key, value, "PX", ms, "NX") honors NX + TTL (ioredis variadic)', async () => {
       const redis = createMock();
-      // [Phase 14 / WR-01] Illustrative fixture uses the unified hash-tag key
-      // scheme (`{sms:<e164>}:resend`) that SmsService actually produces.
-      const key = '{sms:+821012345678}:resend';
+      // [Phase 14 / WR-01] Source the key via sms.service's exported builder so
+      // the mock exercises the exact string SmsService produces at runtime.
+      const key = smsResendKey(TEST_PHONE);
       const first = await redis.set(key, '1', 'PX', 30_000, 'NX');
       expect(first).toBe('OK');
 
@@ -137,9 +145,9 @@ describe('redisProvider factory', () => {
 
     it('decr() decrements and can go below zero (rollback parity with real Redis)', async () => {
       const redis = createMock();
-      // [Phase 14 / WR-01] Illustrative fixture uses the unified hash-tag key
-      // scheme (`{sms:<e164>}:send-count`) that SmsService actually produces.
-      const key = '{sms:+821012345678}:send-count';
+      // [Phase 14 / WR-01] Source the key via sms.service's exported builder so
+      // the mock exercises the exact string SmsService produces at runtime.
+      const key = smsSendCounterKey(TEST_PHONE);
       await redis.set(key, '3');
       expect(await redis.decr(key)).toBe(2);
       expect(await redis.decr(key)).toBe(1);
@@ -156,8 +164,8 @@ describe('redisProvider factory', () => {
       const redis = createMock();
       const pipe = redis.pipeline();
       const results = await pipe
-        .set('{sms:+821012345678}:otp', '654321', 'PX', 180_000)
-        .del('{sms:+821012345678}:attempts')
+        .set(smsOtpKey(TEST_PHONE), '654321', 'PX', 180_000)
+        .del(smsAttemptsKey(TEST_PHONE))
         .exec();
 
       expect(results).toHaveLength(2);
@@ -167,7 +175,7 @@ describe('redisProvider factory', () => {
       expect(typeof results[1]?.[1]).toBe('number');
 
       // Post-pipeline state: OTP stored with TTL (Phase 14 hash-tag form)
-      expect(await redis.get('{sms:+821012345678}:otp')).toBe('654321');
+      expect(await redis.get(smsOtpKey(TEST_PHONE))).toBe('654321');
     });
   });
 });
