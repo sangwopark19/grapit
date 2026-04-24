@@ -1,7 +1,7 @@
 /**
  * Phase 10.1: Infobip /sms/3/messages v3 전환
  * - OTP 생성: crypto.randomInt (Math.random 금지, OWASP A02)
- * - 저장: Valkey `sms:otp:{e164}` TTL 180s
+ * - 저장: Valkey `{sms:{e164}}:otp` TTL 180s (Phase 14 hash-tag 적용)
  * - Verify: Valkey Lua VERIFY_AND_INCREMENT_LUA atomic script
  * - Infobip verify API 사용 안 함 (자체 구현)
  *
@@ -10,7 +10,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BadRequestException, GoneException, HttpException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { SmsService } from './sms.service.js';
+import {
+  SmsService,
+  smsOtpKey,
+  smsAttemptsKey,
+  smsVerifiedKey,
+} from './sms.service.js';
 import { InfobipClient, InfobipApiError } from './infobip-client.js';
 
 vi.mock('node:crypto', async (importOriginal) => {
@@ -21,7 +26,7 @@ import * as nodeCrypto from 'node:crypto';
 
 // ---------- Mocks ----------
 // [Issue 1 / PR #16 review] sendVerificationCode now uses redis.pipeline() to
-// SET the new OTP and DEL sms:attempts:{e164} together. The mock pipeline must
+// SET the new OTP and DEL {sms:{e164}}:attempts together. The mock pipeline must
 // be chainable (set/del return `this`) and exec must resolve to ioredis-style
 // [Error|null, unknown][] tuples.
 const mockPipeline = {
@@ -271,7 +276,7 @@ describe('SmsService', () => {
       );
     });
 
-    it('Infobip sendSms 성공 시 Valkey에 OTP 6자리 저장 (sms:otp:{e164}, TTL 180s)', async () => {
+    it('Infobip sendSms 성공 시 Valkey에 OTP 6자리 저장 ({sms:{e164}}:otp, TTL 180s)', async () => {
       const configService = createConfigService();
       const service = new SmsService(configService, mockRedis as never);
       mockRedis.set.mockResolvedValueOnce('OK'); // cooldown NX pass
@@ -289,7 +294,7 @@ describe('SmsService', () => {
       const result = await service.sendVerificationCode('+821012345678');
       expect(result.success).toBe(true);
       expect(mockPipeline.set).toHaveBeenCalledWith(
-        expect.stringContaining('sms:otp:'),
+        smsOtpKey('+821012345678'),
         '654321',
         'PX',
         180000,
@@ -469,8 +474,8 @@ describe('SmsService', () => {
     });
 
     // ---------- Issue 1 (PR #16 review): sms:attempts reset on new OTP ----------
-    it('신규 OTP 저장 시 sms:attempts:{e164}를 함께 DEL (재발송 후 5회 시도 보장)', async () => {
-      // sms:attempts:{e164} TTL is 900s (set inside VERIFY_AND_INCREMENT_LUA),
+    it('신규 OTP 저장 시 {sms:{e164}}:attempts를 함께 DEL (재발송 후 5회 시도 보장)', async () => {
+      // {sms:{e164}}:attempts TTL is 900s (set inside VERIFY_AND_INCREMENT_LUA),
       // longer than OTP TTL 180s. Without this DEL, a user who failed N
       // attempts on OTP#1 and then re-sends would start OTP#2 with attempts=N
       // already counted — the very first verify on OTP#2 could trigger
@@ -494,14 +499,14 @@ describe('SmsService', () => {
       expect(mockRedis.pipeline).toHaveBeenCalled();
       // SET OTP with TTL 180s
       expect(mockPipeline.set).toHaveBeenCalledWith(
-        'sms:otp:+821012345678',
+        smsOtpKey('+821012345678'),
         '424242',
         'PX',
         180000,
       );
       // DEL stale attempts counter
       expect(mockPipeline.del).toHaveBeenCalledWith(
-        'sms:attempts:+821012345678',
+        smsAttemptsKey('+821012345678'),
       );
       // Success path must NOT release the cooldown (handled separately)
       expect(mockRedis.del).not.toHaveBeenCalledWith(
@@ -570,7 +575,7 @@ describe('SmsService', () => {
       );
     });
 
-    it('Lua VERIFY_AND_INCREMENT 결과 ["VERIFIED", attempts] 시 verified: true + sms:verified:{e164} TTL 600s 저장', async () => {
+    it('Lua VERIFY_AND_INCREMENT 결과 ["VERIFIED", attempts] 시 verified: true + {sms:{e164}}:verified TTL 600s 저장', async () => {
       const configService = createConfigService();
       const service = new SmsService(configService, mockRedis as never);
 
@@ -586,9 +591,9 @@ describe('SmsService', () => {
       expect(mockRedis.eval).toHaveBeenCalledWith(
         expect.stringContaining('KEYS'),
         expect.any(Number),
-        expect.stringContaining('sms:otp:'),
-        expect.stringContaining('sms:attempts:'),
-        expect.stringContaining('sms:verified:'),
+        smsOtpKey('+821012345678'),
+        smsAttemptsKey('+821012345678'),
+        smsVerifiedKey('+821012345678'),
         expect.any(String), // user code
         expect.any(String), // max attempts
         expect.any(String), // verified TTL
@@ -722,8 +727,8 @@ describe('SmsService', () => {
     });
 
     // ---------- CR-01: no short-circuit on sms:verified flag ----------
-    it('[CR-01] sms:verified 플래그가 세팅돼 있어도 잘못된 code는 거부 (impersonation 방지)', async () => {
-      // PREVIOUS BUG: when `sms:verified:{e164}` == '1', verifyCode returned
+    it('[CR-01] {sms:{e164}}:verified 플래그가 세팅돼 있어도 잘못된 code는 거부 (impersonation 방지)', async () => {
+      // PREVIOUS BUG: when `{sms:{e164}}:verified` == '1', verifyCode returned
       // `{ verified: true }` for ANY submitted code (including "000000") for
       // the 600s flag TTL. This allowed anyone who knew a recently-verified
       // phone to spoof verification on signup/password-reset.
@@ -737,7 +742,7 @@ describe('SmsService', () => {
         .mockResolvedValueOnce(1)                       // phone-axis counter
         .mockResolvedValueOnce(['WRONG', 4]);           // Lua: wrong code
 
-      // Even if redis.get('sms:verified:...') would have returned '1'
+      // Even if redis.get('{sms:...}:verified') would have returned '1'
       // (simulating a recently-verified phone), the code path must not
       // consult it — and must return verified:false for a wrong code.
       mockRedis.get.mockResolvedValue('1');
@@ -745,13 +750,13 @@ describe('SmsService', () => {
       const result = await service.verifyCode('+821012345678', '000000');
 
       expect(result.verified).toBe(false);
-      // sms:verified flag MUST NOT be consulted (no short-circuit path).
+      // {sms:{e164}}:verified flag MUST NOT be consulted (no short-circuit path).
       expect(mockRedis.get).not.toHaveBeenCalledWith(
-        expect.stringContaining('sms:verified:'),
+        expect.stringContaining(':verified'),
       );
     });
 
-    it('[CR-01] sms:verified 플래그가 세팅돼 있어도 올바른 Lua VERIFIED 응답만 verified:true', async () => {
+    it('[CR-01] {sms:{e164}}:verified 플래그가 세팅돼 있어도 올바른 Lua VERIFIED 응답만 verified:true', async () => {
       // Positive regression: the legitimate path still works — the Lua script
       // DEL'd OTP on first VERIFIED so idempotent re-verify against the same
       // OTP returns EXPIRED (GoneException). That is the documented trade-off
@@ -763,7 +768,7 @@ describe('SmsService', () => {
         .mockResolvedValueOnce(1)                       // phone-axis counter
         .mockResolvedValueOnce(['EXPIRED', 0]);         // OTP already consumed
 
-      // sms:verified flag set from a prior verify.
+      // {sms:{e164}}:verified flag set from a prior verify.
       mockRedis.get.mockResolvedValue('1');
 
       await expect(
@@ -772,7 +777,7 @@ describe('SmsService', () => {
 
       // Flag must not have short-circuited the GoneException.
       expect(mockRedis.get).not.toHaveBeenCalledWith(
-        expect.stringContaining('sms:verified:'),
+        expect.stringContaining(':verified'),
       );
     });
   });

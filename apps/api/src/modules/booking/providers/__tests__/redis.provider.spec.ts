@@ -150,8 +150,8 @@ describe('redisProvider factory', () => {
       const redis = createMock();
       const pipe = redis.pipeline();
       const results = await pipe
-        .set('sms:otp:+821012345678', '654321', 'PX', 180_000)
-        .del('sms:attempts:+821012345678')
+        .set('{sms:+821012345678}:otp', '654321', 'PX', 180_000)
+        .del('{sms:+821012345678}:attempts')
         .exec();
 
       expect(results).toHaveLength(2);
@@ -160,8 +160,8 @@ describe('redisProvider factory', () => {
       expect(results[1]?.[0]).toBeNull();
       expect(typeof results[1]?.[1]).toBe('number');
 
-      // Post-pipeline state: OTP stored with TTL
-      expect(await redis.get('sms:otp:+821012345678')).toBe('654321');
+      // Post-pipeline state: OTP stored with TTL (Phase 14 hash-tag form)
+      expect(await redis.get('{sms:+821012345678}:otp')).toBe('654321');
     });
   });
 });
