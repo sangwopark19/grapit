@@ -228,11 +228,11 @@ describe('SMS Throttle Integration (testcontainers + Valkey)', () => {
         .send({ phone: '+82010099998888' })
         .expect(HttpStatus.OK);
 
-      // Find throttler keys in Valkey
+      // Find throttler hit keys in Valkey.
+      // @nest-lab/throttler-storage-redis stores keys as `{<tracker>:<throttlerName>}:hits`
+      // (and `:blocked`) — no "throttler" substring in the key itself.
       const keys = await redis.keys('*');
-      const throttlerKeys = keys.filter(
-        (k) => k.includes('throttler') || k.includes('Throttler'),
-      );
+      const throttlerKeys = keys.filter((k) => k.endsWith(':hits'));
 
       // At least one throttler key should exist
       expect(throttlerKeys.length).toBeGreaterThan(0);
@@ -260,9 +260,7 @@ describe('SMS Throttle Integration (testcontainers + Valkey)', () => {
         .expect(HttpStatus.OK);
 
       const keys = await redis.keys('*');
-      const throttlerKeys = keys.filter(
-        (k) => k.includes('throttler') || k.includes('Throttler'),
-      );
+      const throttlerKeys = keys.filter((k) => k.endsWith(':hits'));
 
       expect(throttlerKeys.length).toBeGreaterThan(0);
 
