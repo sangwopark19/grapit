@@ -74,6 +74,10 @@ Progress: [██████████] 100%
 - Phase 09.1 inserted after Phase 09: CI-login-E2E — Playwright login helper 의 POST /auth/login 401 이슈 조사 (URGENT)
 - Phase 10.1 inserted after Phase 10: SMS API v3 전환 — 2FA PIN API(/2fa/2/pin)에서 일반 SMS API(/sms/3/messages)로 리팩토링, applicationId/messageId 의존 제거, PIN 생성·검증 자체 구현 (URGENT)
 - Phase 13 added: 브랜드명 grapit → grabit 일괄 rename (SEED-002 surfaced after Phase 12 ship, 2026-04-22)
+- Phase 14 added (2026-04-24): SMS OTP CROSSSLOT fix — Phase 13 UAT Gap test 10. Valkey Cluster mode 에서 sms.service.ts 3개 key 공통 hash tag 없이 EVAL → CROSSSLOT. phone-verification.tsx 가 res.message 를 UX 에서 마스킹하여 "틀린 인증번호" 로 오표시. Reference: .planning/debug/signup-sms-otp-verify-wrong.md + commit b382e39 (booking.service.ts 동일 패턴 선례)
+- Phase 15 added (2026-04-24): Resend heygrabit.com cutover — Phase 13 UAT Gap test 9. Plan 03/04 가 명시적으로 deferred 처리한 RESEND_FROM_EMAIL secret 값 교체 + Resend 콘솔 heygrabit.com 도메인 verification + DNS SPF/DKIM/DMARC 후이즈 등록. Reference: .planning/debug/password-reset-email-not-delivered-prod.md
+- Phase 16 added (2026-04-24): Legal pages launch — Phase 13 UAT Gap test 11 (pre-existing feature gap). apps/web/app/legal/{terms,privacy,marketing} 신규 구현 + Footer href="#" 플레이스홀더 교체. 한국 개보법·정통망법 상시 공개 URL 런칭 요건. Reference: .planning/debug/legal-pages-404-heygrabit.md
+- Phase 17 added (2026-04-24): Local dev health indicator fix — Phase 13 UAT Gap test 1 (pre-existing Phase 7-05 버그). InMemoryRedis mock 에 ping() 미구현 → Terminus 503. InMemoryRedis.ping() 추가 + capability probe. Reference: .planning/debug/local-api-health-503-no-redis.md
 
 ### Decisions
 

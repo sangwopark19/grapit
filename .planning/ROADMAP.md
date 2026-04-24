@@ -239,3 +239,43 @@ Plans:
 - [x] 13-02-PLAN.md — P2 사용자 노출 카피: UI 로고/footer/admin + email subject + SMS body + legal MD (D-07 @heygrabit.com)
 - [x] 13-03-PLAN.md — P3 인프라 식별자 생성: AR grabit + Sentry 2프로젝트 slug rename + deploy.yml env + 새 Cloud Run 서비스 기동 (D-05 SA 유지) + api.heygrabit.com via Global HTTPS LB (asia-northeast3 domain-mappings 미지원 → Plan 원안 경로 변경)
 - [x] 13-04-PLAN.md — P4 도메인 cutover: heygrabit.com + www → grabit-web via LB URL Map host-rule 확장 + grabit-web-cert SNI 공존 (asia-northeast3 domain-mappings 미지원 → Wave 3 LB 전략 승계), rollback/cleanup 스크립트, HUMAN-UAT (7일 유예 cleanup + 실기기 로그인 테스트는 수동)
+
+### Phase 14: SMS OTP CROSSSLOT fix — 프로덕션 회원가입 SMS 인증 정상화 (Valkey Cluster hash tag 적용)
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 13
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 14 to break down)
+
+### Phase 15: Resend heygrabit.com cutover — transactional email 발송 도메인 전환 + Secret Manager 값 교체
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 14
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 15 to break down)
+
+### Phase 16: Legal pages launch — 이용약관/개인정보처리방침/마케팅동의 공개 URL 구현 (개보법·정통망법 런칭 요건)
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 15
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 16 to break down)
+
+### Phase 17: Local dev health indicator fix — InMemoryRedis.ping() 구현 + capability probe 추가로 REDIS_URL unset 시 /health 200
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 16
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 17 to break down)
