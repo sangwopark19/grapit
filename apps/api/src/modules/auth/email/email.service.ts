@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Resend } from 'resend';
+import * as Sentry from '@sentry/nestjs';
 import { PasswordResetEmail } from './templates/password-reset.js';
 
 export interface SendEmailResult {
@@ -76,6 +77,17 @@ export class EmailService {
 
     if (error) {
       this.logger.error(`Resend send failed for ${to}: ${error.message}`);
+      // [Phase 15 D-11] auth.service intentionally swallows result for enumeration defense; capture here for ops visibility.
+      Sentry.withScope((scope) => {
+        scope.setTag('component', 'email-service');
+        scope.setTag('provider', 'resend');
+        scope.setLevel('error');
+        scope.setContext('email', {
+          from: this.from,
+          toDomain: to.split('@')[1] ?? 'unknown',
+        });
+        Sentry.captureException(new Error(`Resend send failed: ${error.message}`));
+      });
       return { success: false, error: error.message };
     }
 
