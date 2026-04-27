@@ -113,6 +113,17 @@ describe('UploadService', () => {
         }),
       );
     });
+
+    it('should disable auto-checksum so R2 CORS preflight passes (SDK v3 ≥ 3.729)', async () => {
+      const { S3Client } = await import('@aws-sdk/client-s3');
+
+      expect(S3Client).toHaveBeenCalledWith(
+        expect.objectContaining({
+          requestChecksumCalculation: 'WHEN_REQUIRED',
+          responseChecksumValidation: 'WHEN_REQUIRED',
+        }),
+      );
+    });
   });
 
   describe('Local mode (R2 credentials not configured)', () => {
