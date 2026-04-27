@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 Phase: 15 — SHIPPED (3/3 plans complete, 48h 안정 관측 진행 중)
 Plan: 3 of 3 complete (15-01 ✅, 15-02 ✅, 15-03 ✅ with assumption corrections)
 Status: Cutover 검증 완료 — Resend smoke test → Gmail inbox 수신, revision grabit-api-00013-lkx 100% traffic
-Last activity: 2026-04-27 — Quick task 260427-lyr Round 2 완료 (AuthInitializer ↔ 콜백 페이지 cross-component race 해소, commit 56826c6)
+Last activity: 2026-04-27 — Quick task 260427-lyr 완전 종료 (Round 2 PR #24 머지 + 프로덕션 Google 로그인 정상 동작 확인)
 
 Progress: [██████████] 100%
 
@@ -118,7 +118,7 @@ None.
 | 260422-eya | PR #18 코드리뷰 수정: seat-map-viewer handleClick maxSelect 가드가 locked 좌석 클릭을 차단해 parent toast 미발화 → state !== 'locked' 가드 추가 + 회귀 테스트 3건 (commit 45b884e invariant 복원) | 2026-04-22 | fcc6a7b | [260422-eya-seat-map-viewer-maxselect-locked](./quick/260422-eya-seat-map-viewer-maxselect-locked/) |
 | 260424-l23 | Phase 14 pre-existing TTL 2건 수정: sms-throttle.integration.spec.ts 의 throttler key filter 를 실제 라이브러리 format (`{<tracker>:<throttlerName>}:hits`) 에 맞춰 `.endsWith(':hits')` 로 전환 → 28/30 → 30/30 green, Phase 14 ci.yml `test:integration` PR green 블로커 해소 | 2026-04-24 | e65fa99 | [260424-l23-sms-throttle-integration-spec-ts-l220-27](./quick/260424-l23-sms-throttle-integration-spec-ts-l220-27/) |
 | 260427-kch | 회원가입 가입완료 시 410 EXPIRED 차단 핫픽스: `auth.service.ts` register/completeSocialRegistration 가 OTP 코드를 `verifyCode` 로 재호출 → Lua 가 OTP 키 DEL 후 EXPIRED 반환 → GoneException. `SmsService.isPhoneVerified` 추가 + GoneException catch fallback 으로 `{sms:{e164}}:verified` 플래그(TTL 600s) idempotency 확인 (sms.service.ts:385-403 자체 권고 반영). 8 회귀 테스트 추가, 315/315 green. main 직접 머지(PR #21) → Cloud Run 자동 배포 | 2026-04-27 | 9b38358 (hotfix/main) | [260427-kch-410-expired-auth-service-ts-verifycode](./quick/260427-kch-410-expired-auth-service-ts-verifycode/) |
-| 260427-lyr | 프로덕션 소셜 로그인(Google/Kakao/Naver) 100% 실패 핫픽스 (2 라운드): R1 `useRef` 가드는 콜백 페이지 내부 중복만 막고 부족 — root layout `<AuthInitializer />`(`apps/web/components/auth/auth-initializer.tsx` ← `apps/web/app/layout.tsx:24`)가 매 페이지 마운트마다 `initializeAuth()`로 `/auth/refresh`를 호출, 콜백 페이지 IIFE와 cross-component race → `auth.service.ts:167-174` 토큰 도난 탐지로 family revoke → 401. R2 콜백 페이지의 `/auth/refresh`+`/users/me` IIFE 제거하고 `useAuthStore`(`user`, `isInitialized`) 관측 모델로 전환 — AuthInitializer 단일 호출자화로 race 자체 소거. `hasRedirectedRef`로 push 1회 보장. 백엔드 정책 불변. | 2026-04-27 | 70a3f65 (R1) → 56826c6 (R2) | [260427-lyr-social-login-refresh-double-fire-fix](./quick/260427-lyr-social-login-refresh-double-fire-fix/) |
+| 260427-lyr | 프로덕션 소셜 로그인(Google/Kakao/Naver) 100% 실패 핫픽스 (2 라운드, ✅ verified 2026-04-27): R1 `useRef` 가드는 콜백 페이지 내부 중복만 막고 부족 — root layout `<AuthInitializer />`(`apps/web/components/auth/auth-initializer.tsx` ← `apps/web/app/layout.tsx:24`)가 매 페이지 마운트마다 `initializeAuth()`로 `/auth/refresh`를 호출, 콜백 페이지 IIFE와 cross-component race → `auth.service.ts:167-174` 토큰 도난 탐지로 family revoke → 401. R2 콜백 페이지의 `/auth/refresh`+`/users/me` IIFE 제거하고 `useAuthStore`(`user`, `isInitialized`) 관측 모델로 전환 — AuthInitializer 단일 호출자화로 race 자체 소거. `hasRedirectedRef`로 push 1회 보장. 백엔드 정책 불변. PR #23 (R1) + PR #24 (R2) 머지 후 사용자 프로덕션 검증 완료. | 2026-04-27 | 70a3f65 (R1) → 56826c6 (R2) | [260427-lyr-social-login-refresh-double-fire-fix](./quick/260427-lyr-social-login-refresh-double-fire-fix/) |
 
 ## Session Continuity
 
