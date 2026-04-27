@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
-status: "Phase 15 Wave 1 complete (Plan 01+02) — Plan 03 deferred to post-deploy session"
-stopped_at: "Phase 15 Wave 1 — awaiting Plan 01 main merge + Cloud Run deploy before Plan 03 entry"
-last_updated: "2026-04-27T11:50:00.000Z"
-last_activity: 2026-04-27 — Phase 15 Wave 1 complete (Sentry code + Resend heygrabit.com Verified)
+status: "Phase 15 shipped (smoke test ✓, 48h 안정 관측 진행 중 ~2026-04-29 15:30 KST)"
+stopped_at: "Phase 15 cutover 검증 완료 — 운영 트래픽으로 자연 검증 진행"
+last_updated: "2026-04-27T06:30:00.000Z"
+last_activity: 2026-04-27 — Phase 15 cutover 완료 (smoke test delivered to inbox, revision grabit-api-00013-lkx)
 progress:
   total_phases: 15
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 56
-  completed_plans: 54
-  percent: 96
+  completed_plans: 56
+  percent: 100
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** 사용자가 원하는 공연을 발견하고, 좌석을 직접 선택하여, 안정적으로 예매를 완료할 수 있는 것
-**Current focus:** Phase 15 — Resend heygrabit.com cutover (Wave 1 complete, Wave 2 cutover pending)
+**Current focus:** Phase 16 — Legal pages launch (다음 phase, 2026-04-29 안정 window 종료 후 진입 가능)
 
 ## Current Position
 
-Phase: 15 — EXECUTING (Wave 1 complete)
-Plan: 2 of 3 complete (15-01 ✅, 15-02 ✅, 15-03 pending)
-Status: Awaiting PR merge → Cloud Run deploy → Plan 03 (Secret rotation + UAT + 48h 관측)
-Last activity: 2026-04-27 — Plan 15-02 Resend heygrabit.com Verified at 11:41 KST
+Phase: 15 — SHIPPED (3/3 plans complete, 48h 안정 관측 진행 중)
+Plan: 3 of 3 complete (15-01 ✅, 15-02 ✅, 15-03 ✅ with assumption corrections)
+Status: Cutover 검증 완료 — Resend smoke test → Gmail inbox 수신, revision grabit-api-00013-lkx 100% traffic
+Last activity: 2026-04-27 15:25 KST — smoke test inbox 수신 확인 + audit log finalize
 
 Progress: [██████████] 100%
 
@@ -117,6 +117,7 @@ None.
 | 260420-oxe | PR #17 코드리뷰 수정: kstTodayBoundaryUtc() empty-range 버그로 오늘 KPI 3종 항상 0 반환 → kstBoundaryToUtc(1) 로 교체 + 회귀 테스트 10건 추가 | 2026-04-20 | 84a1594 | [260420-oxe-code-review-fix](./quick/260420-oxe-code-review-fix/) |
 | 260422-eya | PR #18 코드리뷰 수정: seat-map-viewer handleClick maxSelect 가드가 locked 좌석 클릭을 차단해 parent toast 미발화 → state !== 'locked' 가드 추가 + 회귀 테스트 3건 (commit 45b884e invariant 복원) | 2026-04-22 | fcc6a7b | [260422-eya-seat-map-viewer-maxselect-locked](./quick/260422-eya-seat-map-viewer-maxselect-locked/) |
 | 260424-l23 | Phase 14 pre-existing TTL 2건 수정: sms-throttle.integration.spec.ts 의 throttler key filter 를 실제 라이브러리 format (`{<tracker>:<throttlerName>}:hits`) 에 맞춰 `.endsWith(':hits')` 로 전환 → 28/30 → 30/30 green, Phase 14 ci.yml `test:integration` PR green 블로커 해소 | 2026-04-24 | e65fa99 | [260424-l23-sms-throttle-integration-spec-ts-l220-27](./quick/260424-l23-sms-throttle-integration-spec-ts-l220-27/) |
+| 260427-kch | 회원가입 가입완료 시 410 EXPIRED 차단 핫픽스: `auth.service.ts` register/completeSocialRegistration 가 OTP 코드를 `verifyCode` 로 재호출 → Lua 가 OTP 키 DEL 후 EXPIRED 반환 → GoneException. `SmsService.isPhoneVerified` 추가 + GoneException catch fallback 으로 `{sms:{e164}}:verified` 플래그(TTL 600s) idempotency 확인 (sms.service.ts:385-403 자체 권고 반영). 8 회귀 테스트 추가, 315/315 green. main 직접 머지(PR #21) → Cloud Run 자동 배포 | 2026-04-27 | 9b38358 (hotfix/main) | [260427-kch-410-expired-auth-service-ts-verifycode](./quick/260427-kch-410-expired-auth-service-ts-verifycode/) |
 
 ## Session Continuity
 

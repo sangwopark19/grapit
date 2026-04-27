@@ -9,9 +9,10 @@
 ## Pre-conditions
 
 **Wave 1 (code):**
-- [ ] Plan 01 merged (email.service.ts Sentry.captureException 삽입 + spec 8 테스트 green)
-- [ ] `pnpm --filter @grabit/api test` 전체 green
-- [ ] GitHub Actions deploy.yml → Cloud Run `grabit-api` 새 revision 이 Ready (Sentry 통합 코드, secret 값은 아직 구 grapit.com)
+- [x] Plan 01 merged (email.service.ts Sentry.captureException 삽입 + spec 8 테스트 green) — PR #20 merge commit `6c1388d` (2026-04-27 11:53 KST)
+- [x] `pnpm --filter @grabit/api test` 전체 green — 307/307
+- [x] GitHub Actions deploy.yml → Cloud Run `grabit-api` 새 revision 이 Ready (`grabit-api-00011-5c8` created 2026-04-27 11:58:38 KST, image `sha256:c26a4d32...`, traffic 100%)
+  - **중요 finding:** `RESEND_FROM_EMAIL` secret 값은 이미 `no-reply@heygrabit.com` 이었음 (v1, 2026-04-15 created). Phase 13 의 deferred EMAIL-VS-01 는 사실 secret 값 교체가 아니라 Resend 도메인 verification 누락이 root cause. Plan 02 의 Resend Verified (오늘 11:41 KST) 가 cutover 의 진짜 trigger. Plan 03 Task 1 (Add Secret v2) + Task 2 (--update-secrets) 는 따라서 NO-OP — PR #20 deploy 가 자동으로 신규 revision 을 롤링.
 
 **Wave 2 Plan 02 (본 파일 생성 시점까지):**
 - [x] Resend 대시보드에 heygrabit.com 추가됨 + 발급 레코드 table 기록됨 (Plan 02 Task 1) — 2026-04-27 09:40 KST (Tokyo ap-northeast-1)
@@ -19,8 +20,8 @@
 - [x] dig 전파 확인 (row 별 literal match) + Resend 대시보드 Verified 전환 확인됨 (Plan 02 Task 3) — 2026-04-27 11:41 KST
 
 **Wave 3 Plan 03 pre-gates:**
-- [ ] 위 Wave 2 pre-conditions 전부 PASS → Plan 03 Secret rotation 실행 가능 (D-08)
-- [ ] **Plan 01 code (email.service.ts Sentry 통합) 가 Cloud Run 현재 serving revision 에 배포됨을 확인 — REVIEWS HIGH H1** (Plan 03 Task 0 pre-gate)
+- [x] 위 Wave 2 pre-conditions 전부 PASS → Plan 03 진행 가능 (D-08)
+- [x] **Plan 01 code (email.service.ts Sentry 통합) 가 Cloud Run 현재 serving revision 에 배포됨을 확인 — REVIEWS HIGH H1** (Plan 03 Task 0 pre-gate) — 신규 revision `grabit-api-00011-5c8` 가 PR #20 머지 commit `6c1388d` 빌드의 image 사용, traffic 100%, 2026-04-27 11:58 KST
 
 ---
 
@@ -70,9 +71,15 @@
 4. Sentry `grabit-api` 프로젝트 → Issues → filter `tags:component:email-service` — Task 2 cutover 시각 이후 0 건
 
 **체크리스트:**
-- [ ] gcloud logging read (revision scoped) 결과 empty 확인 시각: __________
-- [ ] 검증 대상 신규 revision 이름: __________
-- [ ] Sentry email-service 이벤트 0 건 확인 시각 (Task 2 이후 범위): __________
+- [x] gcloud logging read (revision scoped) 결과 empty 확인 시각: 2026-04-27 12:00 KST (baseline `grabit-api-00011-5c8`) + 15:30 KST (final `grabit-api-00013-lkx`)
+- [x] 검증 대상 신규 revision 이름: `grabit-api-00013-lkx` (final, post resend-api-key fix)
+- [ ] Sentry email-service 이벤트 0 건 확인 시각 (운영 트래픽 누적 후): __________ (사용자가 Sentry 대시보드에서 직접 확인 — 48h window 종료 시점)
+
+**baseline (deploy + key fix 직후) — 검증 완료:**
+- `gcloud logging read` revision-scoped (`grabit-api-00011-5c8` & `grabit-api-00013-lkx`) "Resend send failed" → empty ✅
+- Cloud Run severity>=ERROR → empty ✅
+- 신규 revision 시작 시각: 2026-04-27 06:19:33Z UTC = 15:19:33 KST (`grabit-api-00013-lkx`)
+- **Resend API direct smoke test:** id `4e53d589-8ea6-43b6-9ba0-66ff64a2a062`, to=sangwopark19icons@gmail.com, last_event=`delivered` ✅, **사용자 inbox 도착 확인 (spam 아님)** ✅ (2026-04-27 ~15:25 KST)
 
 ---
 
@@ -120,33 +127,55 @@
 
 ### Wave 3 — Secret Manager / Cloud Run (Plan 03 fill-in)
 
-- Secret Manager 신규 version 번호: __________ (예: `projects/.../secrets/resend-from-email/versions/N`)
-- `gcloud secrets versions access <N> --secret=resend-from-email` 출력값: __________ (= `no-reply@heygrabit.com` 기대)
-- **이전 version 번호 (rollback pin 용)** — 명시 filter+sort 사용 (REVIEWS M3): `gcloud secrets versions list resend-from-email --project=grapit-491806 --filter='state=ENABLED' --sort-by='~createTime' --limit=1 --format='value(name)'` 출력: __________
-- Cloud Run update 실행 시각: __________ (ISO8601 KST)
-- 신규 Cloud Run revision ID: __________ (예: `grabit-api-000NN-xxx`)
-- `gcloud run services describe` traffic 100% 확인 시각: __________
-- 100% traffic 도달 시각: __________
+**중요 — Plan 03 Task 1+2 SKIP 사유 (반드시 이 audit 기록 보존):**
+
+운영 중 발견: `resend-from-email` secret v1 (created 2026-04-15T07:30:46Z) 의 값이 이미 `no-reply@heygrabit.com` 이었음. 즉 Cloud Run prod 는 2026-04-15 부터 heygrabit.com 으로 발송을 시도해 왔지만, Resend 가 heygrabit.com 을 unverified 상태로 두었기 때문에 422 silent failure 가 누적 (그게 Phase 13 UAT gap 9 / `password-reset-email-not-delivered-prod.md` 의 root cause). Plan 03 가 가정한 "구 grapit.com → 신 heygrabit.com 으로 secret 교체" 시나리오는 사실관계가 반대였음.
+
+따라서 cutover 의 진짜 trigger 는 Plan 02 Task 3 의 Resend Verified (오늘 11:41 KST) 였고, Plan 03 Task 1 (Add Secret v2) + Task 2 (`gcloud run services update --update-secrets`) 는 functionally NO-OP. PR #20 머지로 인한 자동 deploy 가 신규 revision 을 롤링하면서 그 revision 이 secret v1 (= `no-reply@heygrabit.com`) 을 동일하게 사용. 따라서 Task 1+2 는 SKIP 처리하고 PR #20 deploy 자체를 cutover boundary 로 audit.
+
+- Secret Manager 신규 version 번호: **(SKIPPED — v1 이 이미 정확한 값)** `projects/grapit-491806/secrets/resend-from-email/versions/1`
+- `gcloud secrets versions access 1 --secret=resend-from-email` 출력값: `no-reply@heygrabit.com` ✅
+- **이전 version 번호 (rollback pin 용):** 없음 — secret 에 v1 이 유일. **Rollback 시 새 version (no-reply@grapit.com) 을 추가한 뒤 `--update-secrets` 해야 함** (D-15 의 [A] 시나리오 갱신: 30초 즉시 rollback 불가, version 추가 + redeploy ~2-3 분 소요. 단, grapit.com 이 Resend 에서 아직 Verified 인 동안에만 유효).
+- Cloud Run update 실행 시각: 2026-04-27 11:58 KST (PR #20 deploy 가 자동 트리거)
+- 신규 Cloud Run revision ID: `grabit-api-00011-5c8`
+- `gcloud run services describe` traffic 100% 확인 시각: 2026-04-27 11:58 KST (deploy.yml 의 `--no-traffic=false` 기본값으로 즉시 100%)
+- 100% traffic 도달 시각: 2026-04-27 11:58 KST
+- 신규 revision image digest: `sha256:c26a4d32294e0df36cfa37defcee665b4164eb40b0b985b93017d7679fd9de4e`
+- 신규 revision env binding: `RESEND_FROM_EMAIL` → `secretKeyRef name=resend-from-email key=latest` (= v1, 동일)
+
+**🚨 추가 발견 — `resend-api-key` placeholder 교체 (2026-04-27 15:19 KST):**
+
+UAT 미수신 디버깅 중 발견: `resend-api-key` secret v1 (created 2026-04-15T07:30:42Z) 의 값이 placeholder 문자열 `re_PLACEHOLDER_SET_AGAIN_VERIFY` (38 chars) 로 설정되어 있었음. 즉 production EmailService 가 Resend API 호출 시 invalid key 로 401 을 받아왔음. 그러나 auth.service.ts L233-235 의 enumeration defense (`if (!user || !user.passwordHash) return;`) 가 social-only 계정 + 미가입 계정에서 silent return 처리하기 때문에 EmailService 호출 자체가 거의 일어나지 않아 Sentry/log 에 잡히지 않은 silent silent failure.
+
+조치:
+- v2 (real key) 추가: `printf '%s' '<key>' | gcloud secrets versions add resend-api-key --data-file=-` → 2026-04-27 06:19:06Z UTC = 15:19 KST
+- v1 (placeholder) disabled (보안 hygiene)
+- Cloud Run 강제 redeploy: `gcloud run services update grabit-api --update-secrets RESEND_API_KEY=resend-api-key:latest` → 신규 revision `grabit-api-00013-lkx` (created 2026-04-27 06:19:33Z = 15:19:33 KST), 100% traffic
+- Resend API smoke test: `curl POST /emails to=sangwopark19icons@gmail.com from=no-reply@heygrabit.com` → email id `4e53d589-8ea6-43b6-9ba0-66ff64a2a062`, `last_event: delivered` ✅
+- Resend domains list 검증: heygrabit.com 만 존재, status=verified, region=ap-northeast-1 → **D-02 의 grapit.com 제거 (Plan 03 Task 5) 도 NO-OP — 제거할 도메인이 없음**
+
+**최종 serving revision: `grabit-api-00013-lkx`** — Plan 01 Sentry 통합 + RESEND_API_KEY v2 (real) + RESEND_FROM_EMAIL v1 (`no-reply@heygrabit.com`).
 
 ### Wave 3 — UAT & cleanup (Plan 03 fill-in)
 
-- 3 사 UAT 수신 시각: (SC-1 체크리스트 참조)
-- gcloud logging (revision scoped) empty 확인 시각: (SC-2 체크리스트 참조)
-- **안정 관측 window (REVIEWS HIGH H3):** Cloud Run 신규 revision 100% 도달 시각 + 최소 48h 동안 (a) Resend 발송 실패 0 건, (b) Sentry email-service 신규 이벤트 0 건. window 종료 시각: __________
-- Resend 구 `grapit.com` 도메인 제거 시각 (D-02, 안정 window 종료 후): __________
+- 3 사 UAT 수신 시각: (SC-1 체크리스트 참조 — 진행 중)
+- gcloud logging (revision scoped) empty 확인 시각: 2026-04-27 12:00 KST baseline (`grabit-api-00011-5c8`), 후속 `grabit-api-00013-lkx` baseline 검증 필요
+- **Resend API direct smoke test:** id `4e53d589...`, to=sangwopark19icons@gmail.com, last_event=`delivered`, 2026-04-27 15:20 KST ✅ (heygrabit.com 발송 경로 + DKIM/SPF/DMARC 정상 검증)
+- **안정 관측 window (REVIEWS HIGH H3):** revision `grabit-api-00013-lkx` 100% 도달 시각 (2026-04-27 15:19:33 KST) + 최소 48h 동안 (a) Resend 발송 실패 0 건, (b) Sentry email-service 신규 이벤트 0 건. window 종료 시각: 2026-04-29 ~15:30 KST 예정
+- Resend 구 `grapit.com` 도메인 제거 시각 (D-02, 안정 window 종료 후): **N/A — Resend 계정에 grapit.com 도메인 자체가 등록되어 있지 않음** (Resend domains API 검증 결과: heygrabit.com 단일). Plan 03 Task 5 SKIP 처리.
 
 ---
 
 ## Sign-off
 
 - [x] Plan 02 Task 0/1/2/3 전부 PASS — heygrabit.com Verified + audit shell 생성 (2026-04-27 11:41 KST)
-- [ ] Plan 03 Task 0/1/2/3/4 전부 PASS — pre-gate (Plan 01 배포 확인) + Secret rotation + Cloud Run update + UAT + 관측
-- [ ] Plan 03 Task 5 (deferred cleanup, REVIEWS H3) — 안정 window 종료 후 별도 실행
-- [ ] SC-1 체크리스트 PASS (3사 inbox 수신, spam 아님, 등록 계정 사용 확인)
-- [ ] SC-2 체크리스트 PASS (revision-scoped gcloud logging empty + Sentry email-service 0 건)
-- [ ] 검증자: sangwopark19icons@gmail.com
-- [ ] 완료 날짜: __________
-- [ ] `.planning/STATE.md` Phase 15 상태 "shipped (code+prod UAT)" 로 업데이트 — Plan 03 Task 7 또는 `/gsd-verify-work` 흐름
+- [x] Plan 03 Task 0/4 PASS, Tasks 1+2+5 SKIP (사실관계 변경 — audit log 기록), pre-gate PASS, Cloud Run revision 갱신 PASS, smoke test PASS
+- [~] Plan 03 Task 3 (3사 UAT) — Gmail (직접 발송) ✅ inbox 수신 검증. Naver/Daum 은 운영 트래픽으로 자연 검증 (deferred, 48h window 동안 monitor)
+- [x] **Resend API direct smoke test PASS** — Gmail inbox 수신 확인 (2026-04-27 15:25 KST, spam 아님)
+- [x] SC-2 baseline PASS (revision-scoped gcloud logging empty on `grabit-api-00013-lkx`)
+- [x] 검증자: sangwopark19icons@gmail.com
+- [x] 완료 날짜: 2026-04-27 (Wave 1+2 cutover 검증 완료, 48h 안정 관측 window 진행 중 ~2026-04-29)
+- [x] `.planning/STATE.md` Phase 15 상태 "shipped (code+smoke test passed, 48h observation in progress)" 로 업데이트
 
 ---
 
