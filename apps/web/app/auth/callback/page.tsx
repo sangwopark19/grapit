@@ -39,8 +39,14 @@ function CallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const setAuth = useAuthStore((s) => s.setAuth);
+  // status=authenticated 흐름에서는 root layout 의 AuthInitializer 가
+  // POST /api/v1/auth/refresh + GET /api/v1/users/me 를 수행하고 store 를 채운다.
+  // 콜백 페이지는 그 결과만 관측해 라우팅한다 — 직접 /auth/refresh 를 다시 호출하면
+  // AuthInitializer 와 race 가 발생, refresh-token rotation 의 도난 탐지가 트리거되어
+  // 패밀리 전체가 revoke 되고 401 이 반환된다.
+  const user = useAuthStore((s) => s.user);
+  const isInitialized = useAuthStore((s) => s.isInitialized);
 
-  const [isProcessing, setIsProcessing] = useState(true);
   const [needsRegistration, setNeedsRegistration] = useState(false);
   const [registrationToken, setRegistrationToken] = useState('');
   const [currentStep, setCurrentStep] = useState<2 | 3>(2);
@@ -48,10 +54,10 @@ function CallbackContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorInfo, setErrorInfo] = useState<{ code: string; provider?: string } | null>(null);
 
-  // 콜백 처리는 마운트당 정확히 1회만 발사되어야 한다.
-  // useEffect가 다회 실행되면 /auth/refresh 가 동시에 두 번 호출되어
-  // refresh-token rotation의 도난 탐지가 트리거 → 패밀리 전체 revoke → 401.
+  // searchParams 분기 결정은 마운트당 한 번만.
   const hasRunRef = useRef(false);
+  // 라우팅도 한 번만 실행되어야 한다 (push 직후 user/isInitialized 변화로 재발사 방지).
+  const hasRedirectedRef = useRef(false);
 
   useEffect(() => {
     if (hasRunRef.current) return;
@@ -62,69 +68,47 @@ function CallbackContent() {
 
     if (errorCode) {
       setErrorInfo({ code: errorCode, provider: provider ?? undefined });
-      setIsProcessing(false);
       return;
     }
 
     const regToken = searchParams.get('registrationToken');
     const status = searchParams.get('status');
 
-    if (status === 'authenticated') {
-      // Existing user -- exchange refresh token cookie for access token
-      void (async () => {
-        try {
-          const refreshRes = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/auth/refresh`,
-            {
-              method: 'POST',
-              credentials: 'include',
-              headers: { 'Content-Type': 'application/json' },
-            },
-          );
-
-          if (!refreshRes.ok) {
-            toast.error('로그인에 실패했습니다.');
-            router.push('/auth');
-            return;
-          }
-
-          const { accessToken } = (await refreshRes.json()) as { accessToken: string };
-
-          const userRes = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/users/me`,
-            {
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-                'Content-Type': 'application/json',
-              },
-              credentials: 'include',
-            },
-          );
-
-          if (userRes.ok) {
-            const user = await userRes.json();
-            setAuth(accessToken, user);
-            router.push('/');
-          } else {
-            toast.error('로그인에 실패했습니다.');
-            router.push('/auth');
-          }
-        } catch {
-          toast.error('네트워크 연결을 확인해주세요');
-          router.push('/auth');
-        }
-      })();
-    } else if (status === 'needs_registration' && regToken) {
+    if (status === 'needs_registration' && regToken) {
       // New social user -- needs registration completion
       setRegistrationToken(regToken);
       setNeedsRegistration(true);
-      setIsProcessing(false);
-    } else {
+      return;
+    }
+
+    if (status !== 'authenticated') {
       // Invalid callback
+      hasRedirectedRef.current = true;
       toast.error('잘못된 접근입니다.');
       router.push('/auth');
     }
-  }, [searchParams, setAuth, router]);
+    // status === 'authenticated' 분기는 아래 watch effect 에서 처리.
+  }, [searchParams, router]);
+
+  // status=authenticated 흐름: AuthInitializer 가 store 를 채울 때까지 대기 후 라우팅.
+  useEffect(() => {
+    if (hasRedirectedRef.current) return;
+
+    const status = searchParams.get('status');
+    if (status !== 'authenticated') return;
+
+    if (user) {
+      hasRedirectedRef.current = true;
+      router.push('/');
+      return;
+    }
+    if (isInitialized) {
+      // AuthInitializer 가 끝났는데도 user 가 없다면 refresh 실패.
+      hasRedirectedRef.current = true;
+      toast.error('로그인에 실패했습니다.');
+      router.push('/auth');
+    }
+  }, [user, isInitialized, searchParams, router]);
 
   function handleStep2Complete(data: RegisterStep2Input) {
     setStep2Data(data);
@@ -193,17 +177,6 @@ function CallbackContent() {
     );
   }
 
-  if (isProcessing) {
-    return (
-      <main className="flex flex-1 items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-base text-gray-500">로그인 처리 중...</p>
-        </div>
-      </main>
-    );
-  }
-
   if (needsRegistration) {
     return (
       <main className="flex flex-1 items-center justify-center px-4 py-12">
@@ -241,7 +214,15 @@ function CallbackContent() {
     );
   }
 
-  return null;
+  // 기본 상태: AuthInitializer 결과를 기다리거나 라우팅 직전. 로딩 UI 노출.
+  return (
+    <main className="flex flex-1 items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-base text-gray-500">로그인 처리 중...</p>
+      </div>
+    </main>
+  );
 }
 
 export default function AuthCallbackPage() {
