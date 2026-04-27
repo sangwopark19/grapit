@@ -4,6 +4,7 @@ import {
   ConflictException,
   UnauthorizedException,
   BadRequestException,
+  GoneException,
   Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -67,11 +68,11 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterBody): Promise<AuthResult> {
-    // 0. Verify phone number
-    const verifyResult = await this.smsService.verifyCode(dto.phone, dto.phoneVerificationCode);
-    if (!verifyResult.verified) {
-      throw new BadRequestException('전화번호 인증이 완료되지 않았습니다');
-    }
+    // 0. Verify phone number — handle idempotent re-verify after the
+    // frontend already called /sms/verify-code (OTP key was DEL'd, so
+    // verifyCode now returns EXPIRED). Per sms.service.ts:385-403, fall
+    // back to the {sms:{e164}}:verified flag (TTL 600s).
+    await this.assertPhoneVerified(dto.phone, dto.phoneVerificationCode);
 
     // 1. Check email uniqueness
     const existing = await this.userRepository.findByEmail(dto.email);
@@ -389,11 +390,8 @@ export class AuthService {
   ): Promise<AuthResult> {
     this.logger.log('completeSocialRegistration: started');
 
-    // 0. Verify phone number
-    const verifyResult = await this.smsService.verifyCode(dto.phone, dto.phoneVerificationCode);
-    if (!verifyResult.verified) {
-      throw new BadRequestException('전화번호 인증이 완료되지 않았습니다');
-    }
+    // 0. Verify phone number — see register() for rationale
+    await this.assertPhoneVerified(dto.phone, dto.phoneVerificationCode);
 
     // 1. Verify registrationToken JWT
     let payload: {
@@ -488,6 +486,32 @@ export class AuthService {
   }
 
   // -- Private helpers --
+
+  /**
+   * [hotfix 260427-kch] Verify phone with idempotency fallback.
+   * The frontend already calls POST /sms/verify-code before /auth/register
+   * (or completeSocialRegistration) and the SmsService Lua script DEL's the
+   * OTP key on success. Re-running verifyCode therefore throws GoneException
+   * for the legitimate user. We catch that one specific exception and fall
+   * back to the verified-flag set by the original verify call (TTL 600s,
+   * see sms.service.ts:385-403). True expiry (no flag) still bubbles 410
+   * to the client.
+   */
+  private async assertPhoneVerified(phone: string, code: string): Promise<void> {
+    try {
+      const verifyResult = await this.smsService.verifyCode(phone, code);
+      if (!verifyResult.verified) {
+        throw new BadRequestException('전화번호 인증이 완료되지 않았습니다');
+      }
+    } catch (err) {
+      if (err instanceof GoneException) {
+        const alreadyVerified = await this.smsService.isPhoneVerified(phone);
+        if (!alreadyVerified) throw err; // truly expired — propagate 410
+        return;
+      }
+      throw err;
+    }
+  }
 
   private async generateTokenPair(
     userId: string,
