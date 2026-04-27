@@ -14,9 +14,9 @@
 - [ ] GitHub Actions deploy.yml → Cloud Run `grabit-api` 새 revision 이 Ready (Sentry 통합 코드, secret 값은 아직 구 grapit.com)
 
 **Wave 2 Plan 02 (본 파일 생성 시점까지):**
-- [ ] Resend 대시보드에 heygrabit.com 추가됨 + 발급 레코드 table 기록됨 (Plan 02 Task 1)
-- [ ] 후이즈 DNS 에 Resend 대시보드 row 전부 등록됨 (Plan 02 Task 2)
-- [ ] dig 전파 확인 (row 별 literal match) + Resend 대시보드 Verified 전환 확인됨 (Plan 02 Task 3)
+- [x] Resend 대시보드에 heygrabit.com 추가됨 + 발급 레코드 table 기록됨 (Plan 02 Task 1) — 2026-04-27 09:40 KST (Tokyo ap-northeast-1)
+- [x] 후이즈 DNS 에 Resend 대시보드 row 전부 등록됨 (Plan 02 Task 2)
+- [x] dig 전파 확인 (row 별 literal match) + Resend 대시보드 Verified 전환 확인됨 (Plan 02 Task 3) — 2026-04-27 11:41 KST
 
 **Wave 3 Plan 03 pre-gates:**
 - [ ] 위 Wave 2 pre-conditions 전부 PASS → Plan 03 Secret rotation 실행 가능 (D-08)
@@ -86,11 +86,11 @@
 
 | # | Type | Name | Value | Priority |
 |---|------|------|-------|----------|
-| 1 | __________ | __________ | __________ | __________ |
-| 2 | __________ | __________ | __________ | __________ |
-| 3 | __________ | __________ | __________ | __________ |
-| 4 | __________ | __________ | __________ | __________ |
-| (add more rows if Resend shows more) | | | | |
+| 1 | TXT | `resend._domainkey` | `p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDIJN1oyMnw4Drxn9/wz2tyeuViq7hrU8NeqEydKBk8HgWp8g5diaMD0fHB57EVktS2Y0mB07HeIAUNShT2tILAcdFx9Tjf0o8K1HdFRKeroq1wAZ8aEIr+LkqFQVw+zBF7IibNEpTxACCesuSqwgnlFyHWQ5U5l+X8sfaiIgIZYwIDAQAB` | — (Auto) |
+| 2 | MX | `send` | `feedback-smtp.ap-northeast-1.amazonses.com` | 10 |
+| 3 | TXT | `send` | `v=spf1 include:amazonses.com ~all` | — (Auto) |
+
+*Resend 가 발급한 required record 는 정확히 3 개 (DKIM TXT 1 + SPF MX 1 + SPF TXT 1). region=Tokyo (ap-northeast-1) 라서 MX target 이 `feedback-smtp.ap-northeast-1.amazonses.com` 으로 발급됨. Resend 대시보드는 옵셔널 DMARC (`v=DMARC1; p=none;` no rua) 도 제안했으나, 프로젝트 D-04 lock 값 (rua 포함) 을 우선하여 아래 project-defined DMARC 만 등록.*
 
 **Project-defined DMARC record (Resend required 아님, D-04 locked):**
 - Type: TXT
@@ -98,23 +98,25 @@
 - Value: `v=DMARC1; p=none; rua=mailto:sangwopark19icons@gmail.com`
 
 **후이즈 DNS 등록 (Plan 02 Task 2):**
-- 등록 시각: __________ (ISO8601 KST)
+- 등록 시각: 2026-04-27 ~11:30 KST (정확한 등록 시각은 후이즈 콘솔 history 확인. Resend `DNS verified` 시각이 11:40 KST 이므로 그 직전 5~10분 사이로 추정)
 - 등록자: sangwopark19icons@gmail.com
-- 등록된 row 수 (Resend table 전부 + project-defined DMARC 1): __________
+- 등록된 row 수 (Resend table 전부 + project-defined DMARC 1): 4 (DKIM TXT 1 + SPF MX 1 + SPF TXT 1 + DMARC TXT 1)
+- 후이즈 메뉴별 등록 위치:
+  - **MX 레코드 관리**: `send` (priority 10) → `feedback-smtp.ap-northeast-1.amazonses.com`
+  - **SPF(TXT) 레코드 관리**: 3 row (DKIM `resend._domainkey`, SPF `send`, DMARC `_dmarc`)
 
 **dig 전파 확인 (Plan 02 Task 3) — 각 row 별 literal match table (REVIEWS M1):**
 
-| # | dig command (TYPE NAME) | Resend 발급 VALUE | dig 결과 | 일치 여부 |
+| # | dig command (TYPE NAME) | Resend 발급 VALUE | dig 결과 (concat 후) | 일치 여부 |
 |---|--------------------------|--------------------|----------|-----------|
-| 1 | `dig +short __________ __________` | __________ | __________ | ✅ / ❌ |
-| 2 | `dig +short __________ __________` | __________ | __________ | ✅ / ❌ |
-| 3 | `dig +short __________ __________` | __________ | __________ | ✅ / ❌ |
-| 4 | `dig +short __________ __________` | __________ | __________ | ✅ / ❌ |
-| DMARC | `dig +short TXT _dmarc.heygrabit.com` | `v=DMARC1; p=none; rua=mailto:sangwopark19icons@gmail.com` | __________ | ✅ / ❌ |
+| 1 | `dig +short TXT resend._domainkey.heygrabit.com \| tr -d '" '` | `p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDIJN1oyMnw4Drxn9/wz2tyeuViq7hrU8NeqEydKBk8HgWp8g5diaMD0fHB57EVktS2Y0mB07HeIAUNShT2tILAcdFx9Tjf0o8K1HdFRKeroq1wAZ8aEIr+LkqFQVw+zBF7IibNEpTxACCesuSqwgnlFyHWQ5U5l+X8sfaiIgIZYwIDAQAB` | `p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDIJN1oyMnw4Drxn9/wz2tyeuViq7hrU8NeqEydKBk8HgWp8g5diaMD0fHB57EVktS2Y0mB07HeIAUNShT2tILAcdFx9Tjf0o8K1HdFRKeroq1wAZ8aEIr+LkqFQVw+zBF7IibNEpTxACCesuSqwgnlFyHWQ5U5l+X8sfaiIgIZYwIDAQAB` | ✅ |
+| 2 | `dig +short MX send.heygrabit.com` | `feedback-smtp.ap-northeast-1.amazonses.com` (priority 10) | `10 feedback-smtp.ap-northeast-1.amazonses.com.` (trailing dot 제거 + priority 일치) | ✅ |
+| 3 | `dig +short TXT send.heygrabit.com \| tr -d '" '` | `v=spf1 include:amazonses.com ~all` | `v=spf1 include:amazonses.com ~all` | ✅ |
+| DMARC | `dig +short TXT _dmarc.heygrabit.com \| tr -d '" '` | `v=DMARC1; p=none; rua=mailto:sangwopark19icons@gmail.com` | `v=DMARC1;p=none;rua=mailto:sangwopark19icons@gmail.com` (concat 후 공백 제거 → 동일) | ✅ |
 
 *TXT chunked-string 비교: dig 결과의 다중 quoted-string (`"abc" "def"`) 은 DNS RFC 1035 chunked-string — `tr -d '" '` 또는 `sed 's/" "//g; s/"//g'` 로 concat 후 Resend 원본값과 literal match.*
 
-**Resend 대시보드 heygrabit.com Verified 전환 시각:** __________ (ISO8601 KST) — Plan 02 Task 3 resume-signal
+**Resend 대시보드 heygrabit.com Verified 전환 시각:** 2026-04-27 11:41 KST (Resend Domain Events: Domain added 09:40, DNS verified 11:40, Domain verified 11:41) — Plan 02 Task 3 resume-signal
 
 ### Wave 3 — Secret Manager / Cloud Run (Plan 03 fill-in)
 
@@ -137,7 +139,7 @@
 
 ## Sign-off
 
-- [ ] Plan 02 Task 0/1/2/3 전부 PASS — heygrabit.com Verified + audit shell 생성
+- [x] Plan 02 Task 0/1/2/3 전부 PASS — heygrabit.com Verified + audit shell 생성 (2026-04-27 11:41 KST)
 - [ ] Plan 03 Task 0/1/2/3/4 전부 PASS — pre-gate (Plan 01 배포 확인) + Secret rotation + Cloud Run update + UAT + 관측
 - [ ] Plan 03 Task 5 (deferred cleanup, REVIEWS H3) — 안정 window 종료 후 별도 실행
 - [ ] SC-1 체크리스트 PASS (3사 inbox 수신, spam 아님, 등록 계정 사용 확인)
