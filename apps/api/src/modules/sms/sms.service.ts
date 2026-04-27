@@ -461,4 +461,41 @@ export class SmsService {
       return { verified: false, message: '인증번호 확인에 실패했습니다. 잠시 후 다시 시도해주세요.' };
     }
   }
+
+  /**
+   * [hotfix 260427-kch] Idempotency probe for downstream consumers.
+   *
+   * After a successful verifyCode() call the OTP key is DEL'd, so a second
+   * verifyCode() with the same code returns EXPIRED (GoneException). Per the
+   * design note above verifyCode (sms.service.ts:385-403), the
+   * `{sms:{e164}}:verified` flag (TTL 600s) is left behind specifically so
+   * downstream consumers can probe "this phone was verified within the last
+   * 10 min" WITHOUT re-running the Lua script.
+   *
+   * SECURITY: This is NOT an authentication primitive. Callers MUST only
+   * consult this AFTER verifyCode() has thrown GoneException. Calling this
+   * standalone (or wiring it to a controller) reintroduces the [CR-01]
+   * impersonation primitive that was removed when the verify-flag
+   * short-circuit was deleted from verifyCode itself.
+   *
+   * Returns false in dev-mock mode — the dev flow uses the '000000'
+   * fast-path inside verifyCode and does not need this fallback.
+   */
+  async isPhoneVerified(phone: string): Promise<boolean> {
+    if (this.isDevMock) return false;
+    const e164 = parseE164(phone);
+    try {
+      const flag = await this.redis.get(smsVerifiedKey(e164));
+      return flag === '1';
+    } catch (err) {
+      // Fail closed: a Valkey blip should not let a request slip through
+      // unverified. The caller will re-throw the original GoneException.
+      this.logger.warn({
+        event: 'sms.is_phone_verified_failed',
+        phone: e164,
+        err: (err as Error).message,
+      });
+      return false;
+    }
+  }
 }
