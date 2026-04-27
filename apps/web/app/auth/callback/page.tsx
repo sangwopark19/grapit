@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useRef, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -48,7 +48,15 @@ function CallbackContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorInfo, setErrorInfo] = useState<{ code: string; provider?: string } | null>(null);
 
+  // 콜백 처리는 마운트당 정확히 1회만 발사되어야 한다.
+  // useEffect가 다회 실행되면 /auth/refresh 가 동시에 두 번 호출되어
+  // refresh-token rotation의 도난 탐지가 트리거 → 패밀리 전체 revoke → 401.
+  const hasRunRef = useRef(false);
+
   useEffect(() => {
+    if (hasRunRef.current) return;
+    hasRunRef.current = true;
+
     const errorCode = searchParams.get('error');
     const provider = searchParams.get('provider');
 

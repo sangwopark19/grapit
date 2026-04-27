@@ -12,36 +12,49 @@ export interface SendEmailResult {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// [Phase 15 WR-01] Bounded in-process retry for transient Resend failures.
+// auth.service intentionally swallows the result for enumeration defense, so a
+// single transient failure (rate limit, 5xx, network blip) leaves the user
+// without a reset link. Resend documents these classes as retryable; cap at 3
+// attempts with exponential backoff (250ms, 500ms) — total worst-case ~750ms
+// stays well within Cloud Run request lifetime.
+const MAX_SEND_ATTEMPTS = 3;
+const RETRY_BASE_MS = 250;
+const RETRYABLE_ERROR = (msg: string): boolean =>
+  /rate.?limit|timeout|temporar|5\d\d|ECONN|ETIMEDOUT/i.test(msg);
+
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private readonly resend: Resend | null;
   private readonly from: string;
-  private readonly isDevMode: boolean;
 
   constructor(private readonly configService: ConfigService) {
     const apiKey = this.configService.get<string>('RESEND_API_KEY');
     const fromEmail = this.configService.get<string>('RESEND_FROM_EMAIL');
     const nodeEnv = this.configService.get<string>('NODE_ENV');
-    const isProd = nodeEnv === 'production';
+    // Tighten production check: anything except development/test requires the key.
+    // Prevents staging/preview environments (NODE_ENV=staging) from silently
+    // falling back to dev-mock and writing reset tokens to shared logs.
+    const isNonDev = nodeEnv !== 'development' && nodeEnv !== 'test';
 
     // Phase 7 REDIS_URL hard-fail 원칙 복제 (RESEARCH §Example 3).
     // Silent console.log fallback in production would swallow missed password
     // reset emails and make misconfiguration look like a transient issue.
-    if (isProd && !apiKey) {
+    if (isNonDev && !apiKey) {
       throw new Error(
-        '[email] RESEND_API_KEY is required in production environment. ' +
+        '[email] RESEND_API_KEY is required outside development/test environments. ' +
           'Silent console.log fallback is disabled to prevent missed password reset emails. ' +
           'Check Cloud Run secret binding.',
       );
     }
 
-    // REVIEWS.md MED: RESEND_FROM_EMAIL must also be hard-required in production.
+    // REVIEWS.md MED: RESEND_FROM_EMAIL must also be hard-required outside dev/test.
     // onboarding@resend.dev fallback is dev-only (phishing + deliverability risk).
-    if (isProd) {
+    if (isNonDev) {
       if (!fromEmail || !EMAIL_PATTERN.test(fromEmail)) {
         throw new Error(
-          '[email] RESEND_FROM_EMAIL must be a valid email in production. ' +
+          '[email] RESEND_FROM_EMAIL must be a valid email outside development/test. ' +
             `Received: ${fromEmail ?? '<unset>'}. ` +
             'Phishing/deliverability risk — configure a verified sender in Resend dashboard.',
         );
@@ -51,46 +64,69 @@ export class EmailService {
       this.from = fromEmail ?? 'onboarding@resend.dev';
     }
 
-    this.isDevMode = !apiKey;
-    if (this.isDevMode) {
+    if (apiKey === undefined) {
       this.resend = null;
       this.logger.warn('Email Service running in DEV MOCK mode (no RESEND_API_KEY)');
     } else {
-      this.resend = new Resend(apiKey!);
+      this.resend = new Resend(apiKey);
     }
   }
 
   async sendPasswordResetEmail(to: string, resetLink: string): Promise<SendEmailResult> {
-    if (this.isDevMode) {
+    if (this.resend === null) {
       this.logger.log(`DEV EMAIL: password reset link for ${to}: ${resetLink}`);
       return { success: true };
     }
 
-    // Resend returns { data, error } — it does NOT throw (RESEARCH §Pitfall 2).
-    // Do not wrap in try/catch; branch on `error` instead.
-    const { data, error } = await this.resend!.emails.send({
-      from: this.from,
-      to,
-      subject: '[Grabit] 비밀번호 재설정',
-      react: PasswordResetEmail({ resetLink }),
-    });
+    const toDomain = to.split('@')[1] ?? 'unknown';
 
-    if (error) {
-      this.logger.error(`Resend send failed for ${to}: ${error.message}`);
-      // [Phase 15 D-11] auth.service intentionally swallows result for enumeration defense; capture here for ops visibility.
-      Sentry.withScope((scope) => {
-        scope.setTag('component', 'email-service');
-        scope.setTag('provider', 'resend');
-        scope.setLevel('error');
-        scope.setContext('email', {
-          from: this.from,
-          toDomain: to.split('@')[1] ?? 'unknown',
-        });
-        Sentry.captureException(new Error(`Resend send failed: ${error.message}`));
+    for (let attempt = 1; attempt <= MAX_SEND_ATTEMPTS; attempt++) {
+      // Resend returns { data, error } — it does NOT throw (RESEARCH §Pitfall 2).
+      // Do not wrap in try/catch; branch on `error` instead.
+      const { data, error } = await this.resend.emails.send({
+        from: this.from,
+        to,
+        subject: '[Grabit] 비밀번호 재설정',
+        react: PasswordResetEmail({ resetLink }),
       });
-      return { success: false, error: error.message };
+
+      if (!error) {
+        if (attempt > 1) {
+          this.logger.log(`Resend recovered on attempt ${attempt} (toDomain=${toDomain})`);
+        }
+        return { success: true, id: data?.id };
+      }
+
+      const isFinalAttempt = attempt === MAX_SEND_ATTEMPTS;
+      const isTransient = RETRYABLE_ERROR(error.message);
+
+      if (isFinalAttempt || !isTransient) {
+        this.logger.error(
+          `Resend send failed for ${toDomain} after ${attempt} attempt(s): ${error.message}`,
+        );
+        // [Phase 15 D-11] auth.service intentionally swallows result for enumeration defense; capture here for ops visibility.
+        Sentry.withScope((scope) => {
+          scope.setTag('component', 'email-service');
+          scope.setTag('provider', 'resend');
+          scope.setLevel('error');
+          scope.setContext('email', {
+            from: this.from,
+            toDomain,
+            attempts: attempt,
+          });
+          Sentry.captureException(new Error(`Resend send failed: ${error.message}`));
+        });
+        return { success: false, error: error.message };
+      }
+
+      const delayMs = RETRY_BASE_MS * 2 ** (attempt - 1);
+      this.logger.warn(
+        `Resend transient error on attempt ${attempt}/${MAX_SEND_ATTEMPTS} (toDomain=${toDomain}): ${error.message} — retrying in ${delayMs}ms`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
 
-    return { success: true, id: data?.id };
+    // Unreachable: loop body returns on every attempt outcome (success, non-retryable, or final-attempt exhaustion).
+    throw new Error('email retry loop exited unexpectedly');
   }
 }
