@@ -5,7 +5,7 @@ milestone_name: 안정화 + 고도화
 status: Cutover 검증 완료 — Resend smoke test → Gmail inbox 수신, revision grabit-api-00013-lkx 100% traffic
 stopped_at: Phase 16 context gathered
 last_updated: "2026-04-27T09:00:07.549Z"
-last_activity: 2026-04-27 — Quick task 260427-lyr Round 2 완료 (AuthInitializer ↔ 콜백 페이지 cross-component race 해소, commit 56826c6)
+last_activity: 2026-04-27 — Quick task 260427-pcf 핫픽스 (R2 PUT CORS 차단 — AWS SDK v3 auto-checksum 비활성화, commit 2642b24)
 progress:
   total_phases: 15
   completed_phases: 11
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 Phase: 15 — SHIPPED (3/3 plans complete, 48h 안정 관측 진행 중)
 Plan: 3 of 3 complete (15-01 ✅, 15-02 ✅, 15-03 ✅ with assumption corrections)
 Status: Cutover 검증 완료 — Resend smoke test → Gmail inbox 수신, revision grabit-api-00013-lkx 100% traffic
-Last activity: 2026-04-27 — Quick task 260427-lyr Round 2 완료 (AuthInitializer ↔ 콜백 페이지 cross-component race 해소, commit 56826c6)
+Last activity: 2026-04-27 — Quick task 260427-pcf 핫픽스 (R2 PUT CORS 차단 — AWS SDK v3 auto-checksum 비활성화, commit 2642b24)
 
 Progress: [██████████] 100%
 
@@ -119,6 +119,7 @@ None.
 | 260424-l23 | Phase 14 pre-existing TTL 2건 수정: sms-throttle.integration.spec.ts 의 throttler key filter 를 실제 라이브러리 format (`{<tracker>:<throttlerName>}:hits`) 에 맞춰 `.endsWith(':hits')` 로 전환 → 28/30 → 30/30 green, Phase 14 ci.yml `test:integration` PR green 블로커 해소 | 2026-04-24 | e65fa99 | [260424-l23-sms-throttle-integration-spec-ts-l220-27](./quick/260424-l23-sms-throttle-integration-spec-ts-l220-27/) |
 | 260427-kch | 회원가입 가입완료 시 410 EXPIRED 차단 핫픽스: `auth.service.ts` register/completeSocialRegistration 가 OTP 코드를 `verifyCode` 로 재호출 → Lua 가 OTP 키 DEL 후 EXPIRED 반환 → GoneException. `SmsService.isPhoneVerified` 추가 + GoneException catch fallback 으로 `{sms:{e164}}:verified` 플래그(TTL 600s) idempotency 확인 (sms.service.ts:385-403 자체 권고 반영). 8 회귀 테스트 추가, 315/315 green. main 직접 머지(PR #21) → Cloud Run 자동 배포 | 2026-04-27 | 9b38358 (hotfix/main) | [260427-kch-410-expired-auth-service-ts-verifycode](./quick/260427-kch-410-expired-auth-service-ts-verifycode/) |
 | 260427-lyr | 프로덕션 소셜 로그인(Google/Kakao/Naver) 100% 실패 핫픽스 (2 라운드): R1 `useRef` 가드는 콜백 페이지 내부 중복만 막고 부족 — root layout `<AuthInitializer />`(`apps/web/components/auth/auth-initializer.tsx` ← `apps/web/app/layout.tsx:24`)가 매 페이지 마운트마다 `initializeAuth()`로 `/auth/refresh`를 호출, 콜백 페이지 IIFE와 cross-component race → `auth.service.ts:167-174` 토큰 도난 탐지로 family revoke → 401. R2 콜백 페이지의 `/auth/refresh`+`/users/me` IIFE 제거하고 `useAuthStore`(`user`, `isInitialized`) 관측 모델로 전환 — AuthInitializer 단일 호출자화로 race 자체 소거. `hasRedirectedRef`로 push 1회 보장. 백엔드 정책 불변. | 2026-04-27 | 70a3f65 (R1) → 56826c6 (R2) | [260427-lyr-social-login-refresh-double-fire-fix](./quick/260427-lyr-social-login-refresh-double-fire-fix/) |
+| 260427-pcf | 프로덕션 admin 포스터 업로드 100% 차단 핫픽스: `@aws-sdk/client-s3@3.1020` 이 PutObject 에 자동 부착하는 `x-amz-checksum-crc32` / `x-amz-sdk-checksum-algorithm` 두 헤더가 R2 presigned PUT 을 simple request 에서 preflight 필요 요청으로 격상시킴 → R2 버킷 CORS 미정비로 `https://heygrabit.com` origin 미반사 → preflight 실패. `S3Client` 에 `requestChecksumCalculation: 'WHEN_REQUIRED'` + `responseChecksumValidation: 'WHEN_REQUIRED'` 추가로 헤더 제거 → 단순 PUT 복구. 회귀 테스트 1건 추가, 321/321 green. R2 버킷 CORS 룰 정비는 사용자 수동 작업으로 PLAN.md runbook 명시. 핫픽스 브랜치 `hotfix/quick-260427-pcf-r2-cors-checksum`. | 2026-04-27 | 2642b24 (hotfix branch) | [260427-pcf-r2-cors](./quick/260427-pcf-r2-cors/) |
 
 ## Session Continuity
 
