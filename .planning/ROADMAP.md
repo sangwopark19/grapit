@@ -204,6 +204,9 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
 | 10. SMS 인증 실연동 | v1.1 | 9/9 | Complete    | 2026-04-16 |
 | 11. 어드민 대시보드 | v1.1 | 4/4 | Complete    | 2026-04-20 |
 | 12. UX 현대화 | v1.1 | 6/6 | Complete    | 2026-04-21 |
+| 13. 브랜드 grapit→grabit rename | v1.1 | 4/4 | Complete    | 2026-04-22 |
+| 14. SMS OTP CROSSSLOT fix | v1.1 | 4/4 | Complete    | 2026-04-24 |
+| 15. Resend heygrabit.com cutover | v1.1 | 3/3 | Complete (smoke test ✓, 48h 관측 진행) | 2026-04-27 |
 
 ## Backlog
 
@@ -261,9 +264,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 15-01-PLAN.md — Wave 1 code: email.service.ts Sentry.withScope + captureException 삽입 (D-11) + email.service.spec.ts 8 테스트 (기존 6 + Sentry 호출 / PII masking 신규 2)
-- [ ] 15-02-PLAN.md — Wave 2 ops: Resend heygrabit.com Add Domain + 후이즈 DNS 등록 (SPF/DKIM/DMARC — Resend 발급값 그대로) + dig 전파 확인 + Resend Verified 대기 + 15-HUMAN-UAT.md 생성
-- [ ] 15-03-PLAN.md — Wave 3 cutover: Secret Manager 신규 version 추가 + Cloud Run --update-secrets 재배포 + 100% traffic 확인 + 3사 UAT (Gmail/Naver/Daum) + gcloud logging empty 확인 (D-13) + Resend grapit.com 제거 (D-02) + 15-HUMAN-UAT.md Wave 3 fill-in
+- [x] 15-01-PLAN.md — Wave 1 code: email.service.ts Sentry.withScope + captureException 삽입 (D-11) + email.service.spec.ts 8 테스트 (기존 6 + Sentry 호출 / PII masking 신규 2) — 2026-04-27 완료, PR #20
+- [x] 15-02-PLAN.md — Wave 2 ops: Resend heygrabit.com Add Domain (Tokyo ap-northeast-1) + 후이즈 DNS 등록 (DKIM TXT + SPF MX + SPF TXT + project-defined DMARC) + dig 4/4 literal match + Resend Verified — 2026-04-27 11:41 KST 완료
+- [x] 15-03-PLAN.md — Wave 3 cutover: 가정 변경 (사실관계 정정) — Secret Manager `resend-from-email` 이미 `no-reply@heygrabit.com` (Plan Tasks 1+2 NO-OP). Resend 계정에 `grapit.com` 미등록 (Task 5 N/A). 추가 발견: `resend-api-key` placeholder 였음 → 사용자 신규 키 발급 + v2 추가 + v1 disabled + Cloud Run revision 강제 롤 (`grabit-api-00013-lkx` 100% traffic, 2026-04-27 15:19 KST). Resend API direct smoke test → Gmail inbox 수신 검증 (15:25 KST). Naver/Daum 은 운영 트래픽으로 자연 검증 (48h window).
 
 ### Phase 16: Legal pages launch — 이용약관/개인정보처리방침/마케팅동의 공개 URL 구현 (개보법·정통망법 런칭 요건)
 

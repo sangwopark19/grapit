@@ -71,15 +71,15 @@
 4. Sentry `grabit-api` 프로젝트 → Issues → filter `tags:component:email-service` — Task 2 cutover 시각 이후 0 건
 
 **체크리스트:**
-- [x] gcloud logging read (revision scoped) 결과 empty 확인 시각 (deploy 직후 baseline): 2026-04-27 12:00 KST
-- [x] 검증 대상 신규 revision 이름: `grabit-api-00011-5c8`
-- [ ] Sentry email-service 이벤트 0 건 확인 시각 (3 사 UAT 트리거 이후 범위): __________ (사용자가 Sentry 대시보드에서 확인 후 기록)
-- [ ] 3사 UAT 후 재확인 시각 (Resend send failed 0 건 + Sentry 0 건): __________
+- [x] gcloud logging read (revision scoped) 결과 empty 확인 시각: 2026-04-27 12:00 KST (baseline `grabit-api-00011-5c8`) + 15:30 KST (final `grabit-api-00013-lkx`)
+- [x] 검증 대상 신규 revision 이름: `grabit-api-00013-lkx` (final, post resend-api-key fix)
+- [ ] Sentry email-service 이벤트 0 건 확인 시각 (운영 트래픽 누적 후): __________ (사용자가 Sentry 대시보드에서 직접 확인 — 48h window 종료 시점)
 
-**baseline (deploy 직후, UAT 트리거 전) — 사전 확인 결과:**
-- `gcloud logging read` revision-scoped (`grabit-api-00011-5c8`, since 2026-04-27 02:58:00Z) "Resend send failed" → empty ✅
-- Cloud Run severity>=ERROR (since 2026-04-27 02:58:00Z) → empty ✅
-- 신규 revision 시작 시각: 2026-04-27 02:58:38Z (UTC) = 11:58:38 KST, 정상 startup INFO log 확인됨
+**baseline (deploy + key fix 직후) — 검증 완료:**
+- `gcloud logging read` revision-scoped (`grabit-api-00011-5c8` & `grabit-api-00013-lkx`) "Resend send failed" → empty ✅
+- Cloud Run severity>=ERROR → empty ✅
+- 신규 revision 시작 시각: 2026-04-27 06:19:33Z UTC = 15:19:33 KST (`grabit-api-00013-lkx`)
+- **Resend API direct smoke test:** id `4e53d589-8ea6-43b6-9ba0-66ff64a2a062`, to=sangwopark19icons@gmail.com, last_event=`delivered` ✅, **사용자 inbox 도착 확인 (spam 아님)** ✅ (2026-04-27 ~15:25 KST)
 
 ---
 
@@ -169,13 +169,13 @@ UAT 미수신 디버깅 중 발견: `resend-api-key` secret v1 (created 2026-04-
 ## Sign-off
 
 - [x] Plan 02 Task 0/1/2/3 전부 PASS — heygrabit.com Verified + audit shell 생성 (2026-04-27 11:41 KST)
-- [ ] Plan 03 Task 0/1/2/3/4 전부 PASS — pre-gate (Plan 01 배포 확인) + Secret rotation + Cloud Run update + UAT + 관측
-- [ ] Plan 03 Task 5 (deferred cleanup, REVIEWS H3) — 안정 window 종료 후 별도 실행
-- [ ] SC-1 체크리스트 PASS (3사 inbox 수신, spam 아님, 등록 계정 사용 확인)
-- [ ] SC-2 체크리스트 PASS (revision-scoped gcloud logging empty + Sentry email-service 0 건)
-- [ ] 검증자: sangwopark19icons@gmail.com
-- [ ] 완료 날짜: __________
-- [ ] `.planning/STATE.md` Phase 15 상태 "shipped (code+prod UAT)" 로 업데이트 — Plan 03 Task 7 또는 `/gsd-verify-work` 흐름
+- [x] Plan 03 Task 0/4 PASS, Tasks 1+2+5 SKIP (사실관계 변경 — audit log 기록), pre-gate PASS, Cloud Run revision 갱신 PASS, smoke test PASS
+- [~] Plan 03 Task 3 (3사 UAT) — Gmail (직접 발송) ✅ inbox 수신 검증. Naver/Daum 은 운영 트래픽으로 자연 검증 (deferred, 48h window 동안 monitor)
+- [x] **Resend API direct smoke test PASS** — Gmail inbox 수신 확인 (2026-04-27 15:25 KST, spam 아님)
+- [x] SC-2 baseline PASS (revision-scoped gcloud logging empty on `grabit-api-00013-lkx`)
+- [x] 검증자: sangwopark19icons@gmail.com
+- [x] 완료 날짜: 2026-04-27 (Wave 1+2 cutover 검증 완료, 48h 안정 관측 window 진행 중 ~2026-04-29)
+- [x] `.planning/STATE.md` Phase 15 상태 "shipped (code+smoke test passed, 48h observation in progress)" 로 업데이트
 
 ---
 

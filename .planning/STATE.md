@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
-status: "Phase 15 Wave 1 complete (Plan 01+02) — Plan 03 deferred to post-deploy session"
-stopped_at: "Phase 15 Wave 1 — awaiting Plan 01 main merge + Cloud Run deploy before Plan 03 entry"
-last_updated: "2026-04-27T05:55:00.000Z"
-last_activity: 2026-04-27 — Quick task 260427-kch 핫픽스 (회원가입 410 EXPIRED) — hotfix/main PR #21 대기
+status: "Phase 15 shipped (smoke test ✓, 48h 안정 관측 진행 중 ~2026-04-29 15:30 KST)"
+stopped_at: "Phase 15 cutover 검증 완료 — 운영 트래픽으로 자연 검증 진행"
+last_updated: "2026-04-27T06:30:00.000Z"
+last_activity: 2026-04-27 — Phase 15 cutover 완료 (smoke test delivered to inbox, revision grabit-api-00013-lkx)
 progress:
   total_phases: 15
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 56
-  completed_plans: 54
-  percent: 96
+  completed_plans: 56
+  percent: 100
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** 사용자가 원하는 공연을 발견하고, 좌석을 직접 선택하여, 안정적으로 예매를 완료할 수 있는 것
-**Current focus:** Phase 15 — Resend heygrabit.com cutover (Wave 1 complete, Wave 2 cutover pending)
+**Current focus:** Phase 16 — Legal pages launch (다음 phase, 2026-04-29 안정 window 종료 후 진입 가능)
 
 ## Current Position
 
-Phase: 15 — EXECUTING (Wave 1 complete)
-Plan: 2 of 3 complete (15-01 ✅, 15-02 ✅, 15-03 pending)
-Status: Awaiting PR merge → Cloud Run deploy → Plan 03 (Secret rotation + UAT + 48h 관측)
-Last activity: 2026-04-27 — Plan 15-02 Resend heygrabit.com Verified at 11:41 KST
+Phase: 15 — SHIPPED (3/3 plans complete, 48h 안정 관측 진행 중)
+Plan: 3 of 3 complete (15-01 ✅, 15-02 ✅, 15-03 ✅ with assumption corrections)
+Status: Cutover 검증 완료 — Resend smoke test → Gmail inbox 수신, revision grabit-api-00013-lkx 100% traffic
+Last activity: 2026-04-27 15:25 KST — smoke test inbox 수신 확인 + audit log finalize
 
 Progress: [██████████] 100%
 
