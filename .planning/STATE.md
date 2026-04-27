@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
-status: "Phase 14 merged — PR #19 (merge commit 11b63b6)"
-stopped_at: Phase 15 context gathered
-last_updated: "2026-04-24T08:54:14.269Z"
-last_activity: 2026-04-24
+status: "Phase 15 Wave 1 complete (Plan 01+02) — Plan 03 deferred to post-deploy session"
+stopped_at: "Phase 15 Wave 1 — awaiting Plan 01 main merge + Cloud Run deploy before Plan 03 entry"
+last_updated: "2026-04-27T11:50:00.000Z"
+last_activity: 2026-04-27 — Phase 15 Wave 1 complete (Sentry code + Resend heygrabit.com Verified)
 progress:
   total_phases: 15
   completed_phases: 10
   total_plans: 56
-  completed_plans: 52
-  percent: 93
+  completed_plans: 54
+  percent: 96
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** 사용자가 원하는 공연을 발견하고, 좌석을 직접 선택하여, 안정적으로 예매를 완료할 수 있는 것
-**Current focus:** Phase 14 — sms-otp-crossslot-fix-sms-valkey-cluster-hash-tag
+**Current focus:** Phase 15 — Resend heygrabit.com cutover (Wave 1 complete, Wave 2 cutover pending)
 
 ## Current Position
 
-Phase: 15
-Plan: Not started
-Status: Phase 14 merged — PR #19 (merge commit 11b63b6)
-Last activity: 2026-04-24
+Phase: 15 — EXECUTING (Wave 1 complete)
+Plan: 2 of 3 complete (15-01 ✅, 15-02 ✅, 15-03 pending)
+Status: Awaiting PR merge → Cloud Run deploy → Plan 03 (Secret rotation + UAT + 48h 관측)
+Last activity: 2026-04-27 — Plan 15-02 Resend heygrabit.com Verified at 11:41 KST
 
 Progress: [██████████] 100%
 
