@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ConfigService } from '@nestjs/config';
 import { EmailService } from './email.service.js';
 
@@ -45,7 +45,6 @@ function makeConfig(env: Record<string, string | undefined>): ConfigService {
 }
 
 describe('EmailService', () => {
-  const originalEnv = { ...process.env };
   const sentryMod = sentryModule as unknown as {
     __captureExceptionMock: ReturnType<typeof vi.fn>;
     __withScopeMock: ReturnType<typeof vi.fn>;
@@ -58,10 +57,6 @@ describe('EmailService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    process.env = { ...originalEnv };
   });
 
   it('DEV mode: no RESEND_API_KEY + NODE_ENV=development → returns success without calling Resend', async () => {
@@ -97,12 +92,12 @@ describe('EmailService', () => {
 
   it('PROD misconfig (API_KEY): no RESEND_API_KEY + NODE_ENV=production → throws on construction', () => {
     const config = makeConfig({ NODE_ENV: 'production' });
-    expect(() => new EmailService(config)).toThrow(/RESEND_API_KEY is required in production/);
+    expect(() => new EmailService(config)).toThrow(/RESEND_API_KEY is required outside development\/test environments/);
   });
 
   it('PROD misconfig (FROM_EMAIL unset): RESEND_API_KEY set + RESEND_FROM_EMAIL unset + NODE_ENV=production → throws on construction', () => {
     const config = makeConfig({ RESEND_API_KEY: 're_test_key', NODE_ENV: 'production' });
-    expect(() => new EmailService(config)).toThrow(/RESEND_FROM_EMAIL must be a valid email in production/);
+    expect(() => new EmailService(config)).toThrow(/RESEND_FROM_EMAIL must be a valid email outside development\/test/);
   });
 
   it('PROD misconfig (FROM_EMAIL invalid): RESEND_API_KEY set + RESEND_FROM_EMAIL is not an email + NODE_ENV=production → throws on construction', () => {
@@ -111,7 +106,17 @@ describe('EmailService', () => {
       RESEND_FROM_EMAIL: 'not-an-email',
       NODE_ENV: 'production',
     });
-    expect(() => new EmailService(config)).toThrow(/RESEND_FROM_EMAIL must be a valid email in production/);
+    expect(() => new EmailService(config)).toThrow(/RESEND_FROM_EMAIL must be a valid email outside development\/test/);
+  });
+
+  it('STAGING misconfig (API_KEY): no RESEND_API_KEY + NODE_ENV=staging → throws on construction (tightened guard)', () => {
+    const config = makeConfig({ NODE_ENV: 'staging' });
+    expect(() => new EmailService(config)).toThrow(/RESEND_API_KEY is required outside development\/test environments/);
+  });
+
+  it('TEST mode: no RESEND_API_KEY + NODE_ENV=test → constructs successfully in DEV MOCK mode', () => {
+    const config = makeConfig({ NODE_ENV: 'test' });
+    expect(() => new EmailService(config)).not.toThrow();
   });
 
   it('PROD SDK error: Resend returns { error } → returns { success: false, error }', async () => {
