@@ -143,12 +143,26 @@
 - 신규 revision image digest: `sha256:c26a4d32294e0df36cfa37defcee665b4164eb40b0b985b93017d7679fd9de4e`
 - 신규 revision env binding: `RESEND_FROM_EMAIL` → `secretKeyRef name=resend-from-email key=latest` (= v1, 동일)
 
+**🚨 추가 발견 — `resend-api-key` placeholder 교체 (2026-04-27 15:19 KST):**
+
+UAT 미수신 디버깅 중 발견: `resend-api-key` secret v1 (created 2026-04-15T07:30:42Z) 의 값이 placeholder 문자열 `re_PLACEHOLDER_SET_AGAIN_VERIFY` (38 chars) 로 설정되어 있었음. 즉 production EmailService 가 Resend API 호출 시 invalid key 로 401 을 받아왔음. 그러나 auth.service.ts L233-235 의 enumeration defense (`if (!user || !user.passwordHash) return;`) 가 social-only 계정 + 미가입 계정에서 silent return 처리하기 때문에 EmailService 호출 자체가 거의 일어나지 않아 Sentry/log 에 잡히지 않은 silent silent failure.
+
+조치:
+- v2 (real key) 추가: `printf '%s' '<key>' | gcloud secrets versions add resend-api-key --data-file=-` → 2026-04-27 06:19:06Z UTC = 15:19 KST
+- v1 (placeholder) disabled (보안 hygiene)
+- Cloud Run 강제 redeploy: `gcloud run services update grabit-api --update-secrets RESEND_API_KEY=resend-api-key:latest` → 신규 revision `grabit-api-00013-lkx` (created 2026-04-27 06:19:33Z = 15:19:33 KST), 100% traffic
+- Resend API smoke test: `curl POST /emails to=sangwopark19icons@gmail.com from=no-reply@heygrabit.com` → email id `4e53d589-8ea6-43b6-9ba0-66ff64a2a062`, `last_event: delivered` ✅
+- Resend domains list 검증: heygrabit.com 만 존재, status=verified, region=ap-northeast-1 → **D-02 의 grapit.com 제거 (Plan 03 Task 5) 도 NO-OP — 제거할 도메인이 없음**
+
+**최종 serving revision: `grabit-api-00013-lkx`** — Plan 01 Sentry 통합 + RESEND_API_KEY v2 (real) + RESEND_FROM_EMAIL v1 (`no-reply@heygrabit.com`).
+
 ### Wave 3 — UAT & cleanup (Plan 03 fill-in)
 
-- 3 사 UAT 수신 시각: (SC-1 체크리스트 참조)
-- gcloud logging (revision scoped) empty 확인 시각: (SC-2 체크리스트 참조)
-- **안정 관측 window (REVIEWS HIGH H3):** Cloud Run 신규 revision 100% 도달 시각 + 최소 48h 동안 (a) Resend 발송 실패 0 건, (b) Sentry email-service 신규 이벤트 0 건. window 종료 시각: __________
-- Resend 구 `grapit.com` 도메인 제거 시각 (D-02, 안정 window 종료 후): __________
+- 3 사 UAT 수신 시각: (SC-1 체크리스트 참조 — 진행 중)
+- gcloud logging (revision scoped) empty 확인 시각: 2026-04-27 12:00 KST baseline (`grabit-api-00011-5c8`), 후속 `grabit-api-00013-lkx` baseline 검증 필요
+- **Resend API direct smoke test:** id `4e53d589...`, to=sangwopark19icons@gmail.com, last_event=`delivered`, 2026-04-27 15:20 KST ✅ (heygrabit.com 발송 경로 + DKIM/SPF/DMARC 정상 검증)
+- **안정 관측 window (REVIEWS HIGH H3):** revision `grabit-api-00013-lkx` 100% 도달 시각 (2026-04-27 15:19:33 KST) + 최소 48h 동안 (a) Resend 발송 실패 0 건, (b) Sentry email-service 신규 이벤트 0 건. window 종료 시각: 2026-04-29 ~15:30 KST 예정
+- Resend 구 `grapit.com` 도메인 제거 시각 (D-02, 안정 window 종료 후): **N/A — Resend 계정에 grapit.com 도메인 자체가 등록되어 있지 않음** (Resend domains API 검증 결과: heygrabit.com 단일). Plan 03 Task 5 SKIP 처리.
 
 ---
 
