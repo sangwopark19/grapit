@@ -17,31 +17,33 @@ export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private readonly resend: Resend | null;
   private readonly from: string;
-  private readonly isDevMode: boolean;
 
   constructor(private readonly configService: ConfigService) {
     const apiKey = this.configService.get<string>('RESEND_API_KEY');
     const fromEmail = this.configService.get<string>('RESEND_FROM_EMAIL');
     const nodeEnv = this.configService.get<string>('NODE_ENV');
-    const isProd = nodeEnv === 'production';
+    // Tighten production check: anything except development/test requires the key.
+    // Prevents staging/preview environments (NODE_ENV=staging) from silently
+    // falling back to dev-mock and writing reset tokens to shared logs.
+    const isNonDev = nodeEnv !== 'development' && nodeEnv !== 'test';
 
     // Phase 7 REDIS_URL hard-fail 원칙 복제 (RESEARCH §Example 3).
     // Silent console.log fallback in production would swallow missed password
     // reset emails and make misconfiguration look like a transient issue.
-    if (isProd && !apiKey) {
+    if (isNonDev && !apiKey) {
       throw new Error(
-        '[email] RESEND_API_KEY is required in production environment. ' +
+        '[email] RESEND_API_KEY is required outside development/test environments. ' +
           'Silent console.log fallback is disabled to prevent missed password reset emails. ' +
           'Check Cloud Run secret binding.',
       );
     }
 
-    // REVIEWS.md MED: RESEND_FROM_EMAIL must also be hard-required in production.
+    // REVIEWS.md MED: RESEND_FROM_EMAIL must also be hard-required outside dev/test.
     // onboarding@resend.dev fallback is dev-only (phishing + deliverability risk).
-    if (isProd) {
+    if (isNonDev) {
       if (!fromEmail || !EMAIL_PATTERN.test(fromEmail)) {
         throw new Error(
-          '[email] RESEND_FROM_EMAIL must be a valid email in production. ' +
+          '[email] RESEND_FROM_EMAIL must be a valid email outside development/test. ' +
             `Received: ${fromEmail ?? '<unset>'}. ` +
             'Phishing/deliverability risk — configure a verified sender in Resend dashboard.',
         );
@@ -51,24 +53,23 @@ export class EmailService {
       this.from = fromEmail ?? 'onboarding@resend.dev';
     }
 
-    this.isDevMode = !apiKey;
-    if (this.isDevMode) {
+    if (apiKey === undefined) {
       this.resend = null;
       this.logger.warn('Email Service running in DEV MOCK mode (no RESEND_API_KEY)');
     } else {
-      this.resend = new Resend(apiKey!);
+      this.resend = new Resend(apiKey);
     }
   }
 
   async sendPasswordResetEmail(to: string, resetLink: string): Promise<SendEmailResult> {
-    if (this.isDevMode) {
+    if (this.resend === null) {
       this.logger.log(`DEV EMAIL: password reset link for ${to}: ${resetLink}`);
       return { success: true };
     }
 
     // Resend returns { data, error } — it does NOT throw (RESEARCH §Pitfall 2).
     // Do not wrap in try/catch; branch on `error` instead.
-    const { data, error } = await this.resend!.emails.send({
+    const { data, error } = await this.resend.emails.send({
       from: this.from,
       to,
       subject: '[Grabit] 비밀번호 재설정',
