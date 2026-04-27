@@ -1,9 +1,9 @@
 ---
 quick_id: 260427-lyr
-description: "프로덕션 소셜 로그인이 매번 실패하는 회귀 핫픽스 — `/auth/callback` 페이지 useEffect 더블 발사로 인한 refresh-token 패밀리 자살 차단"
+description: "프로덕션 소셜 로그인이 매번 실패하는 회귀 핫픽스 — root layout `AuthInitializer` 와 `/auth/callback` 페이지가 동시에 `/auth/refresh` 를 호출해 refresh-token 도난 탐지가 트리거되던 race 차단"
 status: complete
 date: 2026-04-27
-commit: 39ae868
+commit: 39ae868 (initial useRef guard, insufficient), 56826c6
 ---
 
 # Summary — Quick Task 260427-lyr
@@ -75,10 +75,46 @@ Chrome 145, Chrome 147, iPhone Safari 26.4 — UA 무관하게 100% 재현.
 1. `gcloud logging read … "/auth/refresh"`에서 같은 IP/UA에 대해 `200`+`401`이 5ms 간격으로 따라붙는 패턴이 사라지는가.
 2. `Social login authenticated` 직후 `/users/me` 호출이 정확히 1회만 발생하는가.
 
-## Files Touched
+## 후속 발견 (Round 2)
 
-- `apps/web/app/auth/callback/page.tsx` (+9 / −1)
+첫 번째 수정 (`useRef` 가드)은 PR #23 으로 main 머지 후 grabit-web-00014 (07:16 KST) 로 배포되었으나 **동일 증상이 그대로 재현**.
 
-## Commit
+`2026-04-27T07:17:56` 로그 재분석 결과:
 
-`39ae868` — fix(quick-260427-lyr): guard /auth/callback useEffect from double-firing
+```
+56.474 LOG findOrCreateSocialUser
+56.503 LOG Social login authenticated
+56.915 204 OPTIONS /auth/refresh
+56.933 200 POST   /auth/refresh
+56.960 401 POST   /auth/refresh   ← 27ms 후 두 번째 POST
+56.988 204 OPTIONS /users/me
+57.003 304 GET    /users/me
+```
+
+여전히 `/auth/refresh` 가 두 번 호출되지만, **콜백 페이지 내부의 중복이 아니다**. 두 번째 호출자는 root layout (`apps/web/app/layout.tsx:24`) 의 `<AuthInitializer />` (`apps/web/components/auth/auth-initializer.tsx`) — 모든 페이지 마운트 시 `initializeAuth()` (`apps/web/lib/auth.ts`) 가 `/auth/refresh` + `/users/me` 를 호출해 `useAuthStore` 를 초기화하는 컴포넌트.
+
+호출자 두 명:
+- **AuthInitializer** (root layout): `useEffect` → `initializeAuth()` → POST `/auth/refresh` (cookie A)
+- **CallbackContent** (page IIFE): `useEffect` → POST `/auth/refresh` (cookie A)
+
+각자 다른 컴포넌트의 useEffect라 `useRef` 가드로 막을 수 없는 cross-component race. 첫 호출이 토큰 회전을 마치기 전에 두 번째 호출이 같은 cookie A 로 도착 → `auth.service.ts:167-174` 가 도난으로 간주, family revoke → 401.
+
+### Round 2 수정
+
+`apps/web/app/auth/callback/page.tsx` — `status=authenticated` 분기에서 직접 `/auth/refresh` + `/users/me` 호출하던 IIFE 제거. 대신 `useAuthStore` 의 `user` / `isInitialized` 를 관측하는 watch effect 로 대체:
+
+- `user` 가 채워지면 → `router.push('/')`
+- `isInitialized && !user` 면 (AuthInitializer 가 끝났는데 user 없음 = refresh 실패) → toast + `router.push('/auth')`
+
+`hasRedirectedRef` 로 라우팅 1회 보장. `isProcessing` state 는 제거 (관측 모델로 충분).
+
+이로써 `/auth/refresh` 호출자는 **AuthInitializer 단 하나**로 단일화되어 race 자체가 소거됨. backend rotation 정책은 그대로 유지.
+
+## Files Touched (누적)
+
+- `apps/web/app/auth/callback/page.tsx` (Round 1 +9/−1, Round 2 useEffect IIFE 제거 + watch effect 추가)
+
+## Commits
+
+- `70a3f65` (Round 1) — fix(quick-260427-lyr): guard /auth/callback useEffect from double-firing — **불충분, race 의 다른 호출자(AuthInitializer)를 못 막음**
+- `56826c6` (Round 2) — fix(quick-260427-lyr): stop /auth/callback from racing AuthInitializer for /auth/refresh
