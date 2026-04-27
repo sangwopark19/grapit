@@ -786,6 +786,58 @@ describe('SmsService', () => {
     });
   });
 
+  // ---------- [hotfix 260427-kch] isPhoneVerified idempotency probe ----------
+  describe('isPhoneVerified', () => {
+    it('production에서 {sms:{e164}}:verified flag = "1" 이면 true 반환', async () => {
+      const configService = createConfigService();
+      const service = new SmsService(configService, mockRedis as never);
+      mockRedis.get.mockResolvedValueOnce('1');
+
+      const result = await service.isPhoneVerified('+821012345678');
+
+      expect(result).toBe(true);
+      expect(mockRedis.get).toHaveBeenCalledWith(
+        smsVerifiedKey('+821012345678'),
+      );
+    });
+
+    it('production에서 flag 가 null 이면 false 반환', async () => {
+      const configService = createConfigService();
+      const service = new SmsService(configService, mockRedis as never);
+      mockRedis.get.mockResolvedValueOnce(null);
+
+      const result = await service.isPhoneVerified('+821012345678');
+
+      expect(result).toBe(false);
+    });
+
+    it('dev mock 모드에서는 Redis 호출 없이 false 반환', async () => {
+      const configService = createConfigService({
+        INFOBIP_API_KEY: undefined,
+        INFOBIP_BASE_URL: undefined,
+        INFOBIP_SENDER: undefined,
+      });
+      const service = new SmsService(configService, mockRedis as never);
+      // Reset call history specifically for redis.get so prior tests do not leak.
+      mockRedis.get.mockClear();
+
+      const result = await service.isPhoneVerified('01012345678');
+
+      expect(result).toBe(false);
+      expect(mockRedis.get).not.toHaveBeenCalled();
+    });
+
+    it('Redis get 실패 시 false 반환 (fail closed)', async () => {
+      const configService = createConfigService();
+      const service = new SmsService(configService, mockRedis as never);
+      mockRedis.get.mockRejectedValueOnce(new Error('valkey down'));
+
+      const result = await service.isPhoneVerified('+821012345678');
+
+      expect(result).toBe(false);
+    });
+  });
+
   // ---------- WR-02: Hash-tag key builders assert E.164 at the boundary ----------
   describe('[WR-02] hash-tag key builders reject non-E.164 input', () => {
     // Redis Cluster hashes on the content between the first `{` and the next
