@@ -4,8 +4,8 @@ milestone: v1.1
 milestone_name: 안정화 + 고도화
 status: "Phase 15 Wave 1 complete (Plan 01+02) — Plan 03 deferred to post-deploy session"
 stopped_at: "Phase 15 Wave 1 — awaiting Plan 01 main merge + Cloud Run deploy before Plan 03 entry"
-last_updated: "2026-04-27T11:50:00.000Z"
-last_activity: 2026-04-27 — Phase 15 Wave 1 complete (Sentry code + Resend heygrabit.com Verified)
+last_updated: "2026-04-27T05:55:00.000Z"
+last_activity: 2026-04-27 — Quick task 260427-kch 핫픽스 (회원가입 410 EXPIRED) — hotfix/main PR #21 대기
 progress:
   total_phases: 15
   completed_phases: 10
@@ -117,6 +117,7 @@ None.
 | 260420-oxe | PR #17 코드리뷰 수정: kstTodayBoundaryUtc() empty-range 버그로 오늘 KPI 3종 항상 0 반환 → kstBoundaryToUtc(1) 로 교체 + 회귀 테스트 10건 추가 | 2026-04-20 | 84a1594 | [260420-oxe-code-review-fix](./quick/260420-oxe-code-review-fix/) |
 | 260422-eya | PR #18 코드리뷰 수정: seat-map-viewer handleClick maxSelect 가드가 locked 좌석 클릭을 차단해 parent toast 미발화 → state !== 'locked' 가드 추가 + 회귀 테스트 3건 (commit 45b884e invariant 복원) | 2026-04-22 | fcc6a7b | [260422-eya-seat-map-viewer-maxselect-locked](./quick/260422-eya-seat-map-viewer-maxselect-locked/) |
 | 260424-l23 | Phase 14 pre-existing TTL 2건 수정: sms-throttle.integration.spec.ts 의 throttler key filter 를 실제 라이브러리 format (`{<tracker>:<throttlerName>}:hits`) 에 맞춰 `.endsWith(':hits')` 로 전환 → 28/30 → 30/30 green, Phase 14 ci.yml `test:integration` PR green 블로커 해소 | 2026-04-24 | e65fa99 | [260424-l23-sms-throttle-integration-spec-ts-l220-27](./quick/260424-l23-sms-throttle-integration-spec-ts-l220-27/) |
+| 260427-kch | 회원가입 가입완료 시 410 EXPIRED 차단 핫픽스: `auth.service.ts` register/completeSocialRegistration 가 OTP 코드를 `verifyCode` 로 재호출 → Lua 가 OTP 키 DEL 후 EXPIRED 반환 → GoneException. `SmsService.isPhoneVerified` 추가 + GoneException catch fallback 으로 `{sms:{e164}}:verified` 플래그(TTL 600s) idempotency 확인 (sms.service.ts:385-403 자체 권고 반영). 8 회귀 테스트 추가, 315/315 green. main 직접 머지(PR #21) → Cloud Run 자동 배포 | 2026-04-27 | 9b38358 (hotfix/main) | [260427-kch-410-expired-auth-service-ts-verifycode](./quick/260427-kch-410-expired-auth-service-ts-verifycode/) |
 
 ## Session Continuity
 
