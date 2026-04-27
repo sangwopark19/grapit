@@ -119,29 +119,30 @@ describe('EmailService', () => {
     expect(() => new EmailService(config)).not.toThrow();
   });
 
-  it('PROD SDK error: Resend returns { error } → returns { success: false, error }', async () => {
+  it('PROD non-retryable error: Resend returns { error } → returns { success: false, error } without retry', async () => {
     const config = makeConfig({
       RESEND_API_KEY: 're_test_key',
       RESEND_FROM_EMAIL: 'no-reply@heygrabit.com',
       NODE_ENV: 'production',
     });
     const mod = resendModule as unknown as { __sendMock: ReturnType<typeof vi.fn> };
-    mod.__sendMock.mockResolvedValueOnce({ data: null, error: { message: 'rate limit exceeded' } });
+    mod.__sendMock.mockResolvedValueOnce({ data: null, error: { message: 'permanent error' } });
 
     const svc = new EmailService(config);
     const result = await svc.sendPasswordResetEmail('user@example.com', 'https://app.test/reset?t=abc');
 
-    expect(result).toEqual({ success: false, error: 'rate limit exceeded' });
+    expect(mod.__sendMock).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ success: false, error: 'permanent error' });
   });
 
-  it('PROD SDK error: Sentry.captureException called with Error wrapping Resend error.message', async () => {
+  it('PROD non-retryable error: Sentry.captureException called with Error wrapping Resend error.message', async () => {
     const config = makeConfig({
       RESEND_API_KEY: 're_test_key',
       RESEND_FROM_EMAIL: 'no-reply@heygrabit.com',
       NODE_ENV: 'production',
     });
     const mod = resendModule as unknown as { __sendMock: ReturnType<typeof vi.fn> };
-    mod.__sendMock.mockResolvedValueOnce({ data: null, error: { message: 'rate limit exceeded' } });
+    mod.__sendMock.mockResolvedValueOnce({ data: null, error: { message: 'permanent error' } });
 
     const svc = new EmailService(config);
     await svc.sendPasswordResetEmail('user@example.com', 'https://app.test/reset?t=abc');
@@ -151,10 +152,10 @@ describe('EmailService', () => {
     const capturedArg = sentryMod.__captureExceptionMock.mock.calls[0]?.[0];
     expect(capturedArg).toBeInstanceOf(Error);
     expect((capturedArg as Error).message).toContain('Resend send failed');
-    expect((capturedArg as Error).message).toContain('rate limit exceeded');
+    expect((capturedArg as Error).message).toContain('permanent error');
   });
 
-  it('PROD SDK error: PII masking — setContext receives toDomain only, not full address', async () => {
+  it('PROD non-retryable error: PII masking — setContext receives toDomain only, not full address', async () => {
     const config = makeConfig({
       RESEND_API_KEY: 're_test_key',
       RESEND_FROM_EMAIL: 'no-reply@heygrabit.com',
@@ -169,6 +170,7 @@ describe('EmailService', () => {
     expect(sentryMod.__scopeStub.setContext).toHaveBeenCalledWith('email', {
       from: 'no-reply@heygrabit.com',
       toDomain: 'example.com',
+      attempts: 1,
     });
     const allSetContextCalls = sentryMod.__scopeStub.setContext.mock.calls;
     const allSetTagCalls = sentryMod.__scopeStub.setTag.mock.calls;
@@ -177,5 +179,91 @@ describe('EmailService', () => {
     expect(sentryMod.__scopeStub.setTag).toHaveBeenCalledWith('component', 'email-service');
     expect(sentryMod.__scopeStub.setTag).toHaveBeenCalledWith('provider', 'resend');
     expect(sentryMod.__scopeStub.setLevel).toHaveBeenCalledWith('error');
+  });
+
+  // [WR-01] Bounded retry behaviour for transient Resend failures.
+  describe('retry on transient errors', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('PROD retryable error: rate_limit_exceeded on attempt 1 → backoff → succeeds on attempt 2 (no Sentry capture)', async () => {
+      const config = makeConfig({
+        RESEND_API_KEY: 're_test_key',
+        RESEND_FROM_EMAIL: 'no-reply@heygrabit.com',
+        NODE_ENV: 'production',
+      });
+      const mod = resendModule as unknown as { __sendMock: ReturnType<typeof vi.fn> };
+      mod.__sendMock
+        .mockResolvedValueOnce({ data: null, error: { message: 'rate_limit_exceeded' } })
+        .mockResolvedValueOnce({ data: { id: 'mock-id-2' }, error: null });
+
+      const svc = new EmailService(config);
+      const promise = svc.sendPasswordResetEmail('user@example.com', 'https://app.test/reset?t=abc');
+
+      // Drain attempt 1 + 250ms backoff + attempt 2.
+      await vi.advanceTimersByTimeAsync(250);
+      const result = await promise;
+
+      expect(mod.__sendMock).toHaveBeenCalledTimes(2);
+      expect(result).toEqual({ success: true, id: 'mock-id-2' });
+      expect(sentryMod.__captureExceptionMock).not.toHaveBeenCalled();
+    });
+
+    it('PROD retryable error: 503 on every attempt → exhausts MAX_SEND_ATTEMPTS=3 → captures Sentry with attempts=3', async () => {
+      const config = makeConfig({
+        RESEND_API_KEY: 're_test_key',
+        RESEND_FROM_EMAIL: 'no-reply@heygrabit.com',
+        NODE_ENV: 'production',
+      });
+      const mod = resendModule as unknown as { __sendMock: ReturnType<typeof vi.fn> };
+      mod.__sendMock.mockResolvedValue({ data: null, error: { message: 'upstream 503 service unavailable' } });
+
+      const svc = new EmailService(config);
+      const promise = svc.sendPasswordResetEmail('user@example.com', 'https://app.test/reset?t=abc');
+
+      // Drain 250ms + 500ms backoffs (between attempts 1→2 and 2→3).
+      await vi.advanceTimersByTimeAsync(750);
+      const result = await promise;
+
+      expect(mod.__sendMock).toHaveBeenCalledTimes(3);
+      expect(result).toEqual({ success: false, error: 'upstream 503 service unavailable' });
+      expect(sentryMod.__captureExceptionMock).toHaveBeenCalledTimes(1);
+      expect(sentryMod.__scopeStub.setContext).toHaveBeenCalledWith('email', {
+        from: 'no-reply@heygrabit.com',
+        toDomain: 'example.com',
+        attempts: 3,
+      });
+    });
+
+    it('PROD non-retryable error: does not retry → exactly 1 send call, immediate Sentry capture', async () => {
+      const config = makeConfig({
+        RESEND_API_KEY: 're_test_key',
+        RESEND_FROM_EMAIL: 'no-reply@heygrabit.com',
+        NODE_ENV: 'production',
+      });
+      const mod = resendModule as unknown as { __sendMock: ReturnType<typeof vi.fn> };
+      mod.__sendMock.mockResolvedValue({ data: null, error: { message: 'invalid recipient' } });
+
+      const svc = new EmailService(config);
+      const promise = svc.sendPasswordResetEmail('user@example.com', 'https://app.test/reset?t=abc');
+
+      // No backoff expected — non-retryable returns on attempt 1. Advance timers anyway to be sure.
+      await vi.advanceTimersByTimeAsync(2000);
+      const result = await promise;
+
+      expect(mod.__sendMock).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({ success: false, error: 'invalid recipient' });
+      expect(sentryMod.__captureExceptionMock).toHaveBeenCalledTimes(1);
+      expect(sentryMod.__scopeStub.setContext).toHaveBeenCalledWith('email', {
+        from: 'no-reply@heygrabit.com',
+        toDomain: 'example.com',
+        attempts: 1,
+      });
+    });
   });
 });
