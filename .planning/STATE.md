@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
 status: Cutover 검증 완료 — Resend smoke test → Gmail inbox 수신, revision grabit-api-00013-lkx 100% traffic
-stopped_at: Phase 16 context gathered
-last_updated: "2026-04-27T09:00:07.549Z"
-last_activity: 2026-04-27 — Quick task 260427-pcf 핫픽스 (R2 PUT CORS 차단 — AWS SDK v3 auto-checksum 비활성화, commit 2642b24)
+stopped_at: Phase 16 UI-SPEC approved
+last_updated: "2026-04-28T02:04:22.084Z"
+last_activity: 2026-04-28 — Quick task 260427-pcf 핫픽스 (R2 PUT CORS 차단 — AWS SDK v3 auto-checksum 비활성화 + wrangler CLI 로 R2 버킷 CORS 룰 정비, commit 2642b24)
 progress:
   total_phases: 15
   completed_phases: 11
@@ -123,8 +123,8 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-27T09:00:07.544Z
-Stopped at: Phase 16 context gathered
-Resume file: .planning/phases/16-legal-pages-launch-url/16-CONTEXT.md
+Last session: 2026-04-28T02:04:22.077Z
+Stopped at: Phase 16 UI-SPEC approved
+Resume file: .planning/phases/16-legal-pages-launch-url/16-UI-SPEC.md
 
 **Planned Phase:** 15 (resend-heygrabit-com-cutover-transactional-email-secret-mana) — 3 plans — 2026-04-24T08:54:14.266Z
