@@ -1,11 +1,16 @@
 ---
 quick_id: 260427-pcf
-description: "프로덕션 admin 포스터/배너/좌석맵 업로드 R2 CORS 차단 핫픽스 — AWS SDK v3 자동 체크섬 비활성화"
+description: "프로덕션 admin 포스터/배너/좌석맵 업로드 R2 CORS 차단 핫픽스 — AWS SDK v3 자동 체크섬 비활성화 + R2 버킷 CORS 룰 정비"
 date: 2026-04-27
 status: complete
+verified: 2026-04-28
 hotfix_branch: hotfix/quick-260427-pcf-r2-cors-checksum
-commit: 2642b24
+commit: 2642b24 (code) → 7d7ec4d (cors docs)
 ---
+
+## 검증 완료 (2026-04-28)
+
+PR #26 머지 후 사용자 프로덕션 admin 페이지에서 포스터 업로드 정상 동작 확인.
 
 # Quick Task 260427-pcf — SUMMARY
 
