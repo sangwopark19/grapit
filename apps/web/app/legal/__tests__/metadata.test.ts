@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 type LegalPageModule = {
   metadata: {
@@ -16,6 +16,15 @@ type LegalPageModule = {
 };
 
 const pageModules = import.meta.glob<LegalPageModule>('../*/page.tsx');
+
+beforeEach(() => {
+  vi.resetModules();
+  vi.stubEnv('GRABIT_ENV', 'production');
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 async function loadLegalPage(
   globKey: '../terms/page.tsx' | '../privacy/page.tsx' | '../marketing/page.tsx',
@@ -102,5 +111,23 @@ describe('Legal pages metadata (D-10, D-13)', () => {
       );
       expect(mod.dynamic).toBe('force-static');
     });
+  });
+});
+
+describe('getLegalRobots', () => {
+  it('GRABIT_ENV 가 없고 NODE_ENV=production 이면 index/follow 를 허용한다', async () => {
+    vi.stubEnv('GRABIT_ENV', undefined);
+    vi.stubEnv('NODE_ENV', 'production');
+    const { getLegalRobots } = await import('../robots');
+
+    expect(getLegalRobots()).toEqual({ index: true, follow: true });
+  });
+
+  it('preview 환경은 noindex/nofollow 를 유지한다', async () => {
+    vi.stubEnv('GRABIT_ENV', 'preview');
+    vi.stubEnv('NODE_ENV', 'production');
+    const { getLegalRobots } = await import('../robots');
+
+    expect(getLegalRobots()).toEqual({ index: false, follow: false });
   });
 });

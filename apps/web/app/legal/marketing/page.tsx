@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import marketingMd from '@/content/legal/marketing-consent.md?raw';
 import { TermsMarkdown } from '@/components/legal/terms-markdown';
+import { getLegalRobots } from '../robots';
 
 export const dynamic = 'force-static';
 
 // Phase 16 review HIGH-4: prod 만 index. preview/staging 은 noindex
-const isProd = process.env.GRABIT_ENV === 'production';
 
 export const metadata: Metadata = {
   title: '마케팅 정보 수신 동의 — Grabit',
@@ -14,10 +14,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: 'https://heygrabit.com/legal/marketing',
   },
-  robots: {
-    index: isProd,
-    follow: isProd,
-  },
+  robots: getLegalRobots(),
 };
 
 export default function MarketingPage() {
