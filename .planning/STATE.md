@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
 status: executing
-stopped_at: Completed 16-03-PLAN.md
-last_updated: "2026-04-28T05:53:55.186Z"
+stopped_at: Completed 16-04-PLAN.md
+last_updated: "2026-04-28T06:04:33.819Z"
 last_activity: 2026-04-28
 progress:
   total_phases: 15
   completed_phases: 11
   total_plans: 62
-  completed_plans: 58
-  percent: 94
+  completed_plans: 59
+  percent: 95
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 ## Current Position
 
 Phase: 16 (legal-pages-launch-url) — EXECUTING
-Plan: 4 of 6
+Plan: 5 of 6
 Status: Ready to execute
 Last activity: 2026-04-28
 
-Progress: [█████████░] 94%
+Progress: [██████████] 95%
 
 ## Performance Metrics
 
@@ -70,6 +70,7 @@ Progress: [█████████░] 94%
 | Phase 16 P01 | 6min | 3 tasks | 3 files |
 | Phase 16 P02 | 6min | 3 tasks | 7 files |
 | Phase 16 P03 | 2min | 1 tasks | 1 files |
+| Phase 16 P04 | 5min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -98,6 +99,7 @@ Full decision log in PROJECT.md Key Decisions table (10 decisions, all Good).
 - [Phase 16-02]: Public legal pages use ?raw markdown imports while preserving existing .md imports for signup dialogs. — Keeps Vitest/Vite module loading compatible for page modules without changing the existing dialog import contract.
 - [Phase 16-03]: Footer exposes only terms/privacy legal pages; /legal/marketing remains hidden from global navigation. — D-04 keeps marketing consent available only through consent-specific flows, not global Footer navigation.
 - [Phase 16-03]: Customer support uses native mailto anchor instead of Next.js Link. — mailto is browser/OS mail-client behavior, not internal Next.js navigation.
+- [Phase 16-04]: Privacy KOPICO heading verification preserved existing '개인정보의 처리 목적' H2 rather than changing protected 1~9조 for an over-specific grep.
 
 ### Pending Todos
 
@@ -132,8 +134,8 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-28T05:53:31.982Z
-Stopped at: Completed 16-03-PLAN.md
+Last session: 2026-04-28T06:04:33.813Z
+Stopped at: Completed 16-04-PLAN.md
 Resume file: None
 
 **Planned Phase:** 15 (resend-heygrabit-com-cutover-transactional-email-secret-mana) — 3 plans — 2026-04-24T08:54:14.266Z
