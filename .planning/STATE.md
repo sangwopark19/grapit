@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
 status: executing
-stopped_at: Phase 16 UI-SPEC approved
-last_updated: "2026-04-28T05:24:30.419Z"
-last_activity: 2026-04-28 -- Phase 16 execution started
+stopped_at: Completed 16-01-PLAN.md
+last_updated: "2026-04-28T05:35:18.974Z"
+last_activity: 2026-04-28
 progress:
   total_phases: 15
   completed_phases: 11
   total_plans: 62
-  completed_plans: 55
-  percent: 89
+  completed_plans: 56
+  percent: 90
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 ## Current Position
 
 Phase: 16 (legal-pages-launch-url) — EXECUTING
-Plan: 1 of 6
-Status: Executing Phase 16
-Last activity: 2026-04-28 -- Phase 16 execution started
+Plan: 2 of 6
+Status: Ready to execute
+Last activity: 2026-04-28
 
-Progress: [██████████] 100%
+Progress: [█████████░] 90%
 
 ## Performance Metrics
 
@@ -67,6 +67,7 @@ Progress: [██████████] 100%
 | Phase 08 P01 | 1min | 1 tasks | 2 files |
 | Phase 08-r2 P02 | 1m | 2 tasks | 3 files |
 | Phase 08-r2 P03 | 21min | 2 tasks | 0 files (infra) |
+| Phase 16 P01 | 6min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -89,6 +90,8 @@ Full decision log in PROJECT.md Key Decisions table (10 decisions, all Good).
 - [Phase 08]: S3Client forcePathStyle: true 추가로 R2 path-style URL 호환성 확보
 - [Phase 08-r2]: remotePatterns에 spread+조건부 패턴으로 환경변수 미설정 시 빈 배열 유지
 - [Phase 08-r2]: R2 credentials를 secrets 섹션에 배치하여 T-08-04 위협 완화
+- [Phase 16-01]: Wave 0 RED 상태를 artifact 생성과 behavioral GREEN 상태로 분리 추적한다 — Plan 16-01 테스트는 후속 wave 구현 전까지 실패가 정상이며, collect 성공을 완료 기준으로 삼는다
+- [Phase 16-01]: metadata test는 import.meta.glob lazy lookup으로 작성한다 — Vite transform 단계에서 미생성 page literal import가 테스트 collection을 막는 것을 방지한다
 
 ### Pending Todos
 
@@ -123,8 +126,8 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-28T02:04:22.077Z
-Stopped at: Phase 16 UI-SPEC approved
-Resume file: .planning/phases/16-legal-pages-launch-url/16-UI-SPEC.md
+Last session: 2026-04-28T05:35:18.968Z
+Stopped at: Completed 16-01-PLAN.md
+Resume file: None
 
 **Planned Phase:** 15 (resend-heygrabit-com-cutover-transactional-email-secret-mana) — 3 plans — 2026-04-24T08:54:14.266Z
