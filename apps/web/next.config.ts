@@ -45,6 +45,7 @@ const nextConfig: NextConfig = {
     root: resolve(__dirname, '../../'),
     rules: {
       '*.md': { as: '*.js', loaders: ['raw-loader'] },
+      '*.md?raw': { as: '*.js', loaders: ['raw-loader'] },
     },
   },
   async rewrites() {
