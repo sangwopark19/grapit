@@ -741,22 +741,25 @@ CONTEXT §deferred + UI-SPEC §Out-of-Scope 와 일치:
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **dialog 하단 보조 링크 (D-11 선택 사항)**
    - What we know: UI-SPEC L406 가 색상/크기 contract 만 명시 (`text-caption text-gray-500 underline hover:text-primary` 톤의 `전체 보기 →`). Plan 재량.
    - What's unclear: 추가 vs 미추가의 사용자 가치 — dialog 사용 흐름에서 "더 자세한 약관 → 새 탭" 이 의미 있는가? (단순 정보 노출 의미 vs 가입 흐름 이탈 위험)
    - Recommendation: **미추가 권장** — 1인 개발 복잡도 최소화 + dialog UX 변경 금지 정신 (D-11) + 가입 이탈 위험 회피. 추후 사용자 피드백으로 결정.
+   - **RESOLVED:** dialog 보조 링크 미추가 — Plan 02/03 모두 D-11 dialog 변경 0건 (signup-step2.tsx 무수정).
 
 2. **개정 이력 표 첫 row 의 v1.0 표기 정합성**
    - What we know: 기존 MD 의 시행일이 "2026년 4월 14일" 로 작성되어 있음 (terms-of-service.md L78, privacy-policy.md L93, marketing-consent.md L32) — Phase 9 작성 시점.
    - What's unclear: v1.0 = 2026-04-14 가 "실제 prod 라이브" 일자인가, "MD 작성" 일자인가?
    - Recommendation: 진실은 후자 — Phase 9 코드 작성 일자. Phase 16 cutover 가 첫 라이브 → **개정 이력 표는 v1.0 = (Phase 16 cutover 일자) 단일 row 만**. "이전 시행일" 개념은 사실상 의미 없음. **사용자 법무 검토 시 결정** — 본 phase 는 placeholder 로 두고 사용자 직접 주입.
+   - **RESOLVED:** Plan 04 가 v1.0 행에 `[직전 시행일: 2026년 4월 14일]` placeholder 를 두고, Plan 06 Task 1 의 사용자 cutover 단계에서 "최초 prod 배포면 v1.0 행 자체 삭제" 를 명시 — 사용자 법무 검토 결과에 따라 cutover 시점에 결정.
 
 3. **Build artifact grep 의 정확한 path**
    - What we know: Next 16 standalone build 의 output 은 `apps/web/.next/server/app/...` 구조. 정적 라우트는 `.html` 또는 `.rsc` 산출물.
    - What's unclear: SSG 페이지의 정확한 파일 이름 — `apps/web/.next/server/app/legal/terms/page.html` vs `apps/web/.next/server/app/legal/terms.html` vs `apps/web/.next/server/pages/legal/terms.html`.
    - Recommendation: **첫 빌드 후 `find apps/web/.next -name "*.html" -path "*legal*"` 로 정확 경로 확인** — Plan 의 검증 스크립트 작성 시 glob (`**/*.html`) 으로 안전 처리.
+   - **RESOLVED:** Plan 02 Task 3 / Plan 06 Task 2-C/D/E 모두 `find apps/web/.next -path '*legal*' -name '*.html'` glob 패턴 채용 — 정확 path 에 무관하게 안전.
 
 ---
 

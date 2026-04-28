@@ -98,3 +98,68 @@ unavailable_reviewers:
 ### Recommended Next Step
 
 `/gsd-plan-phase 16 --reviews` 로 codex feedback 을 plan 단계에 반영. 우선 (1) 16-05 depends_on 수정 + (2) generic bracket regex gate + (3) Plan 16-06 cutover 신설 + (4) preview noindex 강제까지가 명확한 plan-side 변경. 나머지(client bundle, table mapping, completeness checklist)는 Plan 본문 보강 또는 follow-up phase로 routing.
+
+---
+
+## Adjudication (Plan-Phase Replan)
+
+> Adjudicated: 2026-04-28
+> Replan invocation: `/gsd-plan-phase 16 --reviews`
+> Adjudicator: gsd-planner (Claude Opus 4.7 1M context)
+
+각 codex finding 에 대한 처리 결정을 plan 단위로 매핑한다.
+
+### HIGH severity
+
+| Finding ID | Description | Disposition | Rationale | Affected plans |
+|------------|-------------|-------------|-----------|----------------|
+| **HIGH-1** | Cutover wave 부재 — placeholder 가 prod 에 누출될 위험, "launch" 가 아닌 "scaffold" | **accept** | codex 권고대로 Plan 16-06 신설. (a) human-in-the-loop placeholder 실값 주입 (Task 1), (b) clean prod build + generic regex gate + robots/canonical 검증 (Task 2), (c) cutover commit + prod URL smoke (Task 3) 의 3 task 로 atomic launch 보장. depends_on=[16-02, 16-03, 16-04, 16-05] 로 모든 선행 wave 후행. autonomous: false (Task 1 manual). | **신설: 16-06** |
+| **HIGH-2** | Plan 16-05 의 depends_on=[16-02] 만 명시 → executor 가 16-04 보다 먼저 실행 가능 | **accept** | 16-05 frontmatter 를 `depends_on: [16-02, 16-04]` 로 수정. Codex 권고 외 16-03 은 16-05 의 generic regex gate 와 무관하므로 미포함 (의존 불필요). | **수정: 16-05** |
+| **HIGH-3** | placeholder leak grep 불완전 — 사업자명/대표자명/주소/전화번호/직책/직전 시행일 누락 | **accept** | codex 권고 generic bracket regex `\[[^]\n]+:[^]\n]+\]` 채택. 16-05 의 HUMAN-UAT.md UAT-1j + UAT-2e + STRIDE T-16-02 + key_links pattern + must_haves truths 모두 generic regex 로 교체. 16-06 의 cutover gate (Task 2-B + Task 3-C) 도 동일 regex 사용. Plan 16-04 의 placeholder bracket 형식 (`[라벨: 임시값]`) 과 정합. | **수정: 16-05, 신설: 16-06** |
+| **HIGH-4** | D-12 robots index/follow=true + placeholder 기간 충돌 → 색인 위험 | **accept (preview noindex 환경 분기)** | D-12 의 "검색 엔진 색인 허용" lock 은 prod 기준 의도임을 RESEARCH/CONTEXT 의 PG·도메인 verification 맥락으로 해석. preview/staging/dev 는 별개 — 환경 변수 `GRABIT_ENV` 분기로 prod 만 index 허용, 그 외는 noindex 강제. D-12 의 spirit 안에서 안전 보강이며 violation 아님. 16-02 의 page.tsx 3건 모두 `const isProd = process.env.GRABIT_ENV === 'production'; robots: { index: isProd, follow: isProd }` 으로 패치. acceptance criteria + Task 3 검증 + 16-06 cutover gate 모두 GRABIT_ENV 주입 명시. | **수정: 16-02, 신설: 16-06** |
+
+### MEDIUM severity
+
+| Finding ID | Description | Disposition | Rationale | Affected plans |
+|------------|-------------|-------------|-----------|----------------|
+| **MED-1** | 16-01 의 RED 테스트와 VALIDATION ✅ 표기 충돌 → falsified green dashboard | **accept** | 16-01 의 output 섹션을 수정: VALIDATION.md status 갱신 시 두 차원 분리 표기. Artifact 생성 → `✅ artifact`, Behavioral GREEN → Wave 0 단계 `⏳ behavior` (RED 정상). Wave 1/2 완료 시 `✅ behavior` 로 갱신. SUMMARY.md 표기 규칙 명시. | **수정: 16-01** |
+| **MED-2** | 16-02 Task 3 SSG 검증이 stale .next 에 취약 | **accept (rm -rf .next + clean prod build)** | 16-02 Task 3 action 에 `rm -rf apps/web/.next && GRABIT_ENV=production pnpm build` 명시. acceptance criteria 도 clean build 명령으로 갱신. codex 의 next start + curl smoke 는 1인 개발 비용 대비 효과 낮아 reject — Task 3 의 build artifact grep + 16-06 Task 3-C 의 prod URL smoke 로 충분. | **수정: 16-02, 16-06** |
+| **MED-3** | `*.md?raw` vs `*.md` Turbopack rule 분기 → loader contract 분리 | **partial accept (코드 변경 없음)** | 두 rule 모두 동일한 raw-loader 를 사용하는 query 변형일 뿐 — 실제 loader contract 는 단일. 분리는 vitest jsdom 환경 호환을 위한 의도적 결정 (signup-step2 의 `*.md` import 는 D-11 dialog UX lock). 16-02 plan 본문에 결정 근거 + 호환성 분기 명문화. 코드 변경 없음. | **수정: 16-02** (Plan 본문 명문화만) |
+| **MED-4** | privacy GFM 표 vs TermsMarkdown table 매핑 부재 → 모바일 overflow | **accept (옵션 A — TermsMarkdown 매핑 추가)** | 옵션 A 채택 — D-06 "개정 이력 GFM 표" 가 mobile overflow 없이 렌더되도록 TermsMarkdown 의 baseComponents 에 table/thead/tbody/tr/th/td 6개 매핑 추가. wrapper div `overflow-x-auto -mx-2` 로 모바일 가드. 16-02 Task 1 action + acceptance criteria 패치. (옵션 B — list 변환 — 은 D-06 "GFM 표" 명시 의도와 충돌하므로 reject.) | **수정: 16-02** |
+| **MED-5** | `'use client'` TermsMarkdown 을 SSG 페이지 import → client bundle 비용 | **defer** | server-only Markdown renderer 분리는 D-09 lock + D-11 dialog UX 불변 lock 과 충돌 가능 (현재 dialog 도 동일 컴포넌트 사용). 본 phase scope 변경은 D-09/D-11 위반 위험. CONTEXT.md 의 Deferred Ideas 에 "server-only Markdown renderer 분리" 추가 권장 (별도 phase 에서 dialog client wrapper + page server renderer 분리 검토). 본 phase 에서 변경 없음. | **defer (16-CONTEXT.md Deferred Ideas 후속 추가 권장)** |
+| **MED-6** | 법적 completeness checklist 부재 — KOPICO/KISA 권고 항목 미검증 | **accept (light version)** | Full version (콘텐츠 작성·법무 검토 plan 포함) 은 1인 개발 + 본 phase scope ("공개 URL + 콘텐츠 보강") 위반이라 reject. Light version 채택 — 16-04 Task 2 acceptance criteria 에 KOPICO 표준 H2 heading 7개 (처리 목적·보유 기간·제3자 제공·처리 위탁·정보주체 권리·파기·안전성 확보) 보존 회귀 grep 추가. 누락 항목은 사용자 HUMAN-UAT 책임으로 surfacing. CONTEXT D-06 의 "구조만 보강 (실값은 사용자 주입)" 정신과 정합. | **수정: 16-04** |
+
+### LOW severity
+
+| Finding ID | Description | Disposition | Rationale | Affected plans |
+|------------|-------------|-------------|-----------|----------------|
+| **LOW-1** | 16-03 Footer Copyright `© 2026 Grabit` vs `&copy;` false negative | **accept** | acceptance criteria 의 grep 을 OR 분기로 교체: `grep -E '(© 2026 Grabit\|&copy; 2026 Grabit)' apps/web/components/layout/footer.tsx`. JSX 본문이 `&copy;` HTML entity 또는 `©` literal 어느 쪽이든 매치. | **수정: 16-03** |
+| **LOW-2** | sitemap/robots.txt 미검증 | **defer** | 본 phase scope 외. CONTEXT D-12/D-13 도 sitemap 미언급. SEO 개선 phase (별도) 에서 sitemap.xml + robots.txt 일괄 도입 검토. 본 phase 에서 변경 없음. | **defer** |
+
+### 처리 요약
+
+| Plan | 변경 유형 | Codex finding 처리 |
+|------|-----------|--------------------|
+| **16-01** | 본문 패치 | MED-1 (output section 분리 표기) |
+| **16-02** | 본문 패치 | MED-2 (clean build), MED-3 (?raw 명문화), MED-4 (table 매핑), HIGH-4 (env-driven robots) |
+| **16-03** | acceptance 패치 | LOW-1 (Copyright OR 분기) |
+| **16-04** | acceptance 패치 | MED-6 light (KOPICO 7 heading grep) |
+| **16-05** | frontmatter + 본문 패치 | HIGH-2 (depends_on=[16-02, 16-04]), HIGH-3 (generic bracket regex) |
+| **16-06** | 신규 plan | HIGH-1 (atomic cutover wave), HIGH-3 (final regex gate), HIGH-4 (GRABIT_ENV 검증), MED-2 (rm -rf + clean build) |
+
+### Wave 결과 (replan 후)
+
+| Wave | Plan(s) | Autonomous | Description |
+|------|---------|------------|-------------|
+| 0 | 16-01 | yes | RED tests scaffolding |
+| 1 | 16-02 | yes | TermsMarkdown showH1 + table mapping + 4 page.tsx + env-driven robots + clean build |
+| 2 | 16-03 | yes | Footer href 3건 교체 |
+| 3 | 16-04 | yes | 3 MD content augmentation + KOPICO 7 heading 회귀 가드 |
+| 4 | 16-05 | yes | LegalDraftBanner 삭제 + signup-step2 정리 + HUMAN-UAT.md 작성 |
+| **5** | **16-06** | **no (Task 1 manual)** | **Cutover: human placeholder injection + automated gate + prod cutover commit + smoke** |
+
+### Deferred follow-ups
+
+- **MED-5 deferred:** CONTEXT.md 의 Deferred Ideas 에 "server-only Markdown renderer 분리 (dialog client wrapper + page server renderer)" 추가 권장. 본 plan-phase 가 CONTEXT.md 를 변경하지 않으므로, 사용자가 별도 quick-task / 후속 phase 로 처리.
+- **LOW-2 deferred:** SEO 개선 phase 에서 sitemap.xml + robots.txt 일괄 도입.
+
