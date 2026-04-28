@@ -31,6 +31,12 @@ export class UploadService {
         region: 'auto',
         endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
         forcePathStyle: true,
+        // SDK v3 ≥ 3.729 부터 PutObject 에 x-amz-checksum-crc32 /
+        // x-amz-sdk-checksum-algorithm 헤더가 자동 부착됨 → presigned PUT 이
+        // simple request 에서 preflight 필요 요청으로 바뀌어 R2 CORS 가 막음.
+        // 'WHEN_REQUIRED' 로 명시 지정이 있을 때만 체크섬을 계산.
+        requestChecksumCalculation: 'WHEN_REQUIRED',
+        responseChecksumValidation: 'WHEN_REQUIRED',
         credentials: {
           accessKeyId: config.get<string>('R2_ACCESS_KEY_ID', '') as string,
           secretAccessKey: config.get<string>(
