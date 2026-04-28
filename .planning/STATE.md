@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
-status: Cutover 검증 완료 — Resend smoke test → Gmail inbox 수신, revision grabit-api-00013-lkx 100% traffic
-stopped_at: Phase 16 context gathered
-last_updated: "2026-04-27T09:00:07.549Z"
-last_activity: 2026-04-27 — Quick task 260427-pcf 핫픽스 (R2 PUT CORS 차단 — AWS SDK v3 auto-checksum 비활성화, commit 2642b24)
+status: "Phase 16 shipped - draft PR #27; external legal/operator sign-off pending"
+stopped_at: Completed 16-05-PLAN.md
+last_updated: "2026-04-28T08:43:14.050Z"
+last_activity: 2026-04-28
 progress:
   total_phases: 15
-  completed_phases: 11
-  total_plans: 56
-  completed_plans: 55
+  completed_phases: 12
+  total_plans: 62
+  completed_plans: 61
   percent: 98
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** 사용자가 원하는 공연을 발견하고, 좌석을 직접 선택하여, 안정적으로 예매를 완료할 수 있는 것
-**Current focus:** Phase 16 — Legal pages launch (다음 phase, 2026-04-29 안정 window 종료 후 진입 가능)
+**Current focus:** Phase 16 — legal-pages-launch-url
 
 ## Current Position
 
-Phase: 15 — SHIPPED (3/3 plans complete, 48h 안정 관측 진행 중)
-Plan: 3 of 3 complete (15-01 ✅, 15-02 ✅, 15-03 ✅ with assumption corrections)
-Status: Cutover 검증 완료 — Resend smoke test → Gmail inbox 수신, revision grabit-api-00013-lkx 100% traffic
-Last activity: 2026-04-28 — Quick task 260427-pcf 핫픽스 (R2 PUT CORS 차단 — AWS SDK v3 auto-checksum 비활성화 + wrangler CLI 로 R2 버킷 CORS 룰 정비, commit 2642b24)
+Phase: 16 (legal-pages-launch-url) — EXECUTING
+Plan: 6 of 6
+Status: Phase 16 shipped - draft PR #27; external legal/operator sign-off pending
+Last activity: 2026-04-28
 
-Progress: [██████████] 100%
+Progress: [██████████] 97%
 
 ## Performance Metrics
 
@@ -67,6 +67,11 @@ Progress: [██████████] 100%
 | Phase 08 P01 | 1min | 1 tasks | 2 files |
 | Phase 08-r2 P02 | 1m | 2 tasks | 3 files |
 | Phase 08-r2 P03 | 21min | 2 tasks | 0 files (infra) |
+| Phase 16 P01 | 6min | 3 tasks | 3 files |
+| Phase 16 P02 | 6min | 3 tasks | 7 files |
+| Phase 16 P03 | 2min | 1 tasks | 1 files |
+| Phase 16 P04 | 5min | 3 tasks | 4 files |
+| Phase 16 P05 | 6min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -89,6 +94,16 @@ Full decision log in PROJECT.md Key Decisions table (10 decisions, all Good).
 - [Phase 08]: S3Client forcePathStyle: true 추가로 R2 path-style URL 호환성 확보
 - [Phase 08-r2]: remotePatterns에 spread+조건부 패턴으로 환경변수 미설정 시 빈 배열 유지
 - [Phase 08-r2]: R2 credentials를 secrets 섹션에 배치하여 T-08-04 위협 완화
+- [Phase 16-01]: Wave 0 RED 상태를 artifact 생성과 behavioral GREEN 상태로 분리 추적한다 — Plan 16-01 테스트는 후속 wave 구현 전까지 실패가 정상이며, collect 성공을 완료 기준으로 삼는다
+- [Phase 16-01]: metadata test는 import.meta.glob lazy lookup으로 작성한다 — Vite transform 단계에서 미생성 page literal import가 테스트 collection을 막는 것을 방지한다
+- [Phase 16-02]: Legal page metadata keeps production indexing but forces non-production noindex through process.env.GRABIT_ENV === 'production'. — Prevents preview/staging placeholder indexing while preserving the production SEO/indexing contract.
+- [Phase 16-02]: Public legal pages use ?raw markdown imports while preserving existing .md imports for signup dialogs. — Keeps Vitest/Vite module loading compatible for page modules without changing the existing dialog import contract.
+- [Phase 16-03]: Footer exposes only terms/privacy legal pages; /legal/marketing remains hidden from global navigation. — D-04 keeps marketing consent available only through consent-specific flows, not global Footer navigation.
+- [Phase 16-03]: Customer support uses native mailto anchor instead of Next.js Link. — mailto is browser/OS mail-client behavior, not internal Next.js navigation.
+- [Phase 16-04]: Privacy KOPICO heading verification preserved existing '개인정보의 처리 목적' H2 rather than changing protected 1~9조 for an over-specific grep.
+- [Phase 16-05]: LegalDraftBanner deleted rather than runtime-flagged. — D-05 defines launch readiness as complete removal of the draft surface.
+- [Phase 16-05]: Signup dialogs keep prop-less TermsMarkdown. — DialogTitle remains the only visible title and D-11 dialog compatibility is preserved.
+- [Phase 16-05]: Cutover prerequisites centralized in 16-HUMAN-UAT.md. — Business values, mailbox checks, generic placeholder grep, and post-deploy URL/Footer/dialog checks remain operational gates for Plan 16-06.
 
 ### Pending Todos
 
@@ -123,8 +138,8 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-27T09:00:07.544Z
-Stopped at: Phase 16 context gathered
-Resume file: .planning/phases/16-legal-pages-launch-url/16-CONTEXT.md
+Last session: 2026-04-28T06:17:49.403Z
+Stopped at: Completed 16-05-PLAN.md
+Resume file: None
 
 **Planned Phase:** 15 (resend-heygrabit-com-cutover-transactional-email-secret-mana) — 3 plans — 2026-04-24T08:54:14.266Z

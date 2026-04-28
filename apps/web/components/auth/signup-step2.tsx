@@ -15,7 +15,6 @@ import {
 import termsOfServiceMd from '@/content/legal/terms-of-service.md';
 import privacyPolicyMd from '@/content/legal/privacy-policy.md';
 import marketingConsentMd from '@/content/legal/marketing-consent.md';
-import { LegalDraftBanner } from '@/components/legal/legal-draft-banner';
 import { TermsMarkdown } from '@/components/legal/terms-markdown';
 
 interface SignupStep2Props {
@@ -187,7 +186,6 @@ export function SignupStep2({ onComplete, onBack, defaultValues }: SignupStep2Pr
               {LEGAL_CONTENT[dialogKey].title} 상세 내용
             </DialogDescription>
           </DialogHeader>
-          <LegalDraftBanner />
           <TermsMarkdown>{LEGAL_CONTENT[dialogKey].content}</TermsMarkdown>
         </DialogContent>
       </Dialog>
