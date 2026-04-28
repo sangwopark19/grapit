@@ -63,6 +63,14 @@ Results:
 - Typecheck passed.
 - Lint exited 0 with 36 pre-existing warnings outside this change.
 
+Full API suite:
+
+```bash
+pnpm --filter @grabit/api test
+```
+
+Result: 29 files passed, 323 tests passed.
+
 Guard checks:
 
 - `redis.provider.ts` contains `async ping()`.
@@ -77,6 +85,6 @@ No local dev server smoke was run. The plan marked it optional; focused tests di
 ## Self-Check: PASSED
 
 - 17-01 RED tests are GREEN after implementation.
+- Full API test suite passed after implementation.
 - No schema files changed.
 - No production Redis failure path was weakened.
-

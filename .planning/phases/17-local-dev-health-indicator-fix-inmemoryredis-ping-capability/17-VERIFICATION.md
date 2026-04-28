@@ -71,7 +71,12 @@ pnpm --filter @grabit/api lint
 
 Result: exit 0, with 36 pre-existing warnings outside this phase.
 
+```bash
+pnpm --filter @grabit/api test
+```
+
+Result: 29/29 test files passed, 323/323 tests passed.
+
 ## Residual Risk
 
 No live `/api/v1/health` smoke was run in this turn. The unit coverage targets the diagnosed code path directly.
-
