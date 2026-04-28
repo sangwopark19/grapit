@@ -2,8 +2,8 @@
 phase: 16
 slug: legal-pages-launch-url
 status: draft
-nyquist_compliant: false
-wave_0_complete: false
+nyquist_compliant: false  # will flip to true after Wave 0 lands with .md?raw transformer (Plan 02 Task 1)
+wave_0_complete: false  # will flip to true after Plan 01 commits land + Plan 02 Task 1 patches env.d.ts/next.config.ts
 created: 2026-04-28
 ---
 
