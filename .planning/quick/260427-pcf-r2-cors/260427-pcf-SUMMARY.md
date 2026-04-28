@@ -69,12 +69,43 @@ PLAN.md 에 wrangler / Dashboard 양쪽 runbook 명시.
 - 머지 전략: 브랜치 push → PR → main 직접 머지 → Cloud Run 자동 배포
 - Phase 16(legal pages) 진행 중이지만 코드 격리되어 충돌 없음
 
-## 후속 (사용자 액션 권고)
+## R2 버킷 CORS 정비 (2026-04-28 적용 완료)
 
-R2 버킷 CORS 정비 — PLAN.md "수정 범위 → 인프라" 섹션의 cors.json 적용:
+조사 결과 기존 룰의 `allowed_headers` 가 `content-type` 만 등록되어 있었음 →
+SDK 가 추가하는 모든 `x-amz-*` 헤더가 preflight 에서 거부되는 구조적 원인.
 
-```bash
-wrangler r2 bucket cors put grapit-assets --rules ./cors.json
+`wrangler r2 bucket cors set grapit-assets --file ./grapit-assets-cors.json --force`
+로 다음 룰 적용 (Cloudflare wrangler 스키마 기준):
+
+```json
+{
+  "rules": [
+    {
+      "allowed": {
+        "origins": [
+          "https://heygrabit.com",
+          "https://www.heygrabit.com",
+          "https://grapit-web-d3c6wrfdbq-du.a.run.app",
+          "http://localhost:3000"
+        ],
+        "methods": ["GET", "PUT", "HEAD"],
+        "headers": [
+          "content-type", "content-length",
+          "x-amz-checksum-crc32", "x-amz-checksum-crc32c",
+          "x-amz-checksum-sha1", "x-amz-checksum-sha256",
+          "x-amz-sdk-checksum-algorithm",
+          "x-amz-content-sha256", "x-amz-date",
+          "x-amz-user-agent", "authorization"
+        ]
+      },
+      "exposeHeaders": ["ETag"],
+      "maxAgeSeconds": 3600
+    }
+  ]
+}
 ```
 
-또는 Cloudflare Dashboard → R2 → grapit-assets → Settings → CORS Policy.
+`wrangler r2 bucket cors list grapit-assets` 로 적용 검증 완료.
+
+이로써 1차(코드)·2차(인프라) 결함 모두 닫힘. 향후 SDK 가 다른 `x-amz-*`
+헤더를 추가하더라도 preflight 가 통과하도록 화이트리스트가 폭넓게 잡혀 있음.

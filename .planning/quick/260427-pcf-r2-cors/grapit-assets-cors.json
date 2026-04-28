@@ -1,0 +1,30 @@
+{
+  "rules": [
+    {
+      "allowed": {
+        "origins": [
+          "https://heygrabit.com",
+          "https://www.heygrabit.com",
+          "https://grapit-web-d3c6wrfdbq-du.a.run.app",
+          "http://localhost:3000"
+        ],
+        "methods": ["GET", "PUT", "HEAD"],
+        "headers": [
+          "content-type",
+          "content-length",
+          "x-amz-checksum-crc32",
+          "x-amz-checksum-crc32c",
+          "x-amz-checksum-sha1",
+          "x-amz-checksum-sha256",
+          "x-amz-sdk-checksum-algorithm",
+          "x-amz-content-sha256",
+          "x-amz-date",
+          "x-amz-user-agent",
+          "authorization"
+        ]
+      },
+      "exposeHeaders": ["ETag"],
+      "maxAgeSeconds": 3600
+    }
+  ]
+}
