@@ -285,10 +285,11 @@ Plans:
 
 ### Phase 17: Local dev health indicator fix — InMemoryRedis.ping() 구현 + capability probe 추가로 REDIS_URL unset 시 /health 200
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** REDIS_URL 이 unset 인 fresh local dev 환경에서 `InMemoryRedis` fallback 이 `/api/v1/health` 를 503 으로 떨어뜨리지 않도록 `ping()` surface parity 와 RedisHealthIndicator capability probe 를 추가한다.
+**Requirements**: SC-1, SC-2, SC-3, SC-4 (debug artifact success criteria proxy)
 **Depends on:** Phase 16
-**Plans:** 0 plans
+**Plans:** 2 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 17 to break down)
+- [ ] 17-01-PLAN.md — Wave 1 RED: InMemoryRedis `ping()` parity + RedisHealthIndicator no-ping capability probe tests
+- [ ] 17-02-PLAN.md — Wave 2 implementation: `InMemoryRedis.ping()` + RedisHealthIndicator capability probe + focused/typecheck/lint verification

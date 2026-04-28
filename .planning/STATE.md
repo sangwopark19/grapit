@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
-status: "Phase 16 shipped - draft PR #27; external legal/operator sign-off pending"
-stopped_at: Completed 16-05-PLAN.md
-last_updated: "2026-04-28T08:43:14.050Z"
+status: planning
+stopped_at: Phase 17 planned; Phase 16 cutover deferred for user-provided legal values/mailbox verification
+last_updated: "2026-04-28T06:17:49.409Z"
 last_activity: 2026-04-28
 progress:
   total_phases: 15
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** 사용자가 원하는 공연을 발견하고, 좌석을 직접 선택하여, 안정적으로 예매를 완료할 수 있는 것
-**Current focus:** Phase 16 — legal-pages-launch-url
+**Current focus:** Phase 17 — local-dev-health-indicator-fix-inmemoryredis-ping-capability
 
 ## Current Position
 
-Phase: 16 (legal-pages-launch-url) — EXECUTING
-Plan: 6 of 6
-Status: Phase 16 shipped - draft PR #27; external legal/operator sign-off pending
-Last activity: 2026-04-28
+Phase: 17 (local-dev-health-indicator-fix-inmemoryredis-ping-capability) — PLANNED
+Plan: 0 of 2 complete
+Status: Ready to execute
+Last activity: 2026-04-28 -- Phase 17 planning complete; Phase 16 16-06 remains deferred
 
 Progress: [██████████] 97%
 
@@ -104,6 +104,7 @@ Full decision log in PROJECT.md Key Decisions table (10 decisions, all Good).
 - [Phase 16-05]: LegalDraftBanner deleted rather than runtime-flagged. — D-05 defines launch readiness as complete removal of the draft surface.
 - [Phase 16-05]: Signup dialogs keep prop-less TermsMarkdown. — DialogTitle remains the only visible title and D-11 dialog compatibility is preserved.
 - [Phase 16-05]: Cutover prerequisites centralized in 16-HUMAN-UAT.md. — Business values, mailbox checks, generic placeholder grep, and post-deploy URL/Footer/dialog checks remain operational gates for Plan 16-06.
+- [Phase 17]: Use a two-layer local health fix. — Add `InMemoryRedis.ping()` for ioredis surface parity and keep a RedisHealthIndicator capability probe so future local/test fallbacks without `ping()` report local fallback as up without masking real Redis ping failures.
 
 ### Pending Todos
 
