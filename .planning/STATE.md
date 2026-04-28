@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
 status: executing
-stopped_at: Completed 16-01-PLAN.md
-last_updated: "2026-04-28T05:35:18.974Z"
+stopped_at: Completed 16-02-PLAN.md
+last_updated: "2026-04-28T05:46:38.604Z"
 last_activity: 2026-04-28
 progress:
   total_phases: 15
   completed_phases: 11
   total_plans: 62
-  completed_plans: 56
-  percent: 90
+  completed_plans: 57
+  percent: 92
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 ## Current Position
 
 Phase: 16 (legal-pages-launch-url) — EXECUTING
-Plan: 2 of 6
+Plan: 3 of 6
 Status: Ready to execute
 Last activity: 2026-04-28
 
-Progress: [█████████░] 90%
+Progress: [█████████░] 92%
 
 ## Performance Metrics
 
@@ -68,6 +68,7 @@ Progress: [█████████░] 90%
 | Phase 08-r2 P02 | 1m | 2 tasks | 3 files |
 | Phase 08-r2 P03 | 21min | 2 tasks | 0 files (infra) |
 | Phase 16 P01 | 6min | 3 tasks | 3 files |
+| Phase 16 P02 | 6min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -92,6 +93,8 @@ Full decision log in PROJECT.md Key Decisions table (10 decisions, all Good).
 - [Phase 08-r2]: R2 credentials를 secrets 섹션에 배치하여 T-08-04 위협 완화
 - [Phase 16-01]: Wave 0 RED 상태를 artifact 생성과 behavioral GREEN 상태로 분리 추적한다 — Plan 16-01 테스트는 후속 wave 구현 전까지 실패가 정상이며, collect 성공을 완료 기준으로 삼는다
 - [Phase 16-01]: metadata test는 import.meta.glob lazy lookup으로 작성한다 — Vite transform 단계에서 미생성 page literal import가 테스트 collection을 막는 것을 방지한다
+- [Phase 16-02]: Legal page metadata keeps production indexing but forces non-production noindex through process.env.GRABIT_ENV === 'production'. — Prevents preview/staging placeholder indexing while preserving the production SEO/indexing contract.
+- [Phase 16-02]: Public legal pages use ?raw markdown imports while preserving existing .md imports for signup dialogs. — Keeps Vitest/Vite module loading compatible for page modules without changing the existing dialog import contract.
 
 ### Pending Todos
 
@@ -126,8 +129,8 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-28T05:35:18.968Z
-Stopped at: Completed 16-01-PLAN.md
+Last session: 2026-04-28T05:46:22.137Z
+Stopped at: Completed 16-02-PLAN.md
 Resume file: None
 
 **Planned Phase:** 15 (resend-heygrabit-com-cutover-transactional-email-secret-mana) — 3 plans — 2026-04-24T08:54:14.266Z
