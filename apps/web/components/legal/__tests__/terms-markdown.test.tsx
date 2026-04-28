@@ -52,4 +52,14 @@ describe('TermsMarkdown', () => {
       expect(p?.className).toContain('text-gray-700');
     });
   });
+
+  it('react-markdown node prop 을 DOM attribute 로 전달하지 않는다', () => {
+    const { container } = render(
+      <TermsMarkdown showH1>
+        {'# 제목\n\n## 부제\n\n본문\n\n- 항목\n\n| A | B |\n|---|---|\n| C | D |'}
+      </TermsMarkdown>,
+    );
+
+    expect(container.querySelector('[node]')).toBeNull();
+  });
 });
