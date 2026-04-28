@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
-status: planning
-stopped_at: Phase 17 planned; Phase 16 cutover deferred for user-provided legal values/mailbox verification
-last_updated: "2026-04-28T06:17:49.409Z"
+status: "Phase 17 complete; Phase 16 shipped - external legal/operator sign-off pending"
+stopped_at: Phase 17 complete; Phase 16 external legal/operator sign-off pending
+last_updated: "2026-04-28T08:55:27Z"
 last_activity: 2026-04-28
 progress:
   total_phases: 15
-  completed_phases: 12
-  total_plans: 62
-  completed_plans: 61
-  percent: 98
+  completed_phases: 13
+  total_plans: 64
+  completed_plans: 63
+  percent: 99
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** 사용자가 원하는 공연을 발견하고, 좌석을 직접 선택하여, 안정적으로 예매를 완료할 수 있는 것
-**Current focus:** Phase 17 — local-dev-health-indicator-fix-inmemoryredis-ping-capability
+**Current focus:** Phase 17 — local-dev-health-indicator-fix-inmemoryredis-ping-capability complete; Phase 16 shipped with external sign-off pending
 
 ## Current Position
 
-Phase: 17 (local-dev-health-indicator-fix-inmemoryredis-ping-capability) — PLANNED
-Plan: 0 of 2 complete
-Status: Ready to execute
-Last activity: 2026-04-28 -- Phase 17 planning complete; Phase 16 16-06 remains deferred
+Phase: 17 (local-dev-health-indicator-fix-inmemoryredis-ping-capability) — COMPLETE
+Plan: 2 of 2 complete
+Status: Phase 17 complete; Phase 16 shipped - external legal/operator sign-off pending
+Last activity: 2026-04-28 -- Phase 17 complete; Phase 16 PR #27 merged
 
-Progress: [██████████] 97%
+Progress: [██████████] 99%
 
 ## Performance Metrics
 
@@ -72,6 +72,8 @@ Progress: [██████████] 97%
 | Phase 16 P03 | 2min | 1 tasks | 1 files |
 | Phase 16 P04 | 5min | 3 tasks | 4 files |
 | Phase 16 P05 | 6min | 3 tasks | 4 files |
+| Phase 17 P01 | <1min | 2 tasks | 3 files |
+| Phase 17 P02 | <1min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
