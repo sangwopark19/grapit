@@ -102,6 +102,7 @@ describe('redisProvider factory', () => {
       get: (key: string) => Promise<string | null>;
       del: (...keys: string[]) => Promise<number>;
       decr: (key: string) => Promise<number>;
+      ping: () => Promise<string>;
       pttl: (key: string) => Promise<number>;
       pipeline: () => {
         set: (key: string, value: string, ...args: unknown[]) => ReturnType<MemRedis['pipeline']>;
@@ -117,6 +118,12 @@ describe('redisProvider factory', () => {
       warnSpy.mockRestore();
       return client;
     }
+
+    it('ping() returns PONG for local health checks', async () => {
+      const redis = createMock();
+
+      await expect(redis.ping()).resolves.toBe('PONG');
+    });
 
     it('set(key, value, "PX", ms, "NX") honors NX + TTL (ioredis variadic)', async () => {
       const redis = createMock();
