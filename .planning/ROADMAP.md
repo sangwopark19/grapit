@@ -273,12 +273,12 @@ Plans:
 **Goal:** /legal/{terms,privacy,marketing} 3개 SSG 페이지를 신규 게시하고, Footer placeholder href 3건을 실 경로(/legal/terms, /legal/privacy, mailto:support@heygrabit.com)로 교체하며, 3개 MD 콘텐츠에 법정 필수 기재 placeholder(시행일·사업자정보·보호책임자·개정이력)를 보강하고, LegalDraftBanner 컴포넌트와 signup-step2 사용처를 제거하여 한국 개보법·정통망법 상시 공개 URL 요건과 Phase 13 UAT Gap test 11(pre-existing feature gap)을 해소한다.
 **Requirements**: D-01, D-02, D-03, D-04, D-05, D-06, D-07, D-08, D-09, D-10, D-11, D-12, D-13, D-14, D-15 (CONTEXT.md 의 locked decisions — phase_req_ids 가 null 이라 D-IDs 가 acceptance 단위로 작동)
 **Depends on:** Phase 15
-**Plans:** 2/6 plans executed
+**Plans:** 3/6 plans executed
 
 Plans:
 - [x] 16-01-PLAN.md — Wave 0: Foundation tests (terms-markdown.test, metadata.test, footer.test 3건 — RED 정상)
 - [x] 16-02-PLAN.md — Wave 1: TermsMarkdown showH1 prop + table 매핑 + apps/web/app/legal/{layout,terms/page,privacy/page,marketing/page}.tsx 4 신규 + env-driven robots (GRABIT_ENV) + SSG clean build 검증
-- [ ] 16-03-PLAN.md — Wave 2: Footer href 3건 교체 (terms/privacy → Link 실 경로, 고객센터 → mailto)
+- [x] 16-03-PLAN.md — Wave 2: Footer href 3건 교체 (terms/privacy → Link 실 경로, 고객센터 → mailto)
 - [ ] 16-04-PLAN.md — Wave 3: 3개 MD placeholder 보강 (사업자 식별정보 + 보호책임자 + 개정 이력 GFM 표 + 시행일) + KOPICO 7 heading 회귀 가드
 - [ ] 16-05-PLAN.md — Wave 4: LegalDraftBanner.tsx 삭제 + signup-step2.tsx import/JSX 정리 (D-11 dialog UX 불변) + HUMAN-UAT.md 작성 (generic bracket regex gate)
 - [ ] 16-06-PLAN.md — Wave 5: Cutover (autonomous: false) — human placeholder 실값 주입 + clean prod build + generic regex gate + robots/canonical 검증 + cutover commit + prod URL smoke (codex HIGH-1 atomic launch)

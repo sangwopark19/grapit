@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
 status: executing
-stopped_at: Completed 16-02-PLAN.md
-last_updated: "2026-04-28T05:46:38.604Z"
+stopped_at: Completed 16-03-PLAN.md
+last_updated: "2026-04-28T05:53:55.186Z"
 last_activity: 2026-04-28
 progress:
   total_phases: 15
   completed_phases: 11
   total_plans: 62
-  completed_plans: 57
-  percent: 92
+  completed_plans: 58
+  percent: 94
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 ## Current Position
 
 Phase: 16 (legal-pages-launch-url) — EXECUTING
-Plan: 3 of 6
+Plan: 4 of 6
 Status: Ready to execute
 Last activity: 2026-04-28
 
-Progress: [█████████░] 92%
+Progress: [█████████░] 94%
 
 ## Performance Metrics
 
@@ -69,6 +69,7 @@ Progress: [█████████░] 92%
 | Phase 08-r2 P03 | 21min | 2 tasks | 0 files (infra) |
 | Phase 16 P01 | 6min | 3 tasks | 3 files |
 | Phase 16 P02 | 6min | 3 tasks | 7 files |
+| Phase 16 P03 | 2min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -95,6 +96,8 @@ Full decision log in PROJECT.md Key Decisions table (10 decisions, all Good).
 - [Phase 16-01]: metadata test는 import.meta.glob lazy lookup으로 작성한다 — Vite transform 단계에서 미생성 page literal import가 테스트 collection을 막는 것을 방지한다
 - [Phase 16-02]: Legal page metadata keeps production indexing but forces non-production noindex through process.env.GRABIT_ENV === 'production'. — Prevents preview/staging placeholder indexing while preserving the production SEO/indexing contract.
 - [Phase 16-02]: Public legal pages use ?raw markdown imports while preserving existing .md imports for signup dialogs. — Keeps Vitest/Vite module loading compatible for page modules without changing the existing dialog import contract.
+- [Phase 16-03]: Footer exposes only terms/privacy legal pages; /legal/marketing remains hidden from global navigation. — D-04 keeps marketing consent available only through consent-specific flows, not global Footer navigation.
+- [Phase 16-03]: Customer support uses native mailto anchor instead of Next.js Link. — mailto is browser/OS mail-client behavior, not internal Next.js navigation.
 
 ### Pending Todos
 
@@ -129,8 +132,8 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-28T05:46:22.137Z
-Stopped at: Completed 16-02-PLAN.md
+Last session: 2026-04-28T05:53:31.982Z
+Stopped at: Completed 16-03-PLAN.md
 Resume file: None
 
 **Planned Phase:** 15 (resend-heygrabit-com-cutover-transactional-email-secret-mana) — 3 plans — 2026-04-24T08:54:14.266Z
