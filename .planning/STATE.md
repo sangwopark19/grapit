@@ -4,8 +4,8 @@ milestone: v1.1
 milestone_name: 안정화 + 고도화
 status: executing
 stopped_at: Phase 16 UI-SPEC approved
-last_updated: "2026-04-28T03:55:18.886Z"
-last_activity: 2026-04-28 -- Phase 16 planning complete
+last_updated: "2026-04-28T05:24:30.419Z"
+last_activity: 2026-04-28 -- Phase 16 execution started
 progress:
   total_phases: 15
   completed_phases: 11
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** 사용자가 원하는 공연을 발견하고, 좌석을 직접 선택하여, 안정적으로 예매를 완료할 수 있는 것
-**Current focus:** Phase 16 — Legal pages launch (다음 phase, 2026-04-29 안정 window 종료 후 진입 가능)
+**Current focus:** Phase 16 — legal-pages-launch-url
 
 ## Current Position
 
-Phase: 15 — SHIPPED (3/3 plans complete, 48h 안정 관측 진행 중)
-Plan: 3 of 3 complete (15-01 ✅, 15-02 ✅, 15-03 ✅ with assumption corrections)
-Status: Ready to execute
-Last activity: 2026-04-28 -- Phase 16 planning complete
+Phase: 16 (legal-pages-launch-url) — EXECUTING
+Plan: 1 of 6
+Status: Executing Phase 16
+Last activity: 2026-04-28 -- Phase 16 execution started
 
 Progress: [██████████] 100%
 
