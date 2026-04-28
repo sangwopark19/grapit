@@ -51,4 +51,12 @@ describe('legal content', () => {
       expect(content).toContain('2026-04-28');
     }
   });
+
+  it('discloses the runtime SMS provider in privacy policy', () => {
+    expect(privacyPolicyMd).not.toContain('Twilio');
+    expect(privacyPolicyMd).toContain('SMS 발송**: Infobip Limited 및 그 계열사');
+    expect(privacyPolicyMd).toContain('| Infobip Limited 및 그 계열사 | 독일 (Germany) |');
+    expect(privacyPolicyMd).toContain('휴대전화번호, SMS 인증 메시지 내용');
+    expect(privacyPolicyMd).toContain('발송일로부터 3개월');
+  });
 });
