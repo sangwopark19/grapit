@@ -3,7 +3,10 @@ quick_id: 260427-lyr
 description: "프로덕션 소셜 로그인이 매번 실패하는 회귀 핫픽스 — root layout `AuthInitializer` 와 `/auth/callback` 페이지가 동시에 `/auth/refresh` 를 호출해 refresh-token 도난 탐지가 트리거되던 race 차단"
 status: complete
 date: 2026-04-27
-commit: 39ae868 (initial useRef guard, insufficient), 56826c6
+commits:
+  - 70a3f65 (R1, PR #23 — useRef 가드, race 부분 차단에 그쳐 재발)
+  - 56826c6 (R2, PR #24 — AuthInitializer 단일 호출자화로 race 소거)
+verified: 2026-04-27 — 사용자가 프로덕션에서 Google 로그인 정상 동작 확인 (PR #24 머지 후 grabit-web 자동 배포)
 ---
 
 # Summary — Quick Task 260427-lyr
