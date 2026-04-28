@@ -1,12 +1,13 @@
 ---
 phase: 16-legal-pages-launch-url
 fixed_at: 2026-04-28T07:31:49Z
+updated_at: 2026-04-28T08:35:00Z
 review_path: .planning/phases/16-legal-pages-launch-url/16-REVIEW.md
-iteration: 1
+iteration: 2
 findings_in_scope: 5
-fixed: 3
-skipped: 2
-status: partial
+fixed: 5
+skipped: 0
+status: external_signoff_pending
 ---
 
 # Phase 16: Code Review Fix Report
@@ -17,8 +18,8 @@ status: partial
 
 **Summary:**
 - Findings in scope: 5
-- Fixed: 3
-- Skipped: 2
+- Fixed in code/docs: 5
+- External sign-off pending: CR-01/CR-02 legal factual verification
 
 ## Fixed Issues
 
@@ -54,22 +55,50 @@ status: partial
 - `pnpm --filter @grabit/web exec tsc --noEmit --pretty false` → exit 0
 - `pnpm --filter @grabit/web exec next info` → exit 0, config loaded; non-fatal npm/yarn/version warnings only
 
-## Skipped Issues
+## Follow-up Issues Now Addressed in Code/Docs
 
 ### CR-01: [BLOCKER] 공개 legal 문서에 placeholder 사업자/시행일 값이 그대로 노출됨
 
 **File:** `apps/web/content/legal/terms-of-service.md:75`, `apps/web/content/legal/privacy-policy.md:85`, `apps/web/content/legal/marketing-consent.md:32`
-**Reason:** skipped: actual legal/business identity data is not present in the repository. Replacing placeholders with inferred or synthetic 사업자명, 대표자명, 사업자등록번호, 통신판매업 신고번호, 주소, 전화번호, 개인정보 보호책임자, 시행일 would create false legal disclosures. Regression tests for placeholder removal would fail until the real values are supplied.
-**Original issue:** production legal pages and signup consent dialog expose placeholder 사업자/시행일 values.
+**Status:** fixed in markdown and regression tests; requires external operator/legal sign-off before production cutover
+**Files modified:** `apps/web/content/legal/terms-of-service.md`, `apps/web/content/legal/privacy-policy.md`, `apps/web/content/legal/marketing-consent.md`, `apps/web/content/legal/__tests__/legal-content.test.ts`, `.planning/phases/16-legal-pages-launch-url/16-HUMAN-UAT.md`
+**Applied fix:** placeholder 사업자/시행일 값은 실제 markdown 값으로 치환되었고 `legal-content.test.ts`가 placeholder/Twilio 회귀를 차단한다. Codex는 사업자등록증/통신판매업 신고증/mailbox 운영 가능 여부를 외부에서 검증할 수 없으므로, `16-HUMAN-UAT.md`에 현재 markdown 값과 필요한 증빙을 명시하고 `pending operator sign-off` gate로 남겼다.
+**Verification:**
+- `pnpm --filter @grabit/web exec vitest run content/legal/__tests__/legal-content.test.ts --reporter=verbose` → pass
+- `! rg -n '\[(시행일|사업자명|대표자명|사업자등록번호|통신판매업 신고번호|주소|전화번호|보호책임자 실명|직책|직전 시행일):' apps/web/content/legal/*.md` → pass
 
 ### CR-02: [BLOCKER] 개인정보처리방침이 실제 SMS provider와 다른 Twilio를 고지함
 
 **File:** `apps/web/content/legal/privacy-policy.md:47`, `apps/web/content/legal/privacy-policy.md:57`
-**Reason:** skipped: the codebase confirms the runtime SMS provider is Infobip, but the required privacy disclosure values are not available: exact contracting entity, transfer country, and retention period. Replacing Twilio with guessed Infobip legal details would still risk inaccurate overseas transfer disclosure. Human/legal input is required before editing the policy.
-**Original issue:** privacy policy discloses Twilio while backend SMS implementation uses `InfobipClient` and `INFOBIP_*` env vars.
+**Status:** fixed in markdown and regression tests; requires external operator/legal sign-off before production cutover
+**Files modified:** `apps/web/content/legal/privacy-policy.md`, `apps/web/content/legal/__tests__/legal-content.test.ts`, `.planning/phases/16-legal-pages-launch-url/16-HUMAN-UAT.md`
+**Applied fix:** privacy policy no longer discloses Twilio and now discloses `Infobip Limited 및 그 계열사` with country/retention details. `legal-content.test.ts` asserts Twilio is absent and Infobip disclosure is present. Because exact contracting entity, transfer country, and retention period depend on external Infobip/legal records, `16-HUMAN-UAT.md` requires operator sign-off before production cutover.
+**Verification:**
+- `pnpm --filter @grabit/web exec vitest run content/legal/__tests__/legal-content.test.ts --reporter=verbose` → pass
+- `! rg -n 'Twilio' apps/web/content/legal/*.md` → pass
+
+## Review Follow-up Fixes
+
+### RF-01: HUMAN-UAT가 placeholder 치환 전 상태로 남아 있음
+
+**Status:** fixed
+**Files modified:** `.planning/phases/16-legal-pages-launch-url/16-HUMAN-UAT.md`
+**Applied fix:** UAT를 "placeholder 치환" 체크리스트에서 "현재 markdown 값의 증빙 대조 + operator sign-off" 체크리스트로 갱신했다. Cutover Approval은 실제 외부 검증 전까지 `pending external legal/operator sign-off`로 유지한다.
+
+### RF-02: build artifact generic bracket regex가 Next RSC output에서 false positive 발생
+
+**Status:** fixed
+**Files modified:** `.planning/phases/16-legal-pages-launch-url/16-HUMAN-UAT.md`, `.planning/phases/16-legal-pages-launch-url/16-06-PLAN.md`
+**Applied fix:** `.rsc` 전체 generic regex gate를 제거하고 source markdown + `*.html` prerender output에 focused placeholder label regex를 적용하도록 문서화했다.
+
+### RF-03: `curl -sI`로 본문 검증을 안내함
+
+**Status:** fixed
+**Files modified:** `.planning/phases/16-legal-pages-launch-url/16-HUMAN-UAT.md`
+**Applied fix:** status 검증(`curl -fsSI`)과 body grep(`curl -fsS ... | grep -F`)을 분리했다.
 
 ---
 
 _Fixed: 2026-04-28T07:31:49Z_
 _Fixer: the agent (gsd-code-fixer)_
-_Iteration: 1_
+_Iteration: 2_
