@@ -1,11 +1,10 @@
 import { toast } from 'sonner';
+import { apiUrl } from '@/lib/api-url';
 import { useAuthStore } from '@/stores/use-auth-store';
 import {
   STATUS_MESSAGES,
   DEFAULT_ERROR_MESSAGE,
 } from './error-messages';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 interface ApiError {
   message: string;
@@ -31,7 +30,7 @@ async function refreshAccessToken(): Promise<string | null> {
 
   refreshPromise = (async () => {
     try {
-      const res = await fetch(`${API_URL}/api/v1/auth/refresh`, {
+      const res = await fetch(apiUrl('/api/v1/auth/refresh'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -78,7 +77,7 @@ async function request<T>(
     config.body = JSON.stringify(body);
   }
 
-  let res = await fetch(`${API_URL}${path}`, config);
+  let res = await fetch(apiUrl(path as `/${string}`), config);
 
   // On 401, attempt silent refresh and retry once
   if (res.status === 401 && accessToken) {
@@ -93,7 +92,7 @@ async function request<T>(
 
       // Retry with new token
       headers['Authorization'] = `Bearer ${newToken}`;
-      res = await fetch(`${API_URL}${path}`, { ...config, headers });
+      res = await fetch(apiUrl(path as `/${string}`), { ...config, headers });
     } else {
       // Refresh failed -- clear auth and redirect
       useAuthStore.getState().clearAuth();

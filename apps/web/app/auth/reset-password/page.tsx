@@ -14,6 +14,7 @@ import {
   type ResetPasswordInput,
 } from '@grabit/shared';
 import { apiClient } from '@/lib/api-client';
+import { apiUrl } from '@/lib/api-url';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/auth/password-input';
@@ -168,7 +169,7 @@ function ConfirmView({ token }: { token: string }) {
   async function onSubmit(data: ResetPasswordInput) {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/v1/auth/password-reset/confirm', {
+      const res = await fetch(apiUrl('/api/v1/auth/password-reset/confirm'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

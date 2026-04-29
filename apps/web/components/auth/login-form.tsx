@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
 import { loginSchema, type LoginInput, type AuthResponse } from '@grabit/shared';
 import { apiClient, ApiClientError } from '@/lib/api-client';
+import { apiUrl } from '@/lib/api-url';
 import { useAuthStore } from '@/stores/use-auth-store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,8 +23,6 @@ import {
 import { PasswordInput } from '@/components/auth/password-input';
 import { SocialLoginButton } from '@/components/auth/social-login-button';
 import Link from 'next/link';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 const SOCIAL_LOGIN_ERRORS: Record<string, string> = {
   oauth_denied: '소셜 로그인이 취소되었습니다.',
@@ -86,7 +85,7 @@ export function LoginForm() {
 
   function handleSocialLogin(provider: 'kakao' | 'naver' | 'google') {
     setSocialLoading(provider);
-    window.location.href = `${API_URL}/api/v1/auth/social/${provider}`;
+    window.location.href = apiUrl(`/api/v1/auth/social/${provider}`);
   }
 
   return (
