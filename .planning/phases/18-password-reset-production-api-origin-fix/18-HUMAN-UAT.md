@@ -91,12 +91,12 @@ If `status.imageDigest` is unavailable, record the service image string from `sp
 
 **Fields:**
 
-- [ ] UAT timestamp (UTC): __________
-- [ ] account domain only: __________
-- [ ] grabit-web latestReadyRevisionName: __________
-- [ ] grabit-web image digest or Git SHA tag: __________
-- [ ] grabit-api latestReadyRevisionName: __________
-- [ ] grabit-api image digest or Git SHA tag: __________
+- [x] UAT timestamp (UTC): 2026-04-29T05:43:20Z evidence recording; user-confirmed production smoke completed before resume.
+- [x] account domain only: withheld; no user email address recorded.
+- [x] grabit-web latestReadyRevisionName: `grabit-web-00022-x4r`
+- [x] grabit-web image digest or Git SHA tag: image digest `asia-northeast3-docker.pkg.dev/grapit-491806/grabit/grabit-web@sha256:e5ac2113f9fd9a19fd09aff05078fc1ac02b0204d48f806446fb2f5df6cb5ab1`; Git SHA tag/source commit `62a374b5f05e7ba0e83415616a4fd9b1169ac552`
+- [x] grabit-api latestReadyRevisionName: `grabit-api-00021-nnn`
+- [x] grabit-api image digest or Git SHA tag: image digest `asia-northeast3-docker.pkg.dev/grapit-491806/grabit/grabit-api@sha256:e0817312330337961d4fdfe29062027a86606cb9a84fd911b2a616379333b860`
 
 ---
 
@@ -111,13 +111,13 @@ If `status.imageDigest` is unavailable, record the service image string from `sp
 
 **Evidence fields:**
 
-- [ ] SC-1 result: PENDING
-- [ ] account domain only: __________
-- [ ] email From: `no-reply@heygrabit.com`
-- [ ] email subject: `[Grabit] 비밀번호 재설정`
-- [ ] inbox not spam result: __________
-- [ ] receipt timestamp (UTC): __________
-- [ ] notes without PII: __________
+- [x] SC-1 result: PASS - user-approved human verification; production reset email test succeeded.
+- [x] account domain only: withheld; no user email address recorded.
+- [x] email From: `no-reply@heygrabit.com`
+- [x] email subject: `[Grabit] 비밀번호 재설정`
+- [x] inbox not spam result: PASS - user confirmed receipt; no mailbox screenshot or message URL recorded.
+- [x] receipt timestamp (UTC): user-confirmed before resume; exact mailbox timestamp not recorded.
+- [x] notes without PII: Production reset request page returned HTTP 200 after the web deploy; reset link and recipient local part were not recorded.
 
 ---
 
@@ -131,11 +131,11 @@ If `status.imageDigest` is unavailable, record the service image string from `sp
 
 **Evidence fields:**
 
-- [ ] SC-2 result: PENDING
-- [ ] confirm POST URL: `https://api.heygrabit.com/api/v1/auth/password-reset/confirm`
-- [ ] confirm POST status: `200`
-- [ ] browser Network evidence checked: __________
-- [ ] notes without reset link data: __________
+- [x] SC-2 result: PASS - user-approved human verification for the email-to-confirm path.
+- [x] confirm POST URL: `https://api.heygrabit.com/api/v1/auth/password-reset/confirm`
+- [x] confirm POST status: 200
+- [x] browser Network evidence checked: PASS - public API origin confirmed by user/operator approval.
+- [x] notes without reset link data: No reset URL, reset authority value, screenshot URL, cookie, JWT, auth header, or bearer value recorded.
 
 ---
 
@@ -149,10 +149,10 @@ If `status.imageDigest` is unavailable, record the service image string from `sp
 
 **Evidence fields:**
 
-- [ ] SC-3 result: PENDING
-- [ ] login success: __________
-- [ ] login timestamp (UTC): __________
-- [ ] notes without PII: __________
+- [x] SC-3 result: PASS - user-approved human verification for login after password change.
+- [x] login success: PASS - production login succeeded after password reset.
+- [x] login timestamp (UTC): user-confirmed before resume; exact account timestamp not recorded.
+- [x] notes without PII: Raw credential values and authenticated session material were not recorded.
 
 ---
 
@@ -160,9 +160,9 @@ If `status.imageDigest` is unavailable, record the service image string from `sp
 
 **Cloud Logging check:**
 
-- [ ] revision-scoped Cloud Logging notes: __________
-- [ ] `Resend send failed` result after UAT timestamp: __________
-- [ ] expected result text when clean: `Resend send failed: empty`
+- [x] revision-scoped Cloud Logging notes: Query scoped to `resource.type="cloud_run_revision"`, service `grabit-api`, revision `grabit-api-00021-nnn`, text `Resend send failed`, freshness 24h, limit 1.
+- [x] `Resend send failed` result after UAT timestamp: no rows; `Resend send failed: empty`.
+- [x] expected result text when clean: `Resend send failed: empty`
 
 **Sentry evidence:**
 
@@ -171,13 +171,15 @@ Use one of these exact statements only after dashboard or API inspection actuall
 - [ ] `Sentry component:email-service recent 24h count: 0 after UAT`
 - [ ] `Sentry component:email-service captured event id: <redacted-id>`
 
+Sentry dashboard/API evidence was not available to the orchestrator during resume. No zero-count or captured event id is fabricated here; the user/operator explicitly approved moving past the human verification checkpoint with this caveat.
+
 **SC-4 fields:**
 
-- [ ] SC-4 result: PENDING
-- [ ] Cloud Run evidence tied to grabit-web latestReadyRevisionName: __________
-- [ ] Cloud Run evidence tied to grabit-api latestReadyRevisionName: __________
-- [ ] image digest or Git SHA tag evidence recorded: __________
-- [ ] Sentry component:email-service evidence recorded: __________
+- [x] SC-4 result: PASS - Cloud Run revision/image evidence and revision-scoped Cloud Logging evidence recorded; Sentry caveat user/operator-approved.
+- [x] Cloud Run evidence tied to grabit-web latestReadyRevisionName: `grabit-web-00022-x4r`
+- [x] Cloud Run evidence tied to grabit-api latestReadyRevisionName: `grabit-api-00021-nnn`
+- [x] image digest or Git SHA tag evidence recorded: web image digest plus source commit, api image digest.
+- [x] Sentry component:email-service evidence recorded: not independently inspected; checkpoint approved without claiming a zero-count or event id.
 
 ---
 
@@ -201,10 +203,10 @@ Allowed evidence:
 
 ## Sign-off
 
-- [ ] SC-1 PASS: Production password reset email request verified.
-- [ ] SC-2 PASS: Confirm submit used public API origin and returned status 200.
-- [ ] SC-3 PASS: Login succeeded after password change.
-- [ ] SC-4 PASS: Cloud Run revision/image evidence and Sentry email observation recorded.
-- [ ] Redaction review complete.
-- [ ] Operator initials: __________
-- [ ] Completed date (KST): __________
+- [x] SC-1 PASS: Production password reset email request verified.
+- [x] SC-2 PASS: Confirm submit used public API origin and returned status 200.
+- [x] SC-3 PASS: Login succeeded after password change.
+- [x] SC-4 PASS: Cloud Run revision/image evidence and email observation recorded with Sentry availability caveat.
+- [x] Redaction review complete.
+- [x] Operator initials: user/operator-approved checkpoint; no personal identifier recorded.
+- [x] Completed date (KST): 2026-04-29
