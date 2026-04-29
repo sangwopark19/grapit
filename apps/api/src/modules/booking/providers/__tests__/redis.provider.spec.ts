@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { ConfigService } from '@nestjs/config';
 import IORedis from 'ioredis';
+import {
+  ASSERT_OWNED_SEAT_LOCKS_LUA,
+  CONSUME_OWNED_SEAT_LOCKS_LUA,
+} from '../../booking.service.js';
 import { redisProvider, REDIS_CLIENT } from '../redis.provider.js';
 import {
   smsAttemptsKey,
@@ -10,45 +14,6 @@ import {
 } from '../../../sms/sms.service.js';
 
 const TEST_PHONE = '+821012345678';
-
-const ASSERT_OWNED_SEAT_LOCKS_LUA = `
--- ASSERT_OWNED_SEAT_LOCKS_LUA
--- Returns {1, 'OK', count, ''} or {0, 'MISSING'|'OTHER_OWNER', seatId, owner}
-for i = 1, #KEYS do
-  local owner = redis.call('GET', KEYS[i])
-  local seatId = ARGV[i + 1]
-  if not owner then
-    return {0, 'MISSING', seatId, ''}
-  end
-  if owner ~= ARGV[1] then
-    return {0, 'OTHER_OWNER', seatId, owner}
-  end
-end
-return {1, 'OK', tostring(#KEYS), ''}
-`;
-
-const CONSUME_OWNED_SEAT_LOCKS_LUA = `
--- CONSUME_OWNED_SEAT_LOCKS_LUA
--- KEYS[1] user seats, KEYS[2] locked seats, KEYS[3..n] seat lock keys.
--- ARGV[1] userId, ARGV[2..n] requested seat ids.
-for i = 3, #KEYS do
-  local owner = redis.call('GET', KEYS[i])
-  local seatId = ARGV[i - 1]
-  if not owner then
-    return {0, 'MISSING', seatId, ''}
-  end
-  if owner ~= ARGV[1] then
-    return {0, 'OTHER_OWNER', seatId, owner}
-  end
-end
-for i = 3, #KEYS do
-  local seatId = ARGV[i - 1]
-  redis.call('DEL', KEYS[i])
-  redis.call('SREM', KEYS[1], seatId)
-  redis.call('SREM', KEYS[2], seatId)
-end
-return {1, 'OK', tostring(#KEYS - 2), ''}
-`;
 
 /**
  * redisProvider factory tests (Phase 07-04 review fix).
@@ -283,7 +248,7 @@ describe('redisProvider factory', () => {
         )).resolves.toEqual([0, 'OTHER_OWNER', 'A-2', 'other-user']);
       });
 
-      it('CONSUME_OWNED_SEAT_LOCKS_LUA returns success tuple and preserves unrelated locks', async () => {
+      it('CONSUME_OWNED_SEAT_LOCKS_LUA returns success tuple and preserves unrelated same-showtime locks', async () => {
         const redis = createMock();
         const seatA3Key = `{${showtimeId}}:seat:A-3`;
         await redis.set(seatA1Key, userId);

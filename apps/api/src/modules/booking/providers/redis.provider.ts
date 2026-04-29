@@ -210,6 +210,12 @@ class InMemoryRedis {
     const keys = keysAndArgs.slice(0, numKeys).map(String);
     const args = keysAndArgs.slice(numKeys).map(String);
 
+    if (script.includes('ASSERT_OWNED_SEAT_LOCKS_LUA')) {
+      return this.evalAssertOwnedSeatLocks(keys, args);
+    }
+    if (script.includes('CONSUME_OWNED_SEAT_LOCKS_LUA')) {
+      return this.evalConsumeOwnedSeatLocks(keys, args);
+    }
     if (keys.length === 3 && args.length === 3 && script.includes('VERIFIED')) {
       return this.evalVerifyAndIncrement(keys, args);
     }
@@ -320,6 +326,62 @@ class InMemoryRedis {
     if (lockedSet) lockedSet.delete(seatId);
 
     return 1;
+  }
+
+  private evalAssertOwnedSeatLocks(keys: string[], args: string[]): [number, string, string, string] {
+    const [userId, ...seatIds] = args;
+
+    for (let i = 0; i < keys.length; i++) {
+      const lockKey = keys[i]!;
+      const seatId = seatIds[i] ?? '';
+      const owner = this.store.get(lockKey);
+
+      if (owner === undefined) {
+        return [0, 'MISSING', seatId, ''];
+      }
+      if (owner !== userId) {
+        return [0, 'OTHER_OWNER', seatId, owner];
+      }
+    }
+
+    return [1, 'OK', String(seatIds.length), ''];
+  }
+
+  private evalConsumeOwnedSeatLocks(keys: string[], args: string[]): [number, string, string, string] {
+    const [userSeatsKey, lockedSeatsKey, ...seatLockKeys] = keys;
+    const [userId, ...seatIds] = args;
+
+    for (let i = 0; i < seatLockKeys.length; i++) {
+      const lockKey = seatLockKeys[i]!;
+      const seatId = seatIds[i] ?? '';
+      const owner = this.store.get(lockKey);
+
+      if (owner === undefined) {
+        return [0, 'MISSING', seatId, ''];
+      }
+      if (owner !== userId) {
+        return [0, 'OTHER_OWNER', seatId, owner];
+      }
+    }
+
+    for (let i = 0; i < seatLockKeys.length; i++) {
+      const lockKey = seatLockKeys[i]!;
+      const seatId = seatIds[i] ?? '';
+
+      this.store.delete(lockKey);
+      const timer = this.ttls.get(lockKey);
+      if (timer) clearTimeout(timer);
+      this.ttls.delete(lockKey);
+      this.expiries.delete(lockKey);
+
+      const userSet = this.sets.get(userSeatsKey!);
+      if (userSet) userSet.delete(seatId);
+
+      const lockedSet = this.sets.get(lockedSeatsKey!);
+      if (lockedSet) lockedSet.delete(seatId);
+    }
+
+    return [1, 'OK', String(seatIds.length), ''];
   }
 
   private evalGetValidLockedSeats(keys: string[], args: string[]): string[] {
