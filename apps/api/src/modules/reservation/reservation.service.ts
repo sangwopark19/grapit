@@ -78,17 +78,39 @@ export class ReservationService {
     return new Date(showDateTime.getTime() - 24 * 60 * 60 * 1000);
   }
 
+  private async getReservationSeatIds(reservationId: string): Promise<string[]> {
+    const rows = await this.db
+      .select({ seatId: reservationSeats.seatId })
+      .from(reservationSeats)
+      .where(eq(reservationSeats.reservationId, reservationId));
+
+    return rows.map((row) => row.seatId);
+  }
+
   async prepareReservation(
     dto: PrepareReservationRequest,
     userId: string,
   ): Promise<PrepareReservationResponse> {
     // 1. Idempotency: if a reservation already exists for this orderId, return it
     const [existing] = await this.db
-      .select({ id: reservations.id, tossOrderId: reservations.tossOrderId })
+      .select({
+        id: reservations.id,
+        userId: reservations.userId,
+        showtimeId: reservations.showtimeId,
+        status: reservations.status,
+        tossOrderId: reservations.tossOrderId,
+      })
       .from(reservations)
       .where(eq(reservations.tossOrderId, dto.orderId));
 
     if (existing) {
+      if (existing.userId !== userId) {
+        throw new NotFoundException('예매 정보를 찾을 수 없습니다. 다시 시도해주세요.');
+      }
+
+      const existingSeatIds = await this.getReservationSeatIds(existing.id);
+      await this.bookingService.assertOwnedSeatLocks(userId, existing.showtimeId, existingSeatIds);
+
       return { reservationId: existing.id, orderId: dto.orderId };
     }
 
@@ -108,6 +130,12 @@ export class ReservationService {
     if (expectedAmount !== dto.amount) {
       throw new BadRequestException('금액이 일치하지 않습니다');
     }
+
+    await this.bookingService.assertOwnedSeatLocks(
+      userId,
+      dto.showtimeId,
+      dto.seats.map((seat) => seat.seatId),
+    );
 
     // 4. Create pending reservation + seats atomically
     const reservationNumber = this.generateReservationNumber();
