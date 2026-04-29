@@ -47,6 +47,7 @@ describe('ResetPasswordPage', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 
   describe('token query 없을 때 (request 모드)', () => {
@@ -72,6 +73,7 @@ describe('ResetPasswordPage', () => {
     });
 
     it('confirm 제출 성공 시 fetch 가 올바른 path + body 로 호출된다', async () => {
+      vi.stubEnv('NEXT_PUBLIC_API_URL', 'https://api.heygrabit.com');
       const fetchMock = vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
@@ -97,8 +99,14 @@ describe('ResetPasswordPage', () => {
       });
 
       const [url, init] = fetchMock.mock.calls[0];
-      expect(String(url)).toContain('/api/v1/auth/password-reset/confirm');
+      expect(String(url)).toBe(
+        'https://api.heygrabit.com/api/v1/auth/password-reset/confirm',
+      );
       expect((init as RequestInit).method).toBe('POST');
+      expect((init as RequestInit).credentials).toBe('include');
+      expect((init as RequestInit).headers).toEqual({
+        'Content-Type': 'application/json',
+      });
       const body = JSON.parse((init as RequestInit).body as string);
       expect(body.token).toBe('abc.def.ghi');
       expect(body.newPassword).toBe('Test1234!');
