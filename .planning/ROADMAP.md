@@ -296,10 +296,13 @@ Plans:
   1. reservation prepare가 모든 requested seat의 active lock owner를 검증하고 mismatch/expired lock을 거부한다.
   2. payment confirm이 active lock ownership 없이 sold 전환을 수행하지 않는다.
   3. expired/released/other-user lock에 대한 API and E2E regression tests가 추가된다.
-**Plans:** 0 plans
+**Plans:** 4 plans
 
 Plans:
-- [ ] TBD (run `/gsd-plan-phase 19`)
+- [ ] 19-01-PLAN.md — Wave 0 backend/web ownership regression tests
+- [ ] 19-02-PLAN.md — BookingService Valkey ownership assert/consume helpers
+- [ ] 19-03-PLAN.md — Reservation prepare/confirm ownership enforcement
+- [ ] 19-04-PLAN.md — Confirm/complete lock rejection UX and E2E coverage
 
 ### Phase 20: Valkey production connectivity contract
 
