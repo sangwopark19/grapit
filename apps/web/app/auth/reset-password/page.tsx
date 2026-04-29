@@ -40,7 +40,7 @@ function ResetPasswordInner() {
   const token = searchParams.get('token') ?? '';
 
   if (token !== '') {
-    return <ConfirmView token={token} />;
+    return <ConfirmView key={token} token={token} />;
   }
   return <RequestView />;
 }

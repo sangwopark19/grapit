@@ -148,6 +148,39 @@ describe('ResetPasswordPage', () => {
       expect(body.newPasswordConfirm).toBe('Test1234!');
     });
 
+    it('token query 변경 후 제출하면 최신 token을 사용한다', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ message: '비밀번호가 변경되었습니다' }),
+      } as Response);
+      vi.stubGlobal('fetch', fetchMock);
+
+      const { rerender } = render(<ResetPasswordPage />);
+      mockSearchParams.current = new URLSearchParams('token=new.token.value');
+      rerender(<ResetPasswordPage />);
+
+      const user = userEvent.setup();
+      const pwInputs = document.querySelectorAll<HTMLInputElement>(
+        'input[autocomplete="new-password"]',
+      );
+      await user.type(pwInputs[0], 'Test1234!');
+      await user.type(pwInputs[1], 'Test1234!');
+      await user.click(
+        screen.getByRole('button', {
+          name: /비밀번호 변경|변경하기|설정|확인/,
+        }),
+      );
+
+      await vi.waitFor(() => {
+        expect(fetchMock).toHaveBeenCalled();
+      });
+
+      const [, init] = fetchMock.mock.calls[0];
+      const body = JSON.parse((init as RequestInit).body as string);
+      expect(body.token).toBe('new.token.value');
+    });
+
     it('401 응답 시 에러 UI + "다시 요청하기" 링크가 표시된다', async () => {
       const fetchMock = vi.fn().mockResolvedValue({
         ok: false,
