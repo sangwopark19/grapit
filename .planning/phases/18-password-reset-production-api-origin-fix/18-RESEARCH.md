@@ -342,22 +342,22 @@ This test locks the audit's exact failure mode instead of relying on manual revi
 | A1 | Preview/staging should use a non-local public API origin through `NEXT_PUBLIC_API_URL`, but the repo has no concrete preview deploy workflow to verify the exact URL. [ASSUMED] | Summary, Pitfall 3 | Planner may over-specify preview behavior that does not exist yet; document as contract rather than implementing preview infra. |
 | A2 | Phase 18 UAT can use an existing password-based production account. [ASSUMED] | Validation Architecture | If no such account exists, the plan must add a manual precondition to create one before smoke. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **What is the actual preview/staging API URL?**  
    - What we know: Production uses `CLOUD_RUN_API_URL=https://api.heygrabit.com`, and deploy passes it as `NEXT_PUBLIC_API_URL`. [VERIFIED: deploy.yml, 13-HANDOFF.md]  
    - What's unclear: No active preview deployment workflow defines a separate preview API origin. [VERIFIED: rg preview/staging/CLOUD_RUN_API_URL]  
-   - Recommendation: document preview contract as "must set `NEXT_PUBLIC_API_URL` to that environment's public API origin; do not rely on `/api` rewrite." [ASSUMED]
+   - RESOLVED: Phase 18 treats preview/staging as a contract only. Preview must set `NEXT_PUBLIC_API_URL` to that environment's public API origin and must not rely on `/api` rewrite, but Phase 18 does not implement preview infrastructure. [ASSUMED]
 
 2. **Should production build hard-fail when `NEXT_PUBLIC_API_URL` is empty?**  
    - What we know: Missing production API URL caused this class of risk, and Next public env is build-time. [VERIFIED: audit gap, Context7 Next docs]  
    - What's unclear: Local `NODE_ENV=production pnpm build` workflows may currently depend on an empty value. [ASSUMED]  
-   - Recommendation: Phase 18 should at least test deploy.yml build arg and production rewrite absence; a hard build failure can be added if the planner accepts stricter local-build requirements. [ASSUMED]
+   - RESOLVED: Phase 18 guards localhost production origins in `apiUrl()` and production rewrites, and records the deploy build-arg contract, but it does not make empty `NEXT_PUBLIC_API_URL` a build failure. [ASSUMED]
 
 3. **Should CORS origins split from reset-link origin?**  
    - What we know: `main.ts` treats `FRONTEND_URL` as comma-separated CORS origins, but `auth.service.ts` treats it as a single reset-link prefix. [VERIFIED: main.ts:20-43, auth.service.ts:247-249]  
    - What's unclear: Whether preview requires cross-origin API calls before a dedicated env split exists. [ASSUMED]  
-   - Recommendation: do not expand Phase 18 into backend config refactor unless preview UAT is blocked; record it as follow-up if needed. [ASSUMED]
+   - RESOLVED: CORS/reset-link env separation is out of Phase 18 unless preview UAT is blocked. Production `FRONTEND_URL` remains a single canonical web URL for reset-link generation. [ASSUMED]
 
 ## Environment Availability
 
