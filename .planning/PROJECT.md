@@ -25,6 +25,7 @@
 - ✓ CI/CD + Docker + Sentry + Cloud Run 배포 — v1.0
 - ✓ Upstash Redis 제거, ioredis 단일 클라이언트로 Google Memorystore for Valkey 전환 — Phase 7 (v1.1) *(코드 레벨 완료, 런타임 검증은 07-HUMAN-UAT.md)*
 - ✓ 공연 카탈로그 Redis 캐시 레이어 (read-through + admin CRUD 무효화) — Phase 7 (v1.1)
+- ✓ 프로덕션 password reset email → confirm → login flow가 public API origin을 사용하고 localhost rewrite에 의존하지 않음 — Phase 18 (v1.1) *(Sentry email-service 독립 관측은 caveat로 추적)*
 
 ### Active
 
@@ -56,7 +57,7 @@
 
 ## Context
 
-### Current State (v1.1 complete — 2026-04-21)
+### Current State (v1.1 stabilization active — 2026-04-29)
 
 - **v1.1 milestone 완료:** Phase 6~12 전 구간 shipped. Phase 12 "UX 현대화"까지 포함하여 안정화·고도화 단계 종료
 - **Phase 12 산출:** shadcn UI 시스템 modernize(globals.css 토큰), 좌석 선택 visual feedback(Option C useEffect fill transition + 체크마크 fade-in/out), react-zoom-pan-pinch 내장 MiniMap viewport rect 동기화, 모바일 WCAG 2.5.5 터치 타겟(44.8px first paint), admin SVG unified parsing contract (`[data-stage]` root+descendant + enum), UX-01~UX-06 6개 requirement 모두 validated
@@ -67,6 +68,7 @@
 - **Phase 12 잔여 UAT:** 12-HUMAN-UAT.md 3건 (admin/dashboard 시각 톤앤매너 · 실 모바일 터치 오탭 · hydration warning 0건) — 자동 검증 PASS + plan 12-03.5 smoke test 간접 증거 완비, 추후 prod smoke로 최종 close
 - **Phase 13 완료 (2026-04-23):** 브랜드 `grapit → grabit` 일괄 rename + heygrabit.com apex/www + api 라이브 (LB SNI 3-host HTTPS 200). 7-day grace cleanup + 실기기 HUMAN-UAT 수동 잔여
 - **Phase 14 완료 (2026-04-24):** SMS OTP CROSSSLOT fix — `{sms:${e164}}:<role>` hash-tag 스킴으로 전환, 4-심볼 module export(smsOtpKey/smsAttemptsKey/smsVerifiedKey/VERIFY_AND_INCREMENT_LUA)를 Plan 02/03 통합 테스트의 single source of truth 로 확정, cluster-mode CROSSSLOT 회귀 가드(`sms-cluster-crossslot.integration.spec.ts`) + ci.yml `test:integration` step 추가, phone-verification server-message-priority(D-07/D-08) UX 분기. 자동 검증 8/9 (api 283/283 + web 143/143 green, typecheck 0 errors, code review 0 critical). 잔여 HUMAN-UAT 3건: SC-1 실기기 프로덕션 SMS 인증 · ci.yml integration step PR green · pre-existing `sms-throttle.integration.spec.ts` TTL 2건 (@grabit rename 여파 — deferred-items.md)
+- **Phase 18 완료 (2026-04-29):** Password reset production API origin fix — production `next.config.ts` rewrites가 `[]`로 고정되어 `/api`/`socket.io`가 `localhost:8080`으로 새지 않으며, web API callers는 `apiUrl()`을 통해 `https://api.heygrabit.com` public origin을 사용한다. 최종 Cloud Run web revision `grabit-web-00023-62r`, API revision `grabit-api-00021-nnn` 기준 reset email → confirm POST 200 → login success evidence 기록. 자동 검증 web 186/186, API auth/email 323/323 green. 잔여 caveat: Sentry `component:email-service` zero-count/event-id는 독립 확인하지 않고 operator-approved caveat로 추적.
 
 ### 참조 사이트
 NOL 티켓(nol.interpark.com/ticket)을 상세 분석한 5개 문서가 docs/에 있음:
@@ -139,4 +141,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-24 — Phase 14 SMS OTP CROSSSLOT fix 완료 (hash-tag 키 스킴 전환 + cluster-mode 회귀 가드 + phone-verification server-message 분기). 자동 검증 8/9, HUMAN-UAT 3건 지속 추적. Phase 13/14 모두 v1.1 안정화 연장선.*
+*Last updated: 2026-04-29 — Phase 18 password reset production API origin fix 완료. Production reset email → public API confirm → login smoke가 Cloud Run revision evidence와 함께 기록됐고, Sentry email-service 독립 관측만 caveat로 남김.*
