@@ -51,11 +51,14 @@ class InMemoryRedis {
     }
 
     if (nx && this.store.has(key)) return null;
-    this.store.set(key, value);
 
+    const prev = this.ttls.get(key);
+    if (prev) clearTimeout(prev);
+    this.ttls.delete(key);
+    this.expiries.delete(key);
+
+    this.store.set(key, value);
     if (ttlMs !== undefined && !Number.isNaN(ttlMs)) {
-      const prev = this.ttls.get(key);
-      if (prev) clearTimeout(prev);
       this.expiries.set(key, Date.now() + ttlMs);
       this.ttls.set(key, setTimeout(() => {
         this.store.delete(key);

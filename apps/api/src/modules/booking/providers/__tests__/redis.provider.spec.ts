@@ -111,6 +111,7 @@ describe('redisProvider factory', () => {
       decr: (key: string) => Promise<number>;
       ping: () => Promise<string>;
       pttl: (key: string) => Promise<number>;
+      ttl: (key: string) => Promise<number>;
       eval: (script: string, numKeys: number, ...keysAndArgs: (string | number)[]) => Promise<unknown>;
       sadd: (key: string, ...members: string[]) => Promise<number>;
       srem: (key: string, ...members: string[]) => Promise<number>;
@@ -159,6 +160,18 @@ describe('redisProvider factory', () => {
       const ok = await redis.set('cache:perf:123', '{"v":1}', 'EX', 300);
       expect(ok).toBe('OK');
       expect(await redis.get('cache:perf:123')).toBe('{"v":1}');
+    });
+
+    it('set(key, value) clears a previous TTL like real Redis', async () => {
+      const redis = createMock();
+      await redis.set('cache:ttl-clear', 'expires', 'EX', 60);
+      expect(await redis.pttl('cache:ttl-clear')).toBeGreaterThan(0);
+
+      await redis.set('cache:ttl-clear', 'persistent');
+
+      expect(await redis.get('cache:ttl-clear')).toBe('persistent');
+      expect(await redis.pttl('cache:ttl-clear')).toBe(-1);
+      expect(await redis.ttl('cache:ttl-clear')).toBe(-1);
     });
 
     it('decr() decrements and can go below zero (rollback parity with real Redis)', async () => {
