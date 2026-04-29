@@ -248,6 +248,7 @@ test.describe('Toss Payments E2E', () => {
 
     await expect(page.getByText('예매를 완료하지 못했습니다')).toBeVisible({ timeout: 10000 });
     await expect(page.getByText('이미 다른 사용자가 선택한 좌석입니다.')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('button', { name: '예매 내역 확인' })).toBeVisible();
     await expect(page.getByText(/예매가 완료|완료되었습니다/)).not.toBeVisible();
   });
 });

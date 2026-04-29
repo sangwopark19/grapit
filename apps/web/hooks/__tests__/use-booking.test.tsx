@@ -127,4 +127,26 @@ describe('use-booking payment mutations', () => {
       statusCode: 409,
     });
   });
+
+  it('keeps ApiClientError 409 other-owner message as the confirm mutation error', async () => {
+    const payload: ConfirmPaymentRequest = {
+      paymentKey: 'test_payment_key_other_owner',
+      orderId: 'GRP-LOCK-OTHER-OWNER',
+      amount: 50000,
+    };
+    const error = new ApiClientError(
+      '이미 다른 사용자가 선택한 좌석입니다.',
+      409,
+    );
+    postMock.mockRejectedValueOnce(error);
+
+    const { result } = renderHook(() => useConfirmPayment(), {
+      wrapper: createWrapper(),
+    });
+
+    await expect(result.current.mutateAsync(payload)).rejects.toMatchObject({
+      message: '이미 다른 사용자가 선택한 좌석입니다.',
+      statusCode: 409,
+    });
+  });
 });
