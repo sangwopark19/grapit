@@ -146,6 +146,20 @@ jobs:
 
       # Build & Push Web image
       # WR-05: API/WS URL 은 vars.CLOUD_RUN_API_URL 로 통일 (이전: 하드코딩).
+      - name: Validate production public API URL
+        run: |
+          api_url="${{ vars.CLOUD_RUN_API_URL }}"
+          if [ -z "$api_url" ]; then
+            echo "::error::CLOUD_RUN_API_URL must be set for web production build"
+            exit 1
+          fi
+
+          case "$api_url" in
+            http://localhost*|https://localhost*|http://127.0.0.1*|https://127.0.0.1*|http://0.0.0.0*|https://0.0.0.0*|http://[[]::1[]]*|https://[[]::1[]]*)
+              echo "::error::CLOUD_RUN_API_URL must not point to localhost for web production build"
+              exit 1
+              ;;
+          esac
       - name: Build Web image
         run: |
           docker build -f apps/web/Dockerfile \
