@@ -49,6 +49,8 @@ function createMockBookingService() {
     unlockAllSeats: vi.fn().mockResolvedValue({ unlockedSeats: [] }),
     assertOwnedSeatLocks: vi.fn().mockResolvedValue(undefined),
     consumeOwnedSeatLocks: vi.fn().mockResolvedValue({ consumedSeatIds: [] }),
+    acquirePaymentConfirmLock: vi.fn().mockResolvedValue(true),
+    releasePaymentConfirmLock: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -660,6 +662,19 @@ describe('ReservationService', () => {
     const showtimeId = randomUUID();
     const orderId = 'GRP-LOCK-CONFIRM-ABCDE';
 
+    it('rejects concurrent confirm for the same orderId before reading payment state', async () => {
+      mockBookingService.acquirePaymentConfirmLock.mockResolvedValueOnce(false);
+
+      await expect(service.confirmAndCreateReservation(
+        { paymentKey: 'pk_test_123', orderId, amount: 150000 },
+        userId,
+      )).rejects.toThrow('결제 확인이 이미 진행 중입니다.');
+
+      expect(mockDb.select).not.toHaveBeenCalled();
+      expect(mockTossClient.confirmPayment).not.toHaveBeenCalled();
+      expect(mockBookingService.releasePaymentConfirmLock).not.toHaveBeenCalled();
+    });
+
     it('confirmAndCreateReservation rejects invalid locks before Toss confirm', async () => {
       setupConfirmReservationBase({
         reservationId,
@@ -682,6 +697,8 @@ describe('ReservationService', () => {
       expect(mockBookingService.assertOwnedSeatLocks).toHaveBeenCalledWith(userId, showtimeId, ['A-1', 'A-2']);
       expect(mockTossClient.confirmPayment).not.toHaveBeenCalled();
       expect(mockDb.transaction).not.toHaveBeenCalled();
+      const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
+      expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
     });
 
     it('confirmAndCreateReservation keeps confirmed reservation when post-commit lock cleanup fails', async () => {
@@ -707,6 +724,8 @@ describe('ReservationService', () => {
       expect(mockBookingService.consumeOwnedSeatLocks).toHaveBeenCalledWith(userId, showtimeId, ['A-1', 'A-2']);
       expect(mockTossClient.cancelPayment).not.toHaveBeenCalled();
       expect(mockDb.transaction).toHaveBeenCalledOnce();
+      const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
+      expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
     });
 
     it('cancels Toss and rejects when conditional sold transition detects an already sold seat', async () => {
@@ -746,6 +765,8 @@ describe('ReservationService', () => {
       expect(mockTossClient.cancelPayment).toHaveBeenCalledWith('pk_test_123', '서버 오류로 인한 자동 취소');
       expect(mockBookingService.consumeOwnedSeatLocks).not.toHaveBeenCalled();
       expect(mockBookingGateway.broadcastSeatUpdate).not.toHaveBeenCalled();
+      const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
+      expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
     });
 
     it('existing payment idempotency returns detail without active lock ownership check', async () => {
@@ -761,6 +782,8 @@ describe('ReservationService', () => {
       expect(mockBookingService.assertOwnedSeatLocks).not.toHaveBeenCalled();
       expect(mockBookingService.consumeOwnedSeatLocks).not.toHaveBeenCalled();
       expect(mockTossClient.confirmPayment).not.toHaveBeenCalled();
+      const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
+      expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
     });
   });
 

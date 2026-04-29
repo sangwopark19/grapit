@@ -7,6 +7,7 @@ import {
   CONSUME_OWNED_SEAT_LOCKS_LUA,
   LOCK_EXPIRED_MESSAGE,
   LOCK_OTHER_OWNER_MESSAGE,
+  RELEASE_PAYMENT_CONFIRM_LOCK_LUA,
 } from '../booking.service.js';
 import type { BookingGateway } from '../booking.gateway.js';
 
@@ -378,6 +379,45 @@ describe('BookingService', () => {
       expect(flatKeys).not.toContain(`{${showtimeId}}:seat:A-3`);
       expect(mockRedis.del).not.toHaveBeenCalled();
       expect(mockRedis.srem).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('payment confirm lock helpers', () => {
+    it('acquirePaymentConfirmLock stores an order-level NX lock with a 60 second TTL', async () => {
+      mockRedis.set.mockResolvedValue('OK');
+
+      await expect(service.acquirePaymentConfirmLock('order-123', 'token-123'))
+        .resolves
+        .toBe(true);
+
+      expect(mockRedis.set).toHaveBeenCalledWith(
+        '{payment-confirm}:order-123',
+        'token-123',
+        'EX',
+        60,
+        'NX',
+      );
+    });
+
+    it('acquirePaymentConfirmLock returns false when another confirm owns the order lock', async () => {
+      mockRedis.set.mockResolvedValue(null);
+
+      await expect(service.acquirePaymentConfirmLock('order-123', 'token-123'))
+        .resolves
+        .toBe(false);
+    });
+
+    it('releasePaymentConfirmLock compares the lock token before deleting', async () => {
+      mockRedis.eval.mockResolvedValue(1);
+
+      await service.releasePaymentConfirmLock('order-123', 'token-123');
+
+      expect(mockRedis.eval).toHaveBeenCalledWith(
+        RELEASE_PAYMENT_CONFIRM_LOCK_LUA,
+        1,
+        '{payment-confirm}:order-123',
+        'token-123',
+      );
     });
   });
 

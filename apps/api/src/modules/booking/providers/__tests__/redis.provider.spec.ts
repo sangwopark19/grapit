@@ -4,6 +4,7 @@ import IORedis from 'ioredis';
 import {
   ASSERT_OWNED_SEAT_LOCKS_LUA,
   CONSUME_OWNED_SEAT_LOCKS_LUA,
+  RELEASE_PAYMENT_CONFIRM_LOCK_LUA,
 } from '../../booking.service.js';
 import { redisProvider, REDIS_CLIENT } from '../redis.provider.js';
 import {
@@ -274,6 +275,28 @@ describe('redisProvider factory', () => {
         expect(await redis.get(seatA3Key)).toBe(userId);
         expect(await redis.smembers(userSeatsKey)).toContain('A-3');
         expect(await redis.smembers(lockedSeatsKey)).toContain('A-3');
+      });
+
+      it('RELEASE_PAYMENT_CONFIRM_LOCK_LUA deletes only the matching order lock token', async () => {
+        const redis = createMock();
+        const lockKey = '{payment-confirm}:order-123';
+        await redis.set(lockKey, 'token-123', 'EX', 60);
+
+        await expect(redis.eval(
+          RELEASE_PAYMENT_CONFIRM_LOCK_LUA,
+          1,
+          lockKey,
+          'wrong-token',
+        )).resolves.toBe(0);
+        expect(await redis.get(lockKey)).toBe('token-123');
+
+        await expect(redis.eval(
+          RELEASE_PAYMENT_CONFIRM_LOCK_LUA,
+          1,
+          lockKey,
+          'token-123',
+        )).resolves.toBe(1);
+        expect(await redis.get(lockKey)).toBeNull();
       });
     });
   });

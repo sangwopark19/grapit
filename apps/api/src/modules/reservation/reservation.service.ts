@@ -8,6 +8,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { eq, and, sql, desc, inArray } from 'drizzle-orm';
 import { DRIZZLE, type DrizzleDB } from '../../database/drizzle.provider.js';
 import {
@@ -176,6 +177,34 @@ export class ReservationService {
   }
 
   async confirmAndCreateReservation(
+    dto: ConfirmPaymentRequest,
+    userId: string,
+  ): Promise<ReservationDetail> {
+    const confirmLockToken = randomUUID();
+    const confirmLockAcquired = await this.bookingService.acquirePaymentConfirmLock(
+      dto.orderId,
+      confirmLockToken,
+    );
+
+    if (!confirmLockAcquired) {
+      throw new ConflictException('결제 확인이 이미 진행 중입니다.');
+    }
+
+    try {
+      return await this.confirmAndCreateReservationLocked(dto, userId);
+    } finally {
+      try {
+        await this.bookingService.releasePaymentConfirmLock(dto.orderId, confirmLockToken);
+      } catch (releaseError) {
+        this.logger.error(
+          `Payment confirm lock release failed. orderId=${dto.orderId}`,
+          releaseError instanceof Error ? releaseError.stack : String(releaseError),
+        );
+      }
+    }
+  }
+
+  private async confirmAndCreateReservationLocked(
     dto: ConfirmPaymentRequest,
     userId: string,
   ): Promise<ReservationDetail> {

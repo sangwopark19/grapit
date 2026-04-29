@@ -160,6 +160,16 @@ end
 return {1, 'OK', tostring(#ARGV - 1), ''}
 `;
 
+const PAYMENT_CONFIRM_LOCK_TTL = 60;
+
+export const RELEASE_PAYMENT_CONFIRM_LOCK_LUA = `
+-- RELEASE_PAYMENT_CONFIRM_LOCK_LUA
+if redis.call('GET', KEYS[1]) == ARGV[1] then
+  return redis.call('DEL', KEYS[1])
+end
+return 0
+`;
+
 @Injectable()
 export class BookingService {
   constructor(
@@ -322,6 +332,17 @@ export class BookingService {
     if (conflict) throw conflict;
 
     return { consumedSeatIds: seatIds };
+  }
+
+  async acquirePaymentConfirmLock(orderId: string, lockToken: string): Promise<boolean> {
+    const lockKey = `{payment-confirm}:${orderId}`;
+    const result = await this.redis.set(lockKey, lockToken, 'EX', PAYMENT_CONFIRM_LOCK_TTL, 'NX');
+    return result === 'OK';
+  }
+
+  async releasePaymentConfirmLock(orderId: string, lockToken: string): Promise<void> {
+    const lockKey = `{payment-confirm}:${orderId}`;
+    await this.redis.eval(RELEASE_PAYMENT_CONFIRM_LOCK_LUA, 1, lockKey, lockToken);
   }
 
   private lockConflictFromResult(result: SeatLockOwnershipResult): ConflictException | null {

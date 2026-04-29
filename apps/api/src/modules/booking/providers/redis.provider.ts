@@ -216,6 +216,9 @@ class InMemoryRedis {
     if (script.includes('CONSUME_OWNED_SEAT_LOCKS_LUA')) {
       return this.evalConsumeOwnedSeatLocks(keys, args);
     }
+    if (script.includes('RELEASE_PAYMENT_CONFIRM_LOCK_LUA')) {
+      return this.evalReleasePaymentConfirmLock(keys, args);
+    }
     if (keys.length === 3 && args.length === 3 && script.includes('VERIFIED')) {
       return this.evalVerifyAndIncrement(keys, args);
     }
@@ -382,6 +385,17 @@ class InMemoryRedis {
     }
 
     return [1, 'OK', String(seatIds.length), ''];
+  }
+
+  private async evalReleasePaymentConfirmLock(keys: string[], args: string[]): Promise<number> {
+    const [lockKey] = keys;
+    const [lockToken] = args;
+
+    if (this.store.get(lockKey!) !== lockToken) {
+      return 0;
+    }
+
+    return this.del(lockKey!);
   }
 
   private evalGetValidLockedSeats(keys: string[], args: string[]): string[] {
