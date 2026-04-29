@@ -252,6 +252,46 @@ test.describe('Toss Payments E2E', () => {
     await expect(page.getByText(/예매가 완료|완료되었습니다/)).not.toBeVisible();
   });
 
+  test('complete page: recovery failure after non-lock confirm error renders terminal failed state', async ({
+    page,
+  }) => {
+    await loginAsTestUser(page);
+
+    await page.route('**/api/v1/payments/confirm', async (route: Route) => {
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          statusCode: 500,
+          message: '결제 승인 후 처리 중 오류가 발생했습니다.',
+          error: 'Internal Server Error',
+        }),
+      });
+    });
+    await page.route('**/api/v1/reservations?orderId=**', async (route: Route) => {
+      await route.fulfill({
+        status: 404,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          statusCode: 404,
+          message: '예매 정보를 찾을 수 없습니다.',
+          error: 'Not Found',
+        }),
+      });
+    });
+
+    await page.goto(
+      '/booking/e2e-test-performance/complete?paymentKey=test_payment_key_recovery_failure&orderId=test_order_recovery_failure&amount=50000',
+    );
+
+    await expect(page.getByText('예매를 완료하지 못했습니다')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('결제 확인에 실패했습니다. 예매 내역을 확인해주세요.')).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.getByRole('button', { name: '예매 내역 확인' })).toBeVisible();
+    await expect(page.locator('.animate-spin')).not.toBeVisible();
+  });
+
   test('complete page: missing or invalid amount renders invalid access without confirm request', async ({
     page,
   }) => {

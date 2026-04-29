@@ -58,20 +58,24 @@ function CompletePageContent() {
   const [confirmFailed, setConfirmFailed] = useState(false);
   const shouldRecover = confirmFailed && !!orderId;
 
-  const { data: recoveredReservation } = useReservationByOrderId(
-    shouldRecover ? orderId : null,
-  );
+  const {
+    data: recoveredReservation,
+    isFetched: recoveryFetched,
+    isError: recoveryError,
+  } = useReservationByOrderId(shouldRecover ? orderId : null);
 
   useEffect(() => {
-    if (!shouldRecover || !recoveredReservation) return;
+    if (!shouldRecover || (!recoveryFetched && !recoveryError)) return;
 
-    if (recoveredReservation.status === 'CONFIRMED') {
+    if (recoveredReservation?.status === 'CONFIRMED') {
       setBookingData(recoveredReservation);
-    } else {
-      toast.info('예매 내역에서 확인해주세요.');
-      router.replace('/mypage?tab=reservations');
+      clearBooking();
+      return;
     }
-  }, [shouldRecover, recoveredReservation, router]);
+
+    setConfirmationErrorMessage('결제 확인에 실패했습니다. 예매 내역을 확인해주세요.');
+    setConfirmFailed(false);
+  }, [shouldRecover, recoveryFetched, recoveryError, recoveredReservation, clearBooking]);
 
   // Confirm payment on mount — only needs URL params (server has pending order)
   const confirmPayment = useCallback(async () => {
@@ -181,7 +185,11 @@ function CompletePageContent() {
   }
 
   // Loading state
-  if (isConfirming || (!bookingData && !confirmMutation.isError)) {
+  if (
+    isConfirming ||
+    (shouldRecover && !recoveryFetched && !recoveryError) ||
+    (!bookingData && !confirmMutation.isError)
+  ) {
     return <CompleteSkeleton />;
   }
 
