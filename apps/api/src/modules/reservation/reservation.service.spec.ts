@@ -91,6 +91,18 @@ describe('ReservationService', () => {
     return { seatId, tierName: 'VIP', price: 50000, row: 'A', number };
   }
 
+  function seatConfigRowsFor(seats: Array<string | SeatSelection>) {
+    return [{
+      seatConfig: {
+        tiers: [{
+          tierName: 'VIP',
+          color: '#111111',
+          seatIds: seats.map((seat) => (typeof seat === 'string' ? seat : seat.seatId)),
+        }],
+      },
+    }];
+  }
+
   function chainResult<T>(rows: T[]) {
     return {
       from: vi.fn().mockReturnValue({
@@ -109,7 +121,7 @@ describe('ReservationService', () => {
       .mockReturnValueOnce(chainResult([]))
       .mockReturnValueOnce(chainResult([{ id: dto.showtimeId, performanceId: 'performance-1', dateTime: new Date() }]))
       .mockReturnValueOnce(chainResult([{ tierName: 'VIP', price: 50000 }]))
-      .mockReturnValueOnce(chainResult([]));
+      .mockReturnValueOnce(chainResult(seatConfigRowsFor(dto.seats)));
 
     mockDb.transaction.mockResolvedValue({
       id: 'reservation-created',
@@ -129,6 +141,7 @@ describe('ReservationService', () => {
       typeof seat === 'string' ? seat : seat.seatId
     ));
     const amount = dto.amount ?? seats.length * 50000;
+    const seatMapSeatIds = Array.from(new Set([...seats, 'A-1', 'A-2', 'A-3', 'B-1']));
     mockDb.select
       .mockReturnValueOnce(chainResult([{
         id: 'reservation-existing',
@@ -140,7 +153,7 @@ describe('ReservationService', () => {
       }]))
       .mockReturnValueOnce(chainResult([{ id: dto.showtimeId, performanceId: 'performance-1', dateTime: new Date() }]))
       .mockReturnValueOnce(chainResult([{ tierName: 'VIP', price: 50000 }]))
-      .mockReturnValueOnce(chainResult([]))
+      .mockReturnValueOnce(chainResult(seatConfigRowsFor(seatMapSeatIds)))
       .mockReturnValueOnce(chainResult(seats.map((seatId) => ({
         seatId,
         tierName: 'VIP',
@@ -244,7 +257,14 @@ describe('ReservationService', () => {
               { id: randomUUID(), performanceId, tierName: 'VIP', price: 100000, sortOrder: 0 },
               { id: randomUUID(), performanceId, tierName: 'R', price: 80000, sortOrder: 1 },
             ])
-            .mockResolvedValueOnce([]),
+            .mockResolvedValueOnce([{
+              seatConfig: {
+                tiers: [
+                  { tierName: 'VIP', color: '#111111', seatIds: ['A-1', 'A-2'] },
+                  { tierName: 'R', color: '#222222', seatIds: ['B-1'] },
+                ],
+              },
+            }]),
         }),
       });
 
@@ -294,12 +314,44 @@ describe('ReservationService', () => {
             .mockResolvedValueOnce([
               { id: randomUUID(), performanceId, tierName: 'VIP', price: 100000, sortOrder: 0 },
             ])
-            .mockResolvedValueOnce([]),
+            .mockResolvedValueOnce([{
+              seatConfig: {
+                tiers: [
+                  { tierName: 'NONEXISTENT', color: '#111111', seatIds: ['A-1'] },
+                ],
+              },
+            }]),
         }),
       });
 
       await expect(service.calculateTotalAmount(seats, performanceId))
         .rejects.toThrow(BadRequestException);
+    });
+
+    it.each([
+      ['missing', []],
+      ['null config', [{ seatConfig: null }]],
+      ['malformed tiers', [{ seatConfig: { tiers: 'VIP' } }]],
+      ['empty tiers', [{ seatConfig: { tiers: [] } }]],
+    ])('should fail closed when seat map config is %s', async (_caseName, seatMapRows) => {
+      const performanceId = randomUUID();
+      const seats: SeatSelection[] = [
+        { seatId: 'A-1', tierName: 'VIP', price: 1, row: 'client', number: '999' },
+      ];
+
+      mockDb.select.mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn()
+            .mockResolvedValueOnce([
+              { id: randomUUID(), performanceId, tierName: 'VIP', price: 100000, sortOrder: 0 },
+            ])
+            .mockResolvedValueOnce(seatMapRows),
+        }),
+      });
+
+      await expect(service.calculateTotalAmount(seats, performanceId))
+        .rejects
+        .toThrow('좌석 배치 정보가 유효하지 않습니다');
     });
 
     it('should throw BadRequestException for duplicate seat IDs', async () => {

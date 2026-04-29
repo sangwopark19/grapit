@@ -126,10 +126,13 @@ export class ReservationService {
 
     const tierPriceByName = new Map(tiers.map((tier) => [tier.tierName, tier.price]));
     const seatTierBySeatId = this.getSeatTierBySeatId(seatMapRows[0]?.seatConfig);
+    if (!seatTierBySeatId) {
+      throw new BadRequestException('좌석 배치 정보가 유효하지 않습니다');
+    }
 
     return seats.map((seat) => {
-      const tierName = seatTierBySeatId?.get(seat.seatId) ?? seat.tierName;
-      if (seatTierBySeatId && !seatTierBySeatId.has(seat.seatId)) {
+      const tierName = seatTierBySeatId.get(seat.seatId);
+      if (!tierName) {
         throw new BadRequestException('유효하지 않은 좌석입니다');
       }
 
@@ -138,9 +141,7 @@ export class ReservationService {
         throw new BadRequestException('유효하지 않은 등급입니다');
       }
 
-      const position = seatTierBySeatId
-        ? this.deriveSeatPosition(seat.seatId, seat)
-        : { row: seat.row, number: seat.number };
+      const position = this.deriveSeatPosition(seat.seatId, seat);
 
       return {
         ...seat,
