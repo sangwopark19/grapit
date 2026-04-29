@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
-status: "Phase 16 shipped - draft PR #27; external legal/operator sign-off pending"
-stopped_at: Completed 16-05-PLAN.md
-last_updated: "2026-04-28T08:43:14.050Z"
-last_activity: 2026-04-28
+status: "Phase 17 shipped — PR #28"
+stopped_at: Phase 17 context gathered
+last_updated: "2026-04-29T01:29:27.920Z"
+last_activity: 2026-04-29
 progress:
   total_phases: 15
-  completed_phases: 12
-  total_plans: 62
-  completed_plans: 61
+  completed_phases: 13
+  total_plans: 64
+  completed_plans: 63
   percent: 98
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** 사용자가 원하는 공연을 발견하고, 좌석을 직접 선택하여, 안정적으로 예매를 완료할 수 있는 것
-**Current focus:** Phase 16 — legal-pages-launch-url
+**Current focus:** Phase 17 — local-dev-health-indicator-fix-inmemoryredis-ping-capability complete; Phase 16 shipped with external sign-off pending
 
 ## Current Position
 
-Phase: 16 (legal-pages-launch-url) — EXECUTING
-Plan: 6 of 6
-Status: Phase 16 shipped - draft PR #27; external legal/operator sign-off pending
-Last activity: 2026-04-28
+Phase: 17 (local-dev-health-indicator-fix-inmemoryredis-ping-capability) — COMPLETE
+Plan: 2 of 2 complete
+Status: Phase 17 shipped — PR #28
+Last activity: 2026-04-29
 
-Progress: [██████████] 97%
+Progress: [██████████] 99%
 
 ## Performance Metrics
 
@@ -72,6 +72,8 @@ Progress: [██████████] 97%
 | Phase 16 P03 | 2min | 1 tasks | 1 files |
 | Phase 16 P04 | 5min | 3 tasks | 4 files |
 | Phase 16 P05 | 6min | 3 tasks | 4 files |
+| Phase 17 P01 | <1min | 2 tasks | 3 files |
+| Phase 17 P02 | <1min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -104,6 +106,7 @@ Full decision log in PROJECT.md Key Decisions table (10 decisions, all Good).
 - [Phase 16-05]: LegalDraftBanner deleted rather than runtime-flagged. — D-05 defines launch readiness as complete removal of the draft surface.
 - [Phase 16-05]: Signup dialogs keep prop-less TermsMarkdown. — DialogTitle remains the only visible title and D-11 dialog compatibility is preserved.
 - [Phase 16-05]: Cutover prerequisites centralized in 16-HUMAN-UAT.md. — Business values, mailbox checks, generic placeholder grep, and post-deploy URL/Footer/dialog checks remain operational gates for Plan 16-06.
+- [Phase 17]: Use a two-layer local health fix. — Add `InMemoryRedis.ping()` for ioredis surface parity and keep a RedisHealthIndicator capability probe so future local/test fallbacks without `ping()` report local fallback as up without masking real Redis ping failures.
 
 ### Pending Todos
 
@@ -138,8 +141,8 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-28T06:17:49.403Z
-Stopped at: Completed 16-05-PLAN.md
-Resume file: None
+Last session: 2026-04-29T00:36:57.611Z
+Stopped at: Phase 17 context gathered
+Resume file: .planning/phases/17-local-dev-health-indicator-fix-inmemoryredis-ping-capability/17-CONTEXT.md
 
 **Planned Phase:** 15 (resend-heygrabit-com-cutover-transactional-email-secret-mana) — 3 plans — 2026-04-24T08:54:14.266Z

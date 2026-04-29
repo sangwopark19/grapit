@@ -17,6 +17,10 @@ class InMemoryRedis {
   private ttls = new Map<string, NodeJS.Timeout>();
   private expiries = new Map<string, number>();
 
+  async ping(): Promise<'PONG'> {
+    return 'PONG';
+  }
+
   /**
    * Supports both call shapes used across the codebase:
    *  - Options-object: set(key, value, { nx: true, ex: 60 }) — internal/legacy

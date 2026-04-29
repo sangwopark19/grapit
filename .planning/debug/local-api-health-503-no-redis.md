@@ -1,8 +1,8 @@
 ---
-status: diagnosed
+status: resolved
 trigger: "Phase 13 UAT Test 1 — Fresh 시작 시 로컬 API /api/v1/health 가 503 Service Unavailable 반환"
 created: 2026-04-24T00:00:00Z
-updated: 2026-04-24T00:30:00Z
+updated: 2026-04-28T16:00:00+09:00
 goal: find_root_cause_only
 ---
 
@@ -86,6 +86,8 @@ root_cause: |
   결과적으로 health 엔드포인트 호출 시 indicator.isHealthy() 가 this.redis.ping() 을 호출 → 'this.redis.ping is not a function' TypeError → catch 에서 indicator.down() 반환 → Terminus 가 HealthCheckError 로 변환 → 503.
   HealthController 에도 dev-mode skip 가드가 없어 REDIS_URL 이 unset 이면 /health 전체가 실패한다.
   이 버그는 Phase 7-05 (7f34d8b) 에서 indicator 가 추가된 시점부터 존재했으며, Phase 13 rename 과는 무관한 pre-existing gap 이다. UAT 에서 처음 히트되어 노출됨.
-fix: "(not applied — find_root_cause_only mode)"
-verification: "(deferred to plan-phase --gaps implementation)"
-files_changed: []
+fix: "Phase 17 implemented `InMemoryRedis.ping()` and a RedisHealthIndicator no-ping capability probe."
+verification: "17-VERIFICATION.md passed. Focused provider/health tests 15/15, typecheck passed, lint exit 0."
+files_changed:
+  - apps/api/src/modules/booking/providers/redis.provider.ts
+  - apps/api/src/health/redis.health.indicator.ts

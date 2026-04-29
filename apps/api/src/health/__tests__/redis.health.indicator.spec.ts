@@ -52,6 +52,16 @@ describe('RedisHealthIndicator', () => {
     expect(result['redis']?.status).toBe('up');
   });
 
+  it('reports up when redis client has no ping method (local in-memory fallback)', async () => {
+    const redisWithoutPing = { get: vi.fn() };
+    indicator = new RedisHealthIndicator(mockHealth as never, redisWithoutPing as never);
+
+    const result = (await indicator.isHealthy('redis')) as IndicatorResult;
+
+    expect(result['redis']?.status).toBe('up');
+    expect(result['redis']?.message).toContain('ping unavailable');
+  });
+
   it('reports down when redis.ping() rejects with error', async () => {
     mockRedis.ping.mockRejectedValueOnce(new Error('ECONNREFUSED'));
 
