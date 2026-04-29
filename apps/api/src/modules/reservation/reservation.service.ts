@@ -427,10 +427,30 @@ export class ReservationService {
       amount: dto.amount,
     });
 
-    const confirmLockStillOwned = await this.bookingService.refreshPaymentConfirmLock(
-      dto.orderId,
-      confirmLockToken,
-    );
+    let confirmLockStillOwned: boolean;
+    try {
+      confirmLockStillOwned = await this.bookingService.refreshPaymentConfirmLock(
+        dto.orderId,
+        confirmLockToken,
+      );
+    } catch (lockError) {
+      this.logger.error(
+        `Payment confirm lock refresh failed after Toss confirm. paymentKey=${tossResponse.paymentKey}, orderId=${dto.orderId}`,
+        lockError instanceof Error ? lockError.stack : String(lockError),
+      );
+      try {
+        await this.tossClient.cancelPayment(tossResponse.paymentKey, '결제 확인 상태 검증 실패로 인한 자동 취소');
+        this.logger.log(`Confirm lock refresh compensation cancel succeeded. paymentKey=${tossResponse.paymentKey}`);
+      } catch (cancelError) {
+        this.logger.error(
+          `CRITICAL: Confirm lock refresh compensation cancel failed. paymentKey=${tossResponse.paymentKey}. Manual refund required.`,
+          cancelError instanceof Error ? cancelError.stack : String(cancelError),
+        );
+      }
+      throw new InternalServerErrorException(
+        '결제는 승인되었으나 처리 중 오류가 발생했습니다. 자동 취소를 시도했습니다. 고객센터에 문의해주세요.',
+      );
+    }
     if (!confirmLockStillOwned) {
       this.logger.error(
         `Payment confirm lock ownership lost after Toss confirm. paymentKey=${tossResponse.paymentKey}, orderId=${dto.orderId}`,

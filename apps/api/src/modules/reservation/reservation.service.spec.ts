@@ -3,6 +3,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -1006,6 +1007,35 @@ describe('ReservationService', () => {
       expect(mockTossClient.confirmPayment).toHaveBeenCalledOnce();
       expect(mockBookingService.assertOwnedSeatLocks).not.toHaveBeenCalled();
       expect(mockTossClient.cancelPayment).toHaveBeenCalledWith('pk_test_123', '결제 확인 중복 처리로 인한 자동 취소');
+      expect(mockDb.transaction).not.toHaveBeenCalled();
+      expect(mockBookingService.consumeOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockBookingGateway.broadcastSeatUpdate).not.toHaveBeenCalled();
+      const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
+      expect(mockBookingService.refreshPaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
+      expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
+    });
+
+    it('cancels Toss and rejects when confirm lock refresh throws after Toss confirm', async () => {
+      setupConfirmReservationBase({
+        reservationId,
+        showtimeId,
+        orderId,
+        userId,
+        amount: 150000,
+      });
+      mockBookingService.refreshPaymentConfirmLock
+        .mockResolvedValueOnce(true)
+        .mockRejectedValueOnce(new Error('Redis eval failed'));
+
+      await expect(service.confirmAndCreateReservation(
+        { paymentKey: 'pk_test_123', orderId, amount: 150000 },
+        userId,
+      )).rejects.toThrow(InternalServerErrorException);
+
+      expect(mockBookingService.extendOwnedSeatLocks).toHaveBeenCalledWith(userId, showtimeId, ['A-1', 'A-2'], 60);
+      expect(mockTossClient.confirmPayment).toHaveBeenCalledOnce();
+      expect(mockBookingService.assertOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockTossClient.cancelPayment).toHaveBeenCalledWith('pk_test_123', '결제 확인 상태 검증 실패로 인한 자동 취소');
       expect(mockDb.transaction).not.toHaveBeenCalled();
       expect(mockBookingService.consumeOwnedSeatLocks).not.toHaveBeenCalled();
       expect(mockBookingGateway.broadcastSeatUpdate).not.toHaveBeenCalled();
