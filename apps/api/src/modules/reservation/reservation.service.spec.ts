@@ -883,7 +883,7 @@ describe('ReservationService', () => {
       // tx.update should be called for reservation status AND seat_inventories (at least 3 calls: 1 for reservation + 2 for seats)
       expect(mockTx.update.mock.calls.length).toBeGreaterThanOrEqual(3);
       expect(mockBookingService.consumeOwnedSeatLocks.mock.invocationCallOrder[0])
-        .toBeGreaterThan(mockDb.transaction.mock.invocationCallOrder[0]!);
+        .toBeLessThan(mockDb.transaction.mock.invocationCallOrder[0]!);
     });
 
     it('should not call BookingService.unlockAllSeats after confirm success', async () => {
@@ -1044,7 +1044,7 @@ describe('ReservationService', () => {
       expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
     });
 
-    it('confirmAndCreateReservation keeps confirmed reservation when post-commit lock cleanup fails', async () => {
+    it('cancels Toss and does not mark sold when lock consume fails after Toss confirm', async () => {
       setupConfirmReservationBase({
         reservationId,
         showtimeId,
@@ -1052,23 +1052,22 @@ describe('ReservationService', () => {
         userId,
         amount: 150000,
       });
-      setupReservationDetailMocks({ reservationId, userId, amount: 150000 });
       mockBookingService.consumeOwnedSeatLocks.mockRejectedValueOnce(
         new ConflictException(LOCK_OTHER_OWNER_MESSAGE),
       );
-      mockDb.transaction.mockResolvedValue(undefined);
 
       await expect(service.confirmAndCreateReservation(
         { paymentKey: 'pk_test_123', orderId, amount: 150000 },
         userId,
-      )).resolves.toMatchObject({ id: reservationId });
+      )).rejects.toThrow(LOCK_OTHER_OWNER_MESSAGE);
 
       expect(mockBookingService.extendOwnedSeatLocks).toHaveBeenCalledWith(userId, showtimeId, ['A-1', 'A-2'], 60);
       expect(mockBookingService.assertOwnedSeatLocks).toHaveBeenCalledWith(userId, showtimeId, ['A-1', 'A-2']);
       expect(mockTossClient.confirmPayment).toHaveBeenCalledOnce();
       expect(mockBookingService.consumeOwnedSeatLocks).toHaveBeenCalledWith(userId, showtimeId, ['A-1', 'A-2']);
-      expect(mockTossClient.cancelPayment).not.toHaveBeenCalled();
-      expect(mockDb.transaction).toHaveBeenCalledOnce();
+      expect(mockTossClient.cancelPayment).toHaveBeenCalledWith('pk_test_123', '좌석 점유 만료로 인한 자동 취소');
+      expect(mockDb.transaction).not.toHaveBeenCalled();
+      expect(mockBookingGateway.broadcastSeatUpdate).not.toHaveBeenCalled();
       const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
       expect(mockBookingService.refreshPaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
       expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
@@ -1110,7 +1109,9 @@ describe('ReservationService', () => {
 
       expect(mockTossClient.confirmPayment).toHaveBeenCalledOnce();
       expect(mockTossClient.cancelPayment).toHaveBeenCalledWith('pk_test_123', '서버 오류로 인한 자동 취소');
-      expect(mockBookingService.consumeOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockBookingService.consumeOwnedSeatLocks).toHaveBeenCalledWith(userId, showtimeId, ['A-1', 'A-2']);
+      expect(mockBookingService.consumeOwnedSeatLocks.mock.invocationCallOrder[0])
+        .toBeLessThan(mockDb.transaction.mock.invocationCallOrder[0]!);
       expect(mockBookingGateway.broadcastSeatUpdate).not.toHaveBeenCalled();
       const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
       expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
@@ -1135,7 +1136,9 @@ describe('ReservationService', () => {
 
       expect(mockTossClient.confirmPayment).toHaveBeenCalledOnce();
       expect(mockTossClient.cancelPayment).not.toHaveBeenCalled();
-      expect(mockBookingService.consumeOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockBookingService.consumeOwnedSeatLocks).toHaveBeenCalledWith(userId, showtimeId, ['A-1', 'A-2']);
+      expect(mockBookingService.consumeOwnedSeatLocks.mock.invocationCallOrder[0])
+        .toBeLessThan(mockDb.transaction.mock.invocationCallOrder[0]!);
       expect(mockBookingGateway.broadcastSeatUpdate).not.toHaveBeenCalled();
       const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
       expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);

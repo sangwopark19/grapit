@@ -469,9 +469,10 @@ export class ReservationService {
 
     try {
       await this.bookingService.assertOwnedSeatLocks(userId, reservation.showtimeId, pendingSeatIds);
+      await this.bookingService.consumeOwnedSeatLocks(userId, reservation.showtimeId, pendingSeatIds);
     } catch (lockError) {
       this.logger.error(
-        `Seat lock ownership lost after Toss confirm. paymentKey=${tossResponse.paymentKey}, orderId=${dto.orderId}`,
+        `Seat lock ownership lost or consume failed after Toss confirm. paymentKey=${tossResponse.paymentKey}, orderId=${dto.orderId}`,
         lockError instanceof Error ? lockError.stack : String(lockError),
       );
       try {
@@ -578,15 +579,6 @@ export class ReservationService {
       }
       throw new InternalServerErrorException(
         '결제는 승인되었으나 처리 중 오류가 발생했습니다. 자동 취소를 시도했습니다. 고객센터에 문의해주세요.',
-      );
-    }
-
-    try {
-      await this.bookingService.consumeOwnedSeatLocks(userId, reservation.showtimeId, pendingSeatIds);
-    } catch (consumeError) {
-      this.logger.error(
-        `Seat lock cleanup failed after DB sold commit. reservationId=${reservation.id}, orderId=${dto.orderId}`,
-        consumeError instanceof Error ? consumeError.stack : String(consumeError),
       );
     }
 
