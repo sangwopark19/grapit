@@ -14,6 +14,13 @@ const MAX_SEATS = 4;
 /** Lock TTL in seconds (10 minutes, per BOOK-03) */
 const LOCK_TTL = 600;
 
+export const LOCK_EXPIRED_MESSAGE = '좌석 점유 시간이 만료되었습니다. 좌석을 다시 선택해주세요.';
+export const LOCK_OTHER_OWNER_MESSAGE = '이미 다른 사용자가 선택한 좌석입니다.';
+
+export type SeatLockOwnershipFailureReason = 'MISSING' | 'OTHER_OWNER';
+
+type SeatLockOwnershipResult = [number, string, string, string];
+
 /**
  * Lua script for atomic seat locking.
  * Cleans stale user-seats entries, checks count, SET NX, SADD + EXPIRE.
@@ -93,6 +100,64 @@ for i, sid in ipairs(members) do
   end
 end
 return alive
+`;
+
+/**
+ * Lua script for asserting that all requested seats are actively locked by the user.
+ *
+ * KEYS[i] = {showtimeId}:seat:{seatId}
+ * ARGV[1] = userId
+ * ARGV[2..] = requested seat IDs
+ *
+ * Returns: {1, 'OK', count, ''} or {0, 'MISSING'|'OTHER_OWNER', seatId, owner}
+ */
+export const ASSERT_OWNED_SEAT_LOCKS_LUA = `
+-- ASSERT_OWNED_SEAT_LOCKS_LUA
+local userId = ARGV[1]
+for i = 1, #KEYS do
+  local owner = redis.call('GET', KEYS[i])
+  local seatId = ARGV[i + 1]
+  if not owner then
+    return {0, 'MISSING', seatId, ''}
+  end
+  if owner ~= userId then
+    return {0, 'OTHER_OWNER', seatId, owner}
+  end
+end
+return {1, 'OK', tostring(#ARGV - 1), ''}
+`;
+
+/**
+ * Lua script for atomically consuming requested locks owned by the user.
+ *
+ * KEYS[1] = {showtimeId}:user-seats:{userId}
+ * KEYS[2] = {showtimeId}:locked-seats
+ * KEYS[3..] = {showtimeId}:seat:{seatId}
+ * ARGV[1] = userId
+ * ARGV[2..] = requested seat IDs
+ *
+ * Returns: {1, 'OK', count, ''} or {0, 'MISSING'|'OTHER_OWNER', seatId, owner}
+ */
+export const CONSUME_OWNED_SEAT_LOCKS_LUA = `
+-- CONSUME_OWNED_SEAT_LOCKS_LUA
+local userId = ARGV[1]
+for i = 3, #KEYS do
+  local owner = redis.call('GET', KEYS[i])
+  local seatId = ARGV[i - 1]
+  if not owner then
+    return {0, 'MISSING', seatId, ''}
+  end
+  if owner ~= userId then
+    return {0, 'OTHER_OWNER', seatId, owner}
+  end
+end
+for i = 3, #KEYS do
+  local seatId = ARGV[i - 1]
+  redis.call('DEL', KEYS[i])
+  redis.call('SREM', KEYS[1], seatId)
+  redis.call('SREM', KEYS[2], seatId)
+end
+return {1, 'OK', tostring(#ARGV - 1), ''}
 `;
 
 @Injectable()
@@ -223,6 +288,53 @@ export class BookingService {
     await this.redis.del(userSeatsKey);
 
     return { unlockedSeats };
+  }
+
+  async assertOwnedSeatLocks(userId: string, showtimeId: string, seatIds: string[]): Promise<void> {
+    const seatLockKeys = seatIds.map((seatId) => `{${showtimeId}}:seat:${seatId}`);
+
+    const result = (await this.redis.eval(ASSERT_OWNED_SEAT_LOCKS_LUA,
+      seatIds.length,
+      ...seatLockKeys,
+      userId,
+      ...seatIds,
+    )) as SeatLockOwnershipResult;
+
+    const conflict = this.lockConflictFromResult(result);
+    if (conflict) throw conflict;
+  }
+
+  async consumeOwnedSeatLocks(userId: string, showtimeId: string, seatIds: string[]): Promise<{ consumedSeatIds: string[] }> {
+    const userSeatsKey = `{${showtimeId}}:user-seats:${userId}`;
+    const lockedSeatsKey = `{${showtimeId}}:locked-seats`;
+    const seatLockKeys = seatIds.map((seatId) => `{${showtimeId}}:seat:${seatId}`);
+
+    const result = (await this.redis.eval(CONSUME_OWNED_SEAT_LOCKS_LUA,
+      2 + seatIds.length,
+      userSeatsKey,
+      lockedSeatsKey,
+      ...seatLockKeys,
+      userId,
+      ...seatIds,
+    )) as SeatLockOwnershipResult;
+
+    const conflict = this.lockConflictFromResult(result);
+    if (conflict) throw conflict;
+
+    return { consumedSeatIds: seatIds };
+  }
+
+  private lockConflictFromResult(result: SeatLockOwnershipResult): ConflictException | null {
+    const [status, reason] = result;
+    if (status === 1) return null;
+
+    if (reason === 'MISSING') {
+      return new ConflictException(LOCK_EXPIRED_MESSAGE);
+    }
+    if (reason === 'OTHER_OWNER') {
+      return new ConflictException(LOCK_OTHER_OWNER_MESSAGE);
+    }
+    return new ConflictException(LOCK_EXPIRED_MESSAGE);
   }
 
   /**
