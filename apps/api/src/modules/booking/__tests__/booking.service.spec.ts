@@ -5,8 +5,10 @@ import {
   ASSERT_OWNED_SEAT_LOCKS_LUA,
   BookingService,
   CONSUME_OWNED_SEAT_LOCKS_LUA,
+  EXTEND_OWNED_SEAT_LOCKS_LUA,
   LOCK_EXPIRED_MESSAGE,
   LOCK_OTHER_OWNER_MESSAGE,
+  PAYMENT_CONFIRM_LOCK_TTL,
   RELEASE_PAYMENT_CONFIRM_LOCK_LUA,
 } from '../booking.service.js';
 import type { BookingGateway } from '../booking.gateway.js';
@@ -379,6 +381,43 @@ describe('BookingService', () => {
       expect(flatKeys).not.toContain(`{${showtimeId}}:seat:A-3`);
       expect(mockRedis.del).not.toHaveBeenCalled();
       expect(mockRedis.srem).not.toHaveBeenCalled();
+    });
+
+    it('extendOwnedSeatLocks verifies ownership and extends each requested lock atomically', async () => {
+      mockRedis.eval.mockResolvedValue([1, 'OK', '2', '']);
+
+      await expect(service.extendOwnedSeatLocks(
+        userId,
+        showtimeId,
+        ['A-1', 'A-2'],
+        PAYMENT_CONFIRM_LOCK_TTL,
+      )).resolves.toBeUndefined();
+
+      expect(mockRedis.eval).toHaveBeenCalledOnce();
+      const callArgs = mockRedis.eval.mock.calls[0] as unknown[];
+      const script = callArgs[0] as string;
+      const numKeys = callArgs[1] as number;
+      const flatKeys = callArgs.slice(2, 2 + numKeys) as string[];
+      const flatArgs = callArgs.slice(2 + numKeys) as string[];
+      expect(script).toBe(EXTEND_OWNED_SEAT_LOCKS_LUA);
+      expect(numKeys).toBe(3);
+      expect(flatKeys).toEqual([
+        `{${showtimeId}}:user-seats:${userId}`,
+        `{${showtimeId}}:seat:A-1`,
+        `{${showtimeId}}:seat:A-2`,
+      ]);
+      expect(flatArgs).toEqual([userId, String(PAYMENT_CONFIRM_LOCK_TTL), 'A-1', 'A-2']);
+    });
+
+    it('extendOwnedSeatLocks rejects missing locks with lock-expired message', async () => {
+      mockRedis.eval.mockResolvedValue([0, 'MISSING', 'A-2', '']);
+
+      await expect(service.extendOwnedSeatLocks(
+        userId,
+        showtimeId,
+        ['A-1', 'A-2'],
+        PAYMENT_CONFIRM_LOCK_TTL,
+      )).rejects.toThrow(LOCK_EXPIRED_MESSAGE);
     });
   });
 

@@ -223,6 +223,9 @@ class InMemoryRedis {
     if (script.includes('CONSUME_OWNED_SEAT_LOCKS_LUA')) {
       return this.evalConsumeOwnedSeatLocks(keys, args);
     }
+    if (script.includes('EXTEND_OWNED_SEAT_LOCKS_LUA')) {
+      return this.evalExtendOwnedSeatLocks(keys, args);
+    }
     if (script.includes('RELEASE_PAYMENT_CONFIRM_LOCK_LUA')) {
       return this.evalReleasePaymentConfirmLock(keys, args);
     }
@@ -353,6 +356,32 @@ class InMemoryRedis {
         return [0, 'OTHER_OWNER', seatId, owner];
       }
     }
+
+    return [1, 'OK', String(seatIds.length), ''];
+  }
+
+  private async evalExtendOwnedSeatLocks(keys: string[], args: string[]): Promise<[number, string, string, string]> {
+    const [userSeatsKey, ...seatLockKeys] = keys;
+    const [userId, ttlSeconds, ...seatIds] = args;
+
+    for (let i = 0; i < seatLockKeys.length; i++) {
+      const lockKey = seatLockKeys[i]!;
+      const seatId = seatIds[i] ?? '';
+      const owner = this.store.get(lockKey);
+
+      if (owner === undefined) {
+        return [0, 'MISSING', seatId, ''];
+      }
+      if (owner !== userId) {
+        return [0, 'OTHER_OWNER', seatId, owner];
+      }
+    }
+
+    const ttl = Number(ttlSeconds);
+    for (const lockKey of seatLockKeys) {
+      await this.expire(lockKey, ttl);
+    }
+    await this.expire(userSeatsKey!, ttl);
 
     return [1, 'OK', String(seatIds.length), ''];
   }

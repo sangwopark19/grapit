@@ -4,6 +4,7 @@ import IORedis from 'ioredis';
 import {
   ASSERT_OWNED_SEAT_LOCKS_LUA,
   CONSUME_OWNED_SEAT_LOCKS_LUA,
+  EXTEND_OWNED_SEAT_LOCKS_LUA,
   RELEASE_PAYMENT_CONFIRM_LOCK_LUA,
 } from '../../booking.service.js';
 import { redisProvider, REDIS_CLIENT } from '../redis.provider.js';
@@ -288,6 +289,32 @@ describe('redisProvider factory', () => {
         expect(await redis.get(seatA3Key)).toBe(userId);
         expect(await redis.smembers(userSeatsKey)).toContain('A-3');
         expect(await redis.smembers(lockedSeatsKey)).toContain('A-3');
+      });
+
+      it('EXTEND_OWNED_SEAT_LOCKS_LUA extends owned seat lock TTLs without consuming them', async () => {
+        const redis = createMock();
+        await redis.set(seatA1Key, userId, 'EX', 10);
+        await redis.set(seatA2Key, userId, 'EX', 10);
+        await redis.sadd(userSeatsKey, 'A-1', 'A-2');
+        await redis.expire(userSeatsKey, 10);
+
+        await expect(redis.eval(
+          EXTEND_OWNED_SEAT_LOCKS_LUA,
+          3,
+          userSeatsKey,
+          seatA1Key,
+          seatA2Key,
+          userId,
+          '60',
+          'A-1',
+          'A-2',
+        )).resolves.toEqual([1, 'OK', '2', '']);
+
+        expect(await redis.get(seatA1Key)).toBe(userId);
+        expect(await redis.get(seatA2Key)).toBe(userId);
+        expect(await redis.smembers(userSeatsKey)).toEqual(['A-1', 'A-2']);
+        expect(await redis.ttl(seatA1Key)).toBeGreaterThan(10);
+        expect(await redis.ttl(userSeatsKey)).toBeGreaterThan(10);
       });
 
       it('RELEASE_PAYMENT_CONFIRM_LOCK_LUA deletes only the matching order lock token', async () => {

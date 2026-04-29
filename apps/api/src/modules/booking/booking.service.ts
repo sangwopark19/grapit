@@ -160,7 +160,39 @@ end
 return {1, 'OK', tostring(#ARGV - 1), ''}
 `;
 
-const PAYMENT_CONFIRM_LOCK_TTL = 60;
+/**
+ * Lua script for atomically verifying ownership and extending requested locks.
+ *
+ * KEYS[1] = {showtimeId}:user-seats:{userId}
+ * KEYS[2..] = {showtimeId}:seat:{seatId}
+ * ARGV[1] = userId
+ * ARGV[2] = ttl seconds
+ * ARGV[3..] = requested seat IDs
+ *
+ * Returns: {1, 'OK', count, ''} or {0, 'MISSING'|'OTHER_OWNER', seatId, owner}
+ */
+export const EXTEND_OWNED_SEAT_LOCKS_LUA = `
+-- EXTEND_OWNED_SEAT_LOCKS_LUA
+local userId = ARGV[1]
+local ttl = tonumber(ARGV[2])
+for i = 2, #KEYS do
+  local owner = redis.call('GET', KEYS[i])
+  local seatId = ARGV[i + 1]
+  if not owner then
+    return {0, 'MISSING', seatId, ''}
+  end
+  if owner ~= userId then
+    return {0, 'OTHER_OWNER', seatId, owner}
+  end
+end
+for i = 2, #KEYS do
+  redis.call('EXPIRE', KEYS[i], ttl)
+end
+redis.call('EXPIRE', KEYS[1], ttl)
+return {1, 'OK', tostring(#ARGV - 2), ''}
+`;
+
+export const PAYMENT_CONFIRM_LOCK_TTL = 60;
 
 export const RELEASE_PAYMENT_CONFIRM_LOCK_LUA = `
 -- RELEASE_PAYMENT_CONFIRM_LOCK_LUA
@@ -332,6 +364,28 @@ export class BookingService {
     if (conflict) throw conflict;
 
     return { consumedSeatIds: seatIds };
+  }
+
+  async extendOwnedSeatLocks(
+    userId: string,
+    showtimeId: string,
+    seatIds: string[],
+    ttlSeconds: number,
+  ): Promise<void> {
+    const userSeatsKey = `{${showtimeId}}:user-seats:${userId}`;
+    const seatLockKeys = seatIds.map((seatId) => `{${showtimeId}}:seat:${seatId}`);
+
+    const result = (await this.redis.eval(EXTEND_OWNED_SEAT_LOCKS_LUA,
+      1 + seatIds.length,
+      userSeatsKey,
+      ...seatLockKeys,
+      userId,
+      String(ttlSeconds),
+      ...seatIds,
+    )) as SeatLockOwnershipResult;
+
+    const conflict = this.lockConflictFromResult(result);
+    if (conflict) throw conflict;
   }
 
   async acquirePaymentConfirmLock(orderId: string, lockToken: string): Promise<boolean> {
