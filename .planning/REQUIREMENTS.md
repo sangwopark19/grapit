@@ -29,7 +29,7 @@ Requirements for v1.1 안정화 + 고도화. Each maps to roadmap phases.
 
 ### 기술부채 청산
 
-- [ ] **DEBT-01**: Password reset 이메일 기능 실구현 (console.log stub → 실제 이메일 발송)
+- [x] **DEBT-01**: Password reset 이메일 기능 실구현 (console.log stub → 실제 이메일 발송)
 - [ ] **DEBT-02**: 이용약관 dialog에 실제 약관 텍스트 적용
 - [ ] **DEBT-03**: seat-map-viewer.test.tsx locked seat click 테스트 회귀 수정
 - [ ] **DEBT-04**: admin-booking-detail-modal formatDateTime null 타입 경고 수정
@@ -107,7 +107,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | R2-02 | Phase 8, Phase 21, Phase 23, Phase 24 | Pending |
 | R2-03 | Phase 8, Phase 21, Phase 23 | Pending |
 | R2-04 | Phase 8, Phase 21, Phase 23 | Pending |
-| DEBT-01 | Phase 9, Phase 18, Phase 23 | Pending |
+| DEBT-01 | Phase 9, Phase 18, Phase 23 | Complete |
 | DEBT-02 | Phase 9, Phase 23 | Pending |
 | DEBT-03 | Phase 9, Phase 23 | Pending |
 | DEBT-04 | Phase 9, Phase 23 | Pending |

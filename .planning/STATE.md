@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
 status: executing
-stopped_at: Phase 17 context gathered
-last_updated: "2026-04-29T03:52:26.531Z"
-last_activity: 2026-04-29 -- Phase 18 planning complete
+stopped_at: Completed 18-01-PLAN.md
+last_updated: "2026-04-29T05:13:10.106Z"
+last_activity: 2026-04-29
 progress:
   total_phases: 22
   completed_phases: 13
   total_plans: 66
-  completed_plans: 63
-  percent: 95
+  completed_plans: 64
+  percent: 97
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** 사용자가 원하는 공연을 발견하고, 좌석을 직접 선택하여, 안정적으로 예매를 완료할 수 있는 것
-**Current focus:** Phase 17 — local-dev-health-indicator-fix-inmemoryredis-ping-capability complete; Phase 16 shipped with external sign-off pending
+**Current focus:** Phase 18 — password-reset-production-api-origin-fix
 
 ## Current Position
 
-Phase: 17 (local-dev-health-indicator-fix-inmemoryredis-ping-capability) — COMPLETE
-Plan: 2 of 2 complete
+Phase: 18 (password-reset-production-api-origin-fix) — EXECUTING
+Plan: 2 of 2
 Status: Ready to execute
-Last activity: 2026-04-29 -- Phase 18 planning complete
+Last activity: 2026-04-29
 
-Progress: [██████████] 99%
+Progress: [██████████] 97%
 
 ## Performance Metrics
 
@@ -74,6 +74,7 @@ Progress: [██████████] 99%
 | Phase 16 P05 | 6min | 3 tasks | 4 files |
 | Phase 17 P01 | <1min | 2 tasks | 3 files |
 | Phase 17 P02 | <1min | 3 tasks | 3 files |
+| Phase 18 P01 | 9min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -107,6 +108,9 @@ Full decision log in PROJECT.md Key Decisions table (10 decisions, all Good).
 - [Phase 16-05]: Signup dialogs keep prop-less TermsMarkdown. — DialogTitle remains the only visible title and D-11 dialog compatibility is preserved.
 - [Phase 16-05]: Cutover prerequisites centralized in 16-HUMAN-UAT.md. — Business values, mailbox checks, generic placeholder grep, and post-deploy URL/Footer/dialog checks remain operational gates for Plan 16-06.
 - [Phase 17]: Use a two-layer local health fix. — Add `InMemoryRedis.ping()` for ioredis surface parity and keep a RedisHealthIndicator capability probe so future local/test fallbacks without `ping()` report local fallback as up without masking real Redis ping failures.
+- [Phase 18-01]: Reset confirm remains raw fetch via apiUrl so token-invalid 401 stays on invalid-link UI.
+- [Phase 18-01]: Production Next rewrites return [] and localhost /api + /socket.io rewrites are development-only.
+- [Phase 18-01]: deploy-web validates CLOUD_RUN_API_URL before Docker build and blocks empty or loopback origins.
 
 ### Pending Todos
 
@@ -141,8 +145,8 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-29T00:36:57.611Z
-Stopped at: Phase 17 context gathered
-Resume file: .planning/phases/17-local-dev-health-indicator-fix-inmemoryredis-ping-capability/17-CONTEXT.md
+Last session: 2026-04-29T05:13:10.102Z
+Stopped at: Completed 18-01-PLAN.md
+Resume file: None
 
 **Planned Phase:** 15 (resend-heygrabit-com-cutover-transactional-email-secret-mana) — 3 plans — 2026-04-24T08:54:14.266Z
