@@ -3,7 +3,6 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
-  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -514,6 +513,16 @@ describe('ReservationService', () => {
         }),
       });
 
+      // 3rd select: pending reservation seats for ownership assertion/consume
+      mockDb.select.mockReturnValueOnce({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([
+            { seatId: 'A-1' },
+            { seatId: 'A-2' },
+          ]),
+        }),
+      });
+
       // Track all tx operations
       const txOps: { operation: string; args: unknown[] }[] = [];
       const mockTx = {
@@ -626,7 +635,7 @@ describe('ReservationService', () => {
       expect(mockTx.update.mock.calls.length).toBeGreaterThanOrEqual(3);
     });
 
-    it('should call BookingService.unlockAllSeats after transaction', async () => {
+    it('should not call BookingService.unlockAllSeats after confirm success', async () => {
       setupConfirmMocks();
 
       await service.confirmAndCreateReservation(
@@ -634,7 +643,7 @@ describe('ReservationService', () => {
         userId,
       );
 
-      expect(mockBookingService.unlockAllSeats).toHaveBeenCalledWith(userId, showtimeId);
+      expect(mockBookingService.unlockAllSeats).not.toHaveBeenCalledWith(userId, showtimeId);
     });
 
     it('should call BookingGateway.broadcastSeatUpdate with sold for each seat', async () => {
@@ -697,11 +706,11 @@ describe('ReservationService', () => {
       await expect(service.confirmAndCreateReservation(
         { paymentKey: 'pk_test_123', orderId, amount: 150000 },
         userId,
-      )).rejects.toThrow(InternalServerErrorException);
+      )).rejects.toThrow(LOCK_OTHER_OWNER_MESSAGE);
 
       expect(mockTossClient.confirmPayment).toHaveBeenCalledOnce();
       expect(mockBookingService.consumeOwnedSeatLocks).toHaveBeenCalledWith(userId, showtimeId, ['A-1', 'A-2']);
-      expect(mockTossClient.cancelPayment).toHaveBeenCalledWith('pk_test_123', expect.any(String));
+      expect(mockTossClient.cancelPayment).toHaveBeenCalledWith('pk_test_123', '좌석 점유 만료로 인한 자동 취소');
       expect(mockDb.transaction).not.toHaveBeenCalled();
     });
 
