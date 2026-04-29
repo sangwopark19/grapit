@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
-status: completed
+status: "Phase 17 shipped — PR #28"
 stopped_at: Phase 17 context gathered
-last_updated: "2026-04-29T00:36:57.618Z"
-last_activity: "2026-04-28 -- Phase 17 complete; Phase 16 PR #27 merged"
+last_updated: "2026-04-29T01:29:27.920Z"
+last_activity: 2026-04-29
 progress:
   total_phases: 15
   completed_phases: 13
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 
 Phase: 17 (local-dev-health-indicator-fix-inmemoryredis-ping-capability) — COMPLETE
 Plan: 2 of 2 complete
-Status: Phase 17 complete; Phase 16 shipped - external legal/operator sign-off pending
-Last activity: 2026-04-28 -- Phase 17 complete; Phase 16 PR #27 merged
+Status: Phase 17 shipped — PR #28
+Last activity: 2026-04-29
 
 Progress: [██████████] 99%
 
