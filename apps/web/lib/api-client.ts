@@ -11,6 +11,8 @@ interface ApiError {
   statusCode: number;
 }
 
+type ApiPath = `/${string}`;
+
 class ApiClientError extends Error {
   statusCode: number;
   constructor(message: string, statusCode: number) {
@@ -54,7 +56,7 @@ async function refreshAccessToken(): Promise<string | null> {
 
 async function request<T>(
   method: string,
-  path: string,
+  path: ApiPath,
   body?: unknown,
 ): Promise<T> {
   const { accessToken } = useAuthStore.getState();
@@ -77,7 +79,7 @@ async function request<T>(
     config.body = JSON.stringify(body);
   }
 
-  let res = await fetch(apiUrl(path as `/${string}`), config);
+  let res = await fetch(apiUrl(path), config);
 
   // On 401, attempt silent refresh and retry once
   if (res.status === 401 && accessToken) {
@@ -92,7 +94,7 @@ async function request<T>(
 
       // Retry with new token
       headers['Authorization'] = `Bearer ${newToken}`;
-      res = await fetch(apiUrl(path as `/${string}`), { ...config, headers });
+      res = await fetch(apiUrl(path), { ...config, headers });
     } else {
       // Refresh failed -- clear auth and redirect
       useAuthStore.getState().clearAuth();
@@ -133,11 +135,11 @@ async function request<T>(
 }
 
 export const apiClient = {
-  get: <T>(path: string) => request<T>('GET', path),
-  post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
-  put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body),
-  patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body),
-  delete: <T>(path: string) => request<T>('DELETE', path),
+  get: <T>(path: ApiPath) => request<T>('GET', path),
+  post: <T>(path: ApiPath, body?: unknown) => request<T>('POST', path, body),
+  put: <T>(path: ApiPath, body?: unknown) => request<T>('PUT', path, body),
+  patch: <T>(path: ApiPath, body?: unknown) => request<T>('PATCH', path, body),
+  delete: <T>(path: ApiPath) => request<T>('DELETE', path),
 };
 
 export { ApiClientError };
