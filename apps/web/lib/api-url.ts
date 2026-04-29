@@ -22,17 +22,26 @@ export function apiUrl(path: `/${string}`): string {
       throw new Error('NEXT_PUBLIC_API_URL must be set in production');
     }
 
-    let hostname: string;
+    let url: URL;
     try {
-      hostname = getHostname(baseUrl);
+      url = new URL(baseUrl);
     } catch {
       throw new Error('NEXT_PUBLIC_API_URL must be an absolute URL in production');
     }
 
+    const hostname = getHostname(baseUrl);
     if (LOCALHOST_HOSTNAMES.has(hostname)) {
       throw new Error(
         'NEXT_PUBLIC_API_URL must not point to localhost in production',
       );
+    }
+
+    if (url.protocol !== 'https:') {
+      throw new Error('NEXT_PUBLIC_API_URL must be an https URL in production');
+    }
+
+    if (url.origin !== baseUrl) {
+      throw new Error('NEXT_PUBLIC_API_URL must be an origin URL in production');
     }
   }
 

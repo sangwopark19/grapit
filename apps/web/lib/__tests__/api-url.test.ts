@@ -56,4 +56,28 @@ describe('apiUrl', () => {
       'NEXT_PUBLIC_API_URL must not point to localhost in production',
     );
   });
+
+  it('throws in production when the public API URL is not HTTPS', async () => {
+    vi.stubEnv('NEXT_PUBLIC_API_URL', 'http://api.heygrabit.com');
+    vi.stubEnv('NODE_ENV', 'production');
+    const { apiUrl } = await loadApiUrl();
+
+    expect(() => apiUrl(resetConfirmPath)).toThrow(
+      'NEXT_PUBLIC_API_URL must be an https URL in production',
+    );
+  });
+
+  it.each([
+    'https://api.heygrabit.com/base',
+    'https://api.heygrabit.com?x=1',
+    'https://api.heygrabit.com#fragment',
+  ])('throws in production when the public API URL is not origin-only: %s', async (baseUrl) => {
+    vi.stubEnv('NEXT_PUBLIC_API_URL', baseUrl);
+    vi.stubEnv('NODE_ENV', 'production');
+    const { apiUrl } = await loadApiUrl();
+
+    expect(() => apiUrl(resetConfirmPath)).toThrow(
+      'NEXT_PUBLIC_API_URL must be an origin URL in production',
+    );
+  });
 });
