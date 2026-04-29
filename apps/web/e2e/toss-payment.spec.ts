@@ -208,6 +208,8 @@ test.describe('Toss Payments E2E', () => {
     await expect(page.getByText('좌석 점유 시간이 만료되었습니다. 좌석을 다시 선택해주세요.')).toBeVisible({
       timeout: 5000,
     });
+    await expect(page.getByRole('button', { name: '좌석 다시 선택하기' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '좌석을 다시 선택해주세요' })).toBeDisabled();
     await expect.poll(() => confirmIntercepted).toBe(false);
     await expect(page).toHaveURL(/\/booking\/e2e-test-performance\/confirm/);
   });
