@@ -11,6 +11,45 @@ import {
 
 const TEST_PHONE = '+821012345678';
 
+const ASSERT_OWNED_SEAT_LOCKS_LUA = `
+-- ASSERT_OWNED_SEAT_LOCKS_LUA
+-- Returns {1, 'OK', count, ''} or {0, 'MISSING'|'OTHER_OWNER', seatId, owner}
+for i = 1, #KEYS do
+  local owner = redis.call('GET', KEYS[i])
+  local seatId = ARGV[i + 1]
+  if not owner then
+    return {0, 'MISSING', seatId, ''}
+  end
+  if owner ~= ARGV[1] then
+    return {0, 'OTHER_OWNER', seatId, owner}
+  end
+end
+return {1, 'OK', tostring(#KEYS), ''}
+`;
+
+const CONSUME_OWNED_SEAT_LOCKS_LUA = `
+-- CONSUME_OWNED_SEAT_LOCKS_LUA
+-- KEYS[1] user seats, KEYS[2] locked seats, KEYS[3..n] seat lock keys.
+-- ARGV[1] userId, ARGV[2..n] requested seat ids.
+for i = 3, #KEYS do
+  local owner = redis.call('GET', KEYS[i])
+  local seatId = ARGV[i - 1]
+  if not owner then
+    return {0, 'MISSING', seatId, ''}
+  end
+  if owner ~= ARGV[1] then
+    return {0, 'OTHER_OWNER', seatId, owner}
+  end
+end
+for i = 3, #KEYS do
+  local seatId = ARGV[i - 1]
+  redis.call('DEL', KEYS[i])
+  redis.call('SREM', KEYS[1], seatId)
+  redis.call('SREM', KEYS[2], seatId)
+end
+return {1, 'OK', tostring(#KEYS - 2), ''}
+`;
+
 /**
  * redisProvider factory tests (Phase 07-04 review fix).
  *
@@ -104,6 +143,10 @@ describe('redisProvider factory', () => {
       decr: (key: string) => Promise<number>;
       ping: () => Promise<string>;
       pttl: (key: string) => Promise<number>;
+      eval: (script: string, numKeys: number, ...keysAndArgs: (string | number)[]) => Promise<unknown>;
+      sadd: (key: string, ...members: string[]) => Promise<number>;
+      srem: (key: string, ...members: string[]) => Promise<number>;
+      smembers: (key: string) => Promise<string[]>;
       pipeline: () => {
         set: (key: string, value: string, ...args: unknown[]) => ReturnType<MemRedis['pipeline']>;
         del: (...keys: string[]) => ReturnType<MemRedis['pipeline']>;
@@ -183,6 +226,90 @@ describe('redisProvider factory', () => {
 
       // Post-pipeline state: OTP stored with TTL (Phase 14 hash-tag form)
       expect(await redis.get(smsOtpKey(TEST_PHONE))).toBe('654321');
+    });
+
+    describe('lock ownership Lua parity', () => {
+      const showtimeId = 'showtime-owned';
+      const userId = 'user-123';
+      const userSeatsKey = `{${showtimeId}}:user-seats:${userId}`;
+      const lockedSeatsKey = `{${showtimeId}}:locked-seats`;
+      const seatA1Key = `{${showtimeId}}:seat:A-1`;
+      const seatA2Key = `{${showtimeId}}:seat:A-2`;
+
+      it('ASSERT_OWNED_SEAT_LOCKS_LUA returns success tuple when every requested lock is owned', async () => {
+        const redis = createMock();
+        await redis.set(seatA1Key, userId);
+        await redis.set(seatA2Key, userId);
+
+        await expect(redis.eval(
+          ASSERT_OWNED_SEAT_LOCKS_LUA,
+          2,
+          seatA1Key,
+          seatA2Key,
+          userId,
+          'A-1',
+          'A-2',
+        )).resolves.toEqual([1, 'OK', '2', '']);
+      });
+
+      it('ASSERT_OWNED_SEAT_LOCKS_LUA returns MISSING tuple for missing or expired locks', async () => {
+        const redis = createMock();
+        await redis.set(seatA1Key, userId);
+
+        await expect(redis.eval(
+          ASSERT_OWNED_SEAT_LOCKS_LUA,
+          2,
+          seatA1Key,
+          seatA2Key,
+          userId,
+          'A-1',
+          'A-2',
+        )).resolves.toEqual([0, 'MISSING', 'A-2', '']);
+      });
+
+      it('ASSERT_OWNED_SEAT_LOCKS_LUA returns OTHER_OWNER tuple with current owner', async () => {
+        const redis = createMock();
+        await redis.set(seatA1Key, userId);
+        await redis.set(seatA2Key, 'other-user');
+
+        await expect(redis.eval(
+          ASSERT_OWNED_SEAT_LOCKS_LUA,
+          2,
+          seatA1Key,
+          seatA2Key,
+          userId,
+          'A-1',
+          'A-2',
+        )).resolves.toEqual([0, 'OTHER_OWNER', 'A-2', 'other-user']);
+      });
+
+      it('CONSUME_OWNED_SEAT_LOCKS_LUA returns success tuple and preserves unrelated locks', async () => {
+        const redis = createMock();
+        const seatA3Key = `{${showtimeId}}:seat:A-3`;
+        await redis.set(seatA1Key, userId);
+        await redis.set(seatA2Key, userId);
+        await redis.set(seatA3Key, userId);
+        await redis.sadd(userSeatsKey, 'A-1', 'A-2', 'A-3');
+        await redis.sadd(lockedSeatsKey, 'A-1', 'A-2', 'A-3');
+
+        await expect(redis.eval(
+          CONSUME_OWNED_SEAT_LOCKS_LUA,
+          4,
+          userSeatsKey,
+          lockedSeatsKey,
+          seatA1Key,
+          seatA2Key,
+          userId,
+          'A-1',
+          'A-2',
+        )).resolves.toEqual([1, 'OK', '2', '']);
+
+        expect(await redis.get(seatA1Key)).toBeNull();
+        expect(await redis.get(seatA2Key)).toBeNull();
+        expect(await redis.get(seatA3Key)).toBe(userId);
+        expect(await redis.smembers(userSeatsKey)).toContain('A-3');
+        expect(await redis.smembers(lockedSeatsKey)).toContain('A-3');
+      });
     });
   });
 });

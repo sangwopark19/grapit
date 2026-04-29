@@ -35,6 +35,18 @@ function createMockDb() {
   };
 }
 
+const LOCK_EXPIRED_MESSAGE = '좌석 점유 시간이 만료되었습니다. 좌석을 다시 선택해주세요.';
+const LOCK_OTHER_OWNER_MESSAGE = '이미 다른 사용자가 선택한 좌석입니다.';
+
+type PlannedBookingService = BookingService & {
+  assertOwnedSeatLocks: (userId: string, showtimeId: string, seatIds: string[]) => Promise<void>;
+  consumeOwnedSeatLocks: (
+    userId: string,
+    showtimeId: string,
+    seatIds: string[],
+  ) => Promise<{ consumedSeatIds: string[] }>;
+};
+
 describe('BookingService', () => {
   let service: BookingService;
   let mockRedis: ReturnType<typeof createMockRedis>;
@@ -306,6 +318,74 @@ describe('BookingService', () => {
 
       expect(result.unlockedSeats).toEqual([]);
       expect(mockGateway.broadcastSeatUpdate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('lock ownership helpers', () => {
+    it('assertOwnedSeatLocks succeeds when all requested seat locks belong to the user', async () => {
+      const planned = service as unknown as PlannedBookingService;
+      mockRedis.eval.mockResolvedValue([1, 'OK', '2', '']);
+
+      await expect(planned.assertOwnedSeatLocks(userId, showtimeId, ['A-1', 'A-2']))
+        .resolves
+        .toBeUndefined();
+
+      expect(mockRedis.eval).toHaveBeenCalledOnce();
+    });
+
+    it('assertOwnedSeatLocks rejects missing or expired locks with lock-expired message', async () => {
+      const planned = service as unknown as PlannedBookingService;
+      mockRedis.eval.mockResolvedValue([0, 'MISSING', 'A-2', '']);
+
+      await expect(planned.assertOwnedSeatLocks(userId, showtimeId, ['A-1', 'A-2']))
+        .rejects
+        .toThrow(LOCK_EXPIRED_MESSAGE);
+    });
+
+    it('assertOwnedSeatLocks rejects other-user locks with other-user message', async () => {
+      const planned = service as unknown as PlannedBookingService;
+      mockRedis.eval.mockResolvedValue([0, 'OTHER_OWNER', 'A-2', 'other-user']);
+
+      await expect(planned.assertOwnedSeatLocks(userId, showtimeId, ['A-1', 'A-2']))
+        .rejects
+        .toThrow(LOCK_OTHER_OWNER_MESSAGE);
+    });
+
+    it('consumeOwnedSeatLocks uses KEYS [userSeatsKey, lockedSeatsKey, ...seatLockKeys] and ARGV [userId, ...seatIds]', async () => {
+      const planned = service as unknown as PlannedBookingService;
+      mockRedis.eval.mockResolvedValue([1, 'OK', '2', '']);
+
+      await expect(planned.consumeOwnedSeatLocks(userId, showtimeId, ['A-1', 'A-2']))
+        .resolves
+        .toEqual({ consumedSeatIds: ['A-1', 'A-2'] });
+
+      expect(mockRedis.eval).toHaveBeenCalledOnce();
+      const callArgs = mockRedis.eval.mock.calls[0] as unknown[];
+      const numKeys = callArgs[1] as number;
+      const flatKeys = callArgs.slice(2, 2 + numKeys) as string[];
+      const flatArgs = callArgs.slice(2 + numKeys) as string[];
+      expect(numKeys).toBe(4);
+      expect(flatKeys).toEqual([
+        `{${showtimeId}}:user-seats:${userId}`,
+        `{${showtimeId}}:locked-seats`,
+        `{${showtimeId}}:seat:A-1`,
+        `{${showtimeId}}:seat:A-2`,
+      ]);
+      expect(flatArgs).toEqual([userId, 'A-1', 'A-2']);
+    });
+
+    it('consumeOwnedSeatLocks preserves unrelated same-showtime locks', async () => {
+      const planned = service as unknown as PlannedBookingService;
+      mockRedis.eval.mockResolvedValue([1, 'OK', '2', '']);
+
+      await planned.consumeOwnedSeatLocks(userId, showtimeId, ['A-1', 'A-2']);
+
+      const callArgs = mockRedis.eval.mock.calls[0] as unknown[];
+      const numKeys = callArgs[1] as number;
+      const flatKeys = callArgs.slice(2, 2 + numKeys) as string[];
+      expect(flatKeys).not.toContain(`{${showtimeId}}:seat:A-3`);
+      expect(mockRedis.del).not.toHaveBeenCalled();
+      expect(mockRedis.srem).not.toHaveBeenCalled();
     });
   });
 

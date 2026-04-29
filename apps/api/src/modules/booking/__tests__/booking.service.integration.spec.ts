@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import IORedis from 'ioredis';
 import { GenericContainer, type StartedTestContainer } from 'testcontainers';
+import { BookingService } from '../booking.service.js';
 
 /**
  * Phase 07-05 integration spec — PROVES Lua scripts execute correctly on a
@@ -70,6 +71,29 @@ for i, sid in ipairs(members) do
 end
 return alive
 `;
+
+type PlannedBookingService = BookingService & {
+  assertOwnedSeatLocks: (userId: string, showtimeId: string, seatIds: string[]) => Promise<void>;
+  consumeOwnedSeatLocks: (
+    userId: string,
+    showtimeId: string,
+    seatIds: string[],
+  ) => Promise<{ consumedSeatIds: string[] }>;
+};
+
+function createPlannedBookingService(redis: IORedis): PlannedBookingService {
+  const mockDb = {
+    select: () => ({
+      from: () => ({
+        where: async () => [],
+      }),
+    }),
+  };
+  const mockGateway = {
+    broadcastSeatUpdate: () => {},
+  };
+  return new BookingService(redis, mockDb as any, mockGateway as any) as unknown as PlannedBookingService;
+}
 
 describe('BookingService Lua scripts — real Valkey 8 integration', () => {
   let container: StartedTestContainer;
@@ -225,5 +249,78 @@ describe('BookingService Lua scripts — real Valkey 8 integration', () => {
     // Verify the lock is STILL held by the original user
     const owner = await redis.get(lockKey2);
     expect(owner).toBe(userId);
+  });
+
+  describe('planned lock ownership helpers — real Valkey 8 integration', () => {
+    const ownershipUserId = 'ownership-user-1';
+    const otherUserId = 'ownership-user-2';
+    const ownershipShowtimeId = 'ownership-showtime-1';
+    const ownershipUserSeatsKey = `{${ownershipShowtimeId}}:user-seats:${ownershipUserId}`;
+    const ownershipLockedSeatsKey = `{${ownershipShowtimeId}}:locked-seats`;
+
+    beforeEach(async () => {
+      await redis.flushdb();
+    });
+
+    it('assertOwnedSeatLocks passes all-owned locks on real Valkey', async () => {
+      const planned = createPlannedBookingService(redis);
+      await redis.set(`{${ownershipShowtimeId}}:seat:A-1`, ownershipUserId, 'EX', LOCK_TTL);
+      await redis.set(`{${ownershipShowtimeId}}:seat:A-2`, ownershipUserId, 'EX', LOCK_TTL);
+
+      await expect(planned.assertOwnedSeatLocks(ownershipUserId, ownershipShowtimeId, ['A-1', 'A-2']))
+        .resolves
+        .toBeUndefined();
+    });
+
+    it('assertOwnedSeatLocks rejects missing locks on real Valkey', async () => {
+      const planned = createPlannedBookingService(redis);
+      await redis.set(`{${ownershipShowtimeId}}:seat:A-1`, ownershipUserId, 'EX', LOCK_TTL);
+
+      await expect(planned.assertOwnedSeatLocks(ownershipUserId, ownershipShowtimeId, ['A-1', 'A-2']))
+        .rejects
+        .toThrow('좌석 점유 시간이 만료되었습니다. 좌석을 다시 선택해주세요.');
+    });
+
+    it('assertOwnedSeatLocks rejects other-owner locks on real Valkey', async () => {
+      const planned = createPlannedBookingService(redis);
+      await redis.set(`{${ownershipShowtimeId}}:seat:A-1`, ownershipUserId, 'EX', LOCK_TTL);
+      await redis.set(`{${ownershipShowtimeId}}:seat:A-2`, otherUserId, 'EX', LOCK_TTL);
+
+      await expect(planned.assertOwnedSeatLocks(ownershipUserId, ownershipShowtimeId, ['A-1', 'A-2']))
+        .rejects
+        .toThrow('이미 다른 사용자가 선택한 좌석입니다.');
+    });
+
+    it('consumeOwnedSeatLocks performs stale-index cleanup on real Valkey', async () => {
+      const planned = createPlannedBookingService(redis);
+      await redis.sadd(ownershipUserSeatsKey, 'A-2');
+      await redis.sadd(ownershipLockedSeatsKey, 'A-2');
+
+      await expect(planned.assertOwnedSeatLocks(ownershipUserId, ownershipShowtimeId, ['A-2']))
+        .rejects
+        .toThrow('좌석 점유 시간이 만료되었습니다. 좌석을 다시 선택해주세요.');
+
+      expect(await redis.sismember(ownershipUserSeatsKey, 'A-2')).toBe(0);
+      expect(await redis.sismember(ownershipLockedSeatsKey, 'A-2')).toBe(0);
+    });
+
+    it('consumeOwnedSeatLocks supports unrelated lock preservation on real Valkey', async () => {
+      const planned = createPlannedBookingService(redis);
+      await redis.set(`{${ownershipShowtimeId}}:seat:A-1`, ownershipUserId, 'EX', LOCK_TTL);
+      await redis.set(`{${ownershipShowtimeId}}:seat:A-2`, ownershipUserId, 'EX', LOCK_TTL);
+      await redis.set(`{${ownershipShowtimeId}}:seat:A-3`, ownershipUserId, 'EX', LOCK_TTL);
+      await redis.sadd(ownershipUserSeatsKey, 'A-1', 'A-2', 'A-3');
+      await redis.sadd(ownershipLockedSeatsKey, 'A-1', 'A-2', 'A-3');
+
+      await expect(planned.consumeOwnedSeatLocks(ownershipUserId, ownershipShowtimeId, ['A-1', 'A-2']))
+        .resolves
+        .toEqual({ consumedSeatIds: ['A-1', 'A-2'] });
+
+      expect(await redis.get(`{${ownershipShowtimeId}}:seat:A-1`)).toBeNull();
+      expect(await redis.get(`{${ownershipShowtimeId}}:seat:A-2`)).toBeNull();
+      expect(await redis.get(`{${ownershipShowtimeId}}:seat:A-3`)).toBe(ownershipUserId);
+      expect(await redis.sismember(ownershipUserSeatsKey, 'A-3')).toBe(1);
+      expect(await redis.sismember(ownershipLockedSeatsKey, 'A-3')).toBe(1);
+    });
   });
 });
