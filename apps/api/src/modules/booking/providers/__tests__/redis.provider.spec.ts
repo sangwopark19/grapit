@@ -194,6 +194,19 @@ describe('redisProvider factory', () => {
       expect(await redis.get(smsOtpKey(TEST_PHONE))).toBe('654321');
     });
 
+    it('del() deletes string keys, set keys, and returns the number of removed keys', async () => {
+      const redis = createMock();
+      await redis.set('string:key', 'value', 'EX', 60);
+      await redis.sadd('set:key', 'A-1', 'A-2');
+
+      await expect(redis.del('string:key', 'set:key', 'missing:key'))
+        .resolves
+        .toBe(2);
+
+      expect(await redis.get('string:key')).toBeNull();
+      expect(await redis.smembers('set:key')).toEqual([]);
+    });
+
     describe('lock ownership Lua parity', () => {
       const showtimeId = 'showtime-owned';
       const userId = 'user-123';

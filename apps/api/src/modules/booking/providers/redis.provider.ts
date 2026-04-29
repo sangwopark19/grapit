@@ -146,7 +146,14 @@ class InMemoryRedis {
 
   async del(...keys: string[]): Promise<number> {
     let count = 0;
-    for (const k of keys) { if (this.store.delete(k)) count++; }
+    for (const key of keys) {
+      const existed = this.store.delete(key) || this.sets.delete(key);
+      const timer = this.ttls.get(key);
+      if (timer) clearTimeout(timer);
+      this.ttls.delete(key);
+      this.expiries.delete(key);
+      if (existed) count++;
+    }
     return count;
   }
 
