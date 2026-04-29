@@ -13,7 +13,6 @@ import {
   type ResetPasswordRequestInput,
   type ResetPasswordInput,
 } from '@grabit/shared';
-import { apiClient } from '@/lib/api-client';
 import { apiUrl } from '@/lib/api-url';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,7 +60,12 @@ function RequestView() {
   async function onSubmit(data: ResetPasswordRequestInput) {
     setIsLoading(true);
     try {
-      await apiClient.post('/api/v1/auth/password-reset/request', data);
+      await fetch(apiUrl('/api/v1/auth/password-reset/request'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      });
     } catch {
       // Always show success to prevent email enumeration
     } finally {

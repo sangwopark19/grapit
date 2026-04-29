@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { toast } from 'sonner';
 import ResetPasswordPage from '../page';
 
 // --- next/navigation mock (hoisted so useSearchParams per-test can swap) ---
@@ -27,7 +28,7 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
-// apiClient mock — request mode uses apiClient.post, but we don't want network
+// apiClient mock — catches regressions where request mode reintroduces global errors
 vi.mock('@/lib/api-client', () => ({
   apiClient: {
     post: vi.fn().mockResolvedValue({}),
@@ -41,6 +42,7 @@ vi.mock('@/lib/api-client', () => ({
 describe('ResetPasswordPage', () => {
   beforeEach(() => {
     mockSearchParams.current = new URLSearchParams();
+    vi.clearAllMocks();
     mockPush.mockReset();
     vi.stubGlobal('fetch', vi.fn());
   });
@@ -55,6 +57,39 @@ describe('ResetPasswordPage', () => {
       render(<ResetPasswordPage />);
       expect(screen.getByText('가입 시 사용한 이메일을 입력하세요')).toBeDefined();
       expect(screen.getByLabelText('이메일')).toBeDefined();
+    });
+
+    it('API 실패 응답이어도 toast.error 없이 성공 화면을 표시한다', async () => {
+      vi.stubEnv('NEXT_PUBLIC_API_URL', 'https://api.heygrabit.com');
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => ({ message: '메일 발송 실패' }),
+      } as Response);
+      vi.stubGlobal('fetch', fetchMock);
+      const { apiClient } = await import('@/lib/api-client');
+
+      render(<ResetPasswordPage />);
+      const user = userEvent.setup();
+      await user.type(screen.getByLabelText('이메일'), 'member@example.com');
+      await user.click(
+        screen.getByRole('button', { name: '비밀번호 재설정 링크 발송' }),
+      );
+
+      await vi.waitFor(() => {
+        expect(screen.getByText('비밀번호 재설정 메일 발송 완료')).toBeDefined();
+      });
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://api.heygrabit.com/api/v1/auth/password-reset/request',
+        expect.objectContaining({
+          method: 'POST',
+          credentials: 'include',
+          body: JSON.stringify({ email: 'member@example.com' }),
+        }),
+      );
+      expect((apiClient.post as ReturnType<typeof vi.fn>)).not.toHaveBeenCalled();
+      expect(toast.error).not.toHaveBeenCalled();
     });
   });
 
