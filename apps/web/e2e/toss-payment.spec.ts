@@ -251,4 +251,23 @@ test.describe('Toss Payments E2E', () => {
     await expect(page.getByRole('button', { name: '예매 내역 확인' })).toBeVisible();
     await expect(page.getByText(/예매가 완료|완료되었습니다/)).not.toBeVisible();
   });
+
+  test('complete page: missing or invalid amount renders invalid access without confirm request', async ({
+    page,
+  }) => {
+    let confirmIntercepted = false;
+    await loginAsTestUser(page);
+
+    await page.route('**/api/v1/payments/confirm', async (route: Route) => {
+      confirmIntercepted = true;
+      await route.fulfill({ status: 500, body: 'unexpected confirm call' });
+    });
+
+    await page.goto(
+      '/booking/e2e-test-performance/complete?paymentKey=test_payment_key_invalid_amount&orderId=test_order_invalid_amount&amount=abc',
+    );
+
+    await expect(page.getByText('잘못된 접근입니다.')).toBeVisible({ timeout: 5000 });
+    await expect.poll(() => confirmIntercepted).toBe(false);
+  });
 });

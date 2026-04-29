@@ -42,6 +42,8 @@ function CompletePageContent() {
   const paymentKey = searchParams.get('paymentKey');
   const orderId = searchParams.get('orderId');
   const amount = searchParams.get('amount');
+  const parsedAmount = Number(amount);
+  const hasValidAmount = amount !== null && Number.isFinite(parsedAmount) && parsedAmount > 0;
 
   const clearBooking = useBookingStore((s) => s.clearBooking);
   const performanceId = useBookingStore((s) => s.performanceId);
@@ -73,7 +75,7 @@ function CompletePageContent() {
 
   // Confirm payment on mount — only needs URL params (server has pending order)
   const confirmPayment = useCallback(async () => {
-    if (hasConfirmedRef.current || !paymentKey || !orderId || !amount) {
+    if (hasConfirmedRef.current || !paymentKey || !orderId || !hasValidAmount) {
       return;
     }
 
@@ -84,7 +86,7 @@ function CompletePageContent() {
       const result = await confirmMutation.mutateAsync({
         paymentKey,
         orderId,
-        amount: Number(amount),
+        amount: parsedAmount,
       });
 
       setBookingData(result);
@@ -110,16 +112,17 @@ function CompletePageContent() {
   }, [
     paymentKey,
     orderId,
-    amount,
+    parsedAmount,
+    hasValidAmount,
     confirmMutation,
     clearBooking,
   ]);
 
   useEffect(() => {
-    if (paymentKey && orderId && amount) {
+    if (paymentKey && orderId && hasValidAmount) {
       confirmPayment();
     }
-  }, [paymentKey, orderId, amount, confirmPayment]);
+  }, [paymentKey, orderId, hasValidAmount, confirmPayment]);
 
   // Focus heading on success
   useEffect(() => {
@@ -130,7 +133,7 @@ function CompletePageContent() {
   }, [bookingData]);
 
   // Handle missing params
-  if (!paymentKey || !orderId) {
+  if (!paymentKey || !orderId || !hasValidAmount) {
     if (!shouldRecover) {
       return (
         <div className="mx-auto flex min-h-[50vh] max-w-[720px] items-center justify-center px-6 py-12">
