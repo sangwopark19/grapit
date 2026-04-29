@@ -202,6 +202,14 @@ end
 return 0
 `;
 
+export const REFRESH_PAYMENT_CONFIRM_LOCK_LUA = `
+-- REFRESH_PAYMENT_CONFIRM_LOCK_LUA
+if redis.call('GET', KEYS[1]) == ARGV[1] then
+  return redis.call('EXPIRE', KEYS[1], tonumber(ARGV[2]))
+end
+return 0
+`;
+
 @Injectable()
 export class BookingService {
   constructor(
@@ -392,6 +400,22 @@ export class BookingService {
     const lockKey = `{payment-confirm}:${orderId}`;
     const result = await this.redis.set(lockKey, lockToken, 'EX', PAYMENT_CONFIRM_LOCK_TTL, 'NX');
     return result === 'OK';
+  }
+
+  async refreshPaymentConfirmLock(
+    orderId: string,
+    lockToken: string,
+    ttlSeconds = PAYMENT_CONFIRM_LOCK_TTL,
+  ): Promise<boolean> {
+    const lockKey = `{payment-confirm}:${orderId}`;
+    const result = await this.redis.eval(
+      REFRESH_PAYMENT_CONFIRM_LOCK_LUA,
+      1,
+      lockKey,
+      lockToken,
+      String(ttlSeconds),
+    );
+    return result === 1;
   }
 
   async releasePaymentConfirmLock(orderId: string, lockToken: string): Promise<void> {

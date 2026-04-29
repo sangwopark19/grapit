@@ -5,6 +5,7 @@ import {
   ASSERT_OWNED_SEAT_LOCKS_LUA,
   CONSUME_OWNED_SEAT_LOCKS_LUA,
   EXTEND_OWNED_SEAT_LOCKS_LUA,
+  REFRESH_PAYMENT_CONFIRM_LOCK_LUA,
   RELEASE_PAYMENT_CONFIRM_LOCK_LUA,
 } from '../../booking.service.js';
 import { redisProvider, REDIS_CLIENT } from '../redis.provider.js';
@@ -337,6 +338,30 @@ describe('redisProvider factory', () => {
           'token-123',
         )).resolves.toBe(1);
         expect(await redis.get(lockKey)).toBeNull();
+      });
+
+      it('REFRESH_PAYMENT_CONFIRM_LOCK_LUA extends only the matching order lock token', async () => {
+        const redis = createMock();
+        const lockKey = '{payment-confirm}:order-refresh';
+        await redis.set(lockKey, 'token-123', 'EX', 10);
+
+        await expect(redis.eval(
+          REFRESH_PAYMENT_CONFIRM_LOCK_LUA,
+          1,
+          lockKey,
+          'wrong-token',
+          '60',
+        )).resolves.toBe(0);
+        expect(await redis.ttl(lockKey)).toBeLessThanOrEqual(10);
+
+        await expect(redis.eval(
+          REFRESH_PAYMENT_CONFIRM_LOCK_LUA,
+          1,
+          lockKey,
+          'token-123',
+          '60',
+        )).resolves.toBe(1);
+        expect(await redis.ttl(lockKey)).toBeGreaterThan(10);
       });
     });
   });

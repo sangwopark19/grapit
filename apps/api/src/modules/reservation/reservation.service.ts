@@ -331,9 +331,20 @@ export class ReservationService {
       throw new ConflictException('결제 확인이 이미 진행 중입니다.');
     }
 
+    const refreshTimer = this.startPaymentConfirmLockRefresh(dto.orderId, confirmLockToken);
+
     try {
-      return await this.confirmAndCreateReservationLocked(dto, userId);
+      const lockStillOwned = await this.bookingService.refreshPaymentConfirmLock(
+        dto.orderId,
+        confirmLockToken,
+      );
+      if (!lockStillOwned) {
+        throw new ConflictException('결제 확인이 이미 진행 중입니다.');
+      }
+
+      return await this.confirmAndCreateReservationLocked(dto, userId, confirmLockToken);
     } finally {
+      clearInterval(refreshTimer);
       try {
         await this.bookingService.releasePaymentConfirmLock(dto.orderId, confirmLockToken);
       } catch (releaseError) {
@@ -345,9 +356,25 @@ export class ReservationService {
     }
   }
 
+  private startPaymentConfirmLockRefresh(
+    orderId: string,
+    lockToken: string,
+  ): ReturnType<typeof setInterval> {
+    const refreshEveryMs = Math.max(1000, Math.floor(PAYMENT_CONFIRM_LOCK_TTL * 1000 / 2));
+    return setInterval(() => {
+      void this.bookingService.refreshPaymentConfirmLock(orderId, lockToken).catch((refreshError) => {
+        this.logger.error(
+          `Payment confirm lock refresh failed. orderId=${orderId}`,
+          refreshError instanceof Error ? refreshError.stack : String(refreshError),
+        );
+      });
+    }, refreshEveryMs);
+  }
+
   private async confirmAndCreateReservationLocked(
     dto: ConfirmPaymentRequest,
     userId: string,
+    confirmLockToken: string,
   ): Promise<ReservationDetail> {
     // 1. Idempotency: check if payment already exists for this orderId
     const [existingPayment] = await this.db
@@ -398,6 +425,26 @@ export class ReservationService {
       orderId: dto.orderId,
       amount: dto.amount,
     });
+
+    const confirmLockStillOwned = await this.bookingService.refreshPaymentConfirmLock(
+      dto.orderId,
+      confirmLockToken,
+    );
+    if (!confirmLockStillOwned) {
+      this.logger.error(
+        `Payment confirm lock ownership lost after Toss confirm. paymentKey=${tossResponse.paymentKey}, orderId=${dto.orderId}`,
+      );
+      try {
+        await this.tossClient.cancelPayment(tossResponse.paymentKey, '결제 확인 중복 처리로 인한 자동 취소');
+        this.logger.log(`Confirm lock compensation cancel succeeded. paymentKey=${tossResponse.paymentKey}`);
+      } catch (cancelError) {
+        this.logger.error(
+          `CRITICAL: Confirm lock compensation cancel failed. paymentKey=${tossResponse.paymentKey}. Manual refund required.`,
+          cancelError instanceof Error ? cancelError.stack : String(cancelError),
+        );
+      }
+      throw new ConflictException('결제 확인이 이미 진행 중입니다.');
+    }
 
     try {
       await this.bookingService.assertOwnedSeatLocks(userId, reservation.showtimeId, pendingSeatIds);
@@ -472,6 +519,25 @@ export class ReservationService {
         }
       });
     } catch (dbError) {
+      try {
+        const [committedPayment] = await this.db
+          .select()
+          .from(payments)
+          .where(eq(payments.tossOrderId, dto.orderId));
+
+        if (committedPayment) {
+          this.logger.warn(
+            `Payment row already exists after confirm transaction failure. orderId=${dto.orderId}, reservationId=${committedPayment.reservationId}`,
+          );
+          return this.getReservationDetail(committedPayment.reservationId, userId);
+        }
+      } catch (lookupError) {
+        this.logger.error(
+          `Failed to re-read payment after confirm transaction failure. orderId=${dto.orderId}`,
+          lookupError instanceof Error ? lookupError.stack : String(lookupError),
+        );
+      }
+
       // Compensation: attempt to cancel the Toss payment
       this.logger.error(
         `DB transaction failed after Toss confirm. paymentKey=${tossResponse.paymentKey}, orderId=${dto.orderId}`,

@@ -229,6 +229,9 @@ class InMemoryRedis {
     if (script.includes('RELEASE_PAYMENT_CONFIRM_LOCK_LUA')) {
       return this.evalReleasePaymentConfirmLock(keys, args);
     }
+    if (script.includes('REFRESH_PAYMENT_CONFIRM_LOCK_LUA')) {
+      return this.evalRefreshPaymentConfirmLock(keys, args);
+    }
     if (keys.length === 3 && args.length === 3 && script.includes('VERIFIED')) {
       return this.evalVerifyAndIncrement(keys, args);
     }
@@ -432,6 +435,17 @@ class InMemoryRedis {
     }
 
     return this.del(lockKey!);
+  }
+
+  private async evalRefreshPaymentConfirmLock(keys: string[], args: string[]): Promise<number> {
+    const [lockKey] = keys;
+    const [lockToken, ttlSeconds] = args;
+
+    if (this.store.get(lockKey!) !== lockToken) {
+      return 0;
+    }
+
+    return this.expire(lockKey!, Number(ttlSeconds));
   }
 
   private evalGetValidLockedSeats(keys: string[], args: string[]): string[] {

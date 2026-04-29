@@ -9,6 +9,7 @@ import {
   LOCK_EXPIRED_MESSAGE,
   LOCK_OTHER_OWNER_MESSAGE,
   PAYMENT_CONFIRM_LOCK_TTL,
+  REFRESH_PAYMENT_CONFIRM_LOCK_LUA,
   RELEASE_PAYMENT_CONFIRM_LOCK_LUA,
 } from '../booking.service.js';
 import type { BookingGateway } from '../booking.gateway.js';
@@ -457,6 +458,30 @@ describe('BookingService', () => {
         '{payment-confirm}:order-123',
         'token-123',
       );
+    });
+
+    it('refreshPaymentConfirmLock extends only a matching order-level lock token', async () => {
+      mockRedis.eval.mockResolvedValue(1);
+
+      await expect(service.refreshPaymentConfirmLock('order-123', 'token-123'))
+        .resolves
+        .toBe(true);
+
+      expect(mockRedis.eval).toHaveBeenCalledWith(
+        REFRESH_PAYMENT_CONFIRM_LOCK_LUA,
+        1,
+        '{payment-confirm}:order-123',
+        'token-123',
+        String(PAYMENT_CONFIRM_LOCK_TTL),
+      );
+    });
+
+    it('refreshPaymentConfirmLock returns false when the order lock token changed', async () => {
+      mockRedis.eval.mockResolvedValue(0);
+
+      await expect(service.refreshPaymentConfirmLock('order-123', 'token-123'))
+        .resolves
+        .toBe(false);
     });
   });
 

@@ -51,6 +51,7 @@ function createMockBookingService() {
     consumeOwnedSeatLocks: vi.fn().mockResolvedValue({ consumedSeatIds: [] }),
     extendOwnedSeatLocks: vi.fn().mockResolvedValue(undefined),
     acquirePaymentConfirmLock: vi.fn().mockResolvedValue(true),
+    refreshPaymentConfirmLock: vi.fn().mockResolvedValue(true),
     releasePaymentConfirmLock: vi.fn().mockResolvedValue(undefined),
   };
 }
@@ -899,6 +900,7 @@ describe('ReservationService', () => {
       expect(mockTossClient.confirmPayment).not.toHaveBeenCalled();
       expect(mockDb.transaction).not.toHaveBeenCalled();
       const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
+      expect(mockBookingService.refreshPaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
       expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
     });
 
@@ -927,6 +929,36 @@ describe('ReservationService', () => {
       expect(mockBookingService.consumeOwnedSeatLocks).not.toHaveBeenCalled();
       expect(mockBookingGateway.broadcastSeatUpdate).not.toHaveBeenCalled();
       const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
+      expect(mockBookingService.refreshPaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
+      expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
+    });
+
+    it('cancels Toss and rejects when the order confirm lock is lost after Toss confirm', async () => {
+      setupConfirmReservationBase({
+        reservationId,
+        showtimeId,
+        orderId,
+        userId,
+        amount: 150000,
+      });
+      mockBookingService.refreshPaymentConfirmLock
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(false);
+
+      await expect(service.confirmAndCreateReservation(
+        { paymentKey: 'pk_test_123', orderId, amount: 150000 },
+        userId,
+      )).rejects.toThrow('결제 확인이 이미 진행 중입니다.');
+
+      expect(mockBookingService.extendOwnedSeatLocks).toHaveBeenCalledWith(userId, showtimeId, ['A-1', 'A-2'], 60);
+      expect(mockTossClient.confirmPayment).toHaveBeenCalledOnce();
+      expect(mockBookingService.assertOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockTossClient.cancelPayment).toHaveBeenCalledWith('pk_test_123', '결제 확인 중복 처리로 인한 자동 취소');
+      expect(mockDb.transaction).not.toHaveBeenCalled();
+      expect(mockBookingService.consumeOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockBookingGateway.broadcastSeatUpdate).not.toHaveBeenCalled();
+      const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
+      expect(mockBookingService.refreshPaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
       expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
     });
 
@@ -956,6 +988,7 @@ describe('ReservationService', () => {
       expect(mockTossClient.cancelPayment).not.toHaveBeenCalled();
       expect(mockDb.transaction).toHaveBeenCalledOnce();
       const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
+      expect(mockBookingService.refreshPaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
       expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
     });
 
@@ -986,6 +1019,7 @@ describe('ReservationService', () => {
         }),
       };
       mockDb.transaction.mockImplementation(async (cb: (tx: typeof mockTx) => Promise<unknown>) => cb(mockTx));
+      mockDb.select.mockReturnValueOnce(chainResult([]));
 
       await expect(service.confirmAndCreateReservation(
         { paymentKey: 'pk_test_123', orderId, amount: 150000 },
@@ -994,6 +1028,31 @@ describe('ReservationService', () => {
 
       expect(mockTossClient.confirmPayment).toHaveBeenCalledOnce();
       expect(mockTossClient.cancelPayment).toHaveBeenCalledWith('pk_test_123', '서버 오류로 인한 자동 취소');
+      expect(mockBookingService.consumeOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockBookingGateway.broadcastSeatUpdate).not.toHaveBeenCalled();
+      const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
+      expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
+    });
+
+    it('does not cancel Toss when a duplicate payment insert race already committed the same order', async () => {
+      setupConfirmReservationBase({
+        reservationId,
+        showtimeId,
+        orderId,
+        userId,
+        amount: 150000,
+      });
+      mockDb.transaction.mockRejectedValueOnce(new Error('duplicate key value violates unique constraint'));
+      mockDb.select.mockReturnValueOnce(chainResult([{ reservationId, tossOrderId: orderId }]));
+      setupReservationDetailMocks({ reservationId, userId, amount: 150000 });
+
+      await expect(service.confirmAndCreateReservation(
+        { paymentKey: 'pk_test_123', orderId, amount: 150000 },
+        userId,
+      )).resolves.toMatchObject({ id: reservationId });
+
+      expect(mockTossClient.confirmPayment).toHaveBeenCalledOnce();
+      expect(mockTossClient.cancelPayment).not.toHaveBeenCalled();
       expect(mockBookingService.consumeOwnedSeatLocks).not.toHaveBeenCalled();
       expect(mockBookingGateway.broadcastSeatUpdate).not.toHaveBeenCalled();
       const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
@@ -1015,6 +1074,7 @@ describe('ReservationService', () => {
       expect(mockBookingService.consumeOwnedSeatLocks).not.toHaveBeenCalled();
       expect(mockTossClient.confirmPayment).not.toHaveBeenCalled();
       const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
+      expect(mockBookingService.refreshPaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
       expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
     });
   });
