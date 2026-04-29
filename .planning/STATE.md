@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
-status: executing
-stopped_at: Completed 19-04-PLAN.md
-last_updated: "2026-04-29T08:35:43.665Z"
+status: verifying
+stopped_at: Completed 19-03-PLAN.md
+last_updated: "2026-04-29T08:49:33.925Z"
 last_activity: 2026-04-29
 progress:
   total_phases: 22
-  completed_phases: 14
+  completed_phases: 15
   total_plans: 70
-  completed_plans: 68
-  percent: 97
+  completed_plans: 69
+  percent: 99
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 ## Current Position
 
 Phase: 19 (seat-lock-ownership-enforcement) — EXECUTING
-Plan: 3 of 4
-Status: Ready to execute
+Plan: 4 of 4
+Status: Phase complete — ready for verification
 Last activity: 2026-04-29
 
-Progress: [██████████] 97%
+Progress: [██████████] 99%
 
 ## Performance Metrics
 
@@ -80,6 +80,7 @@ Progress: [██████████] 97%
 | Phase 19 P01 | 9min | 2 tasks | 6 files |
 | Phase 19 P02 | 8min | 2 tasks | 5 files |
 | Phase 19 P04 | 7min | 2 tasks | 4 files |
+| Phase 19 P03 | 6min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -127,6 +128,9 @@ Full decision log in PROJECT.md Key Decisions table (10 decisions, all Good).
 - [Phase 19-04]: Confirm-page lock failure disables payment CTA and prevents Toss requestPayment after prepare rejection.
 - [Phase 19-04]: Complete-page lock rejection bypasses orderId recovery and renders failed UI state instead of success.
 - [Phase 19-04]: Preserve selected seats on prepare lock failure until the user explicitly clicks the recovery CTA.
+- [Phase 19-03]: Existing pending orderId returns now require active Valkey ownership for stored reservation seats.
+- [Phase 19-03]: Existing payment idempotency remains first and does not require active locks after sold transition.
+- [Phase 19-03]: Post-Toss consume failure cancels the Toss payment and skips the DB sold transition.
 
 ### Pending Todos
 
@@ -161,8 +165,8 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-29T08:35:43.658Z
-Stopped at: Completed 19-04-PLAN.md
+Last session: 2026-04-29T08:48:54.173Z
+Stopped at: Completed 19-03-PLAN.md
 Resume file: None
 
 **Planned Phase:** 15 (resend-heygrabit-com-cutover-transactional-email-secret-mana) — 3 plans — 2026-04-24T08:54:14.266Z

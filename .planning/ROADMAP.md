@@ -37,7 +37,7 @@ Full details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 - [ ] **Phase 16: Legal pages launch** - legal 공개 URL cutover와 외부 sign-off 완료 (in progress)
 - [x] **Phase 17: Local dev health indicator fix** - InMemoryRedis ping parity와 health capability probe 보강 (completed)
 - [x] **Phase 18: Password reset production API origin fix** - password reset confirm의 production API origin break 해소 (gap closure) (completed 2026-04-29)
-- [ ] **Phase 19: Seat lock ownership enforcement** - reservation/payment 경계에서 Valkey lock ownership 강제 (gap closure)
+- [x] **Phase 19: Seat lock ownership enforcement** - reservation/payment 경계에서 Valkey lock ownership 강제 (gap closure) (completed 2026-04-29)
 - [ ] **Phase 20: Valkey production connectivity contract** - Cloud Run → Valkey runtime/cluster contract 검증 (gap closure)
 - [ ] **Phase 21: Verification artifact backfill** - missing `VERIFICATION.md`와 requirement evidence 계약 복구 (gap closure)
 - [ ] **Phase 22: Operator UAT gates** - SMS, legal, email operator/human gates 완료 (gap closure)
@@ -296,7 +296,7 @@ Plans:
   1. reservation prepare가 모든 requested seat의 active lock owner를 검증하고 mismatch/expired lock을 거부한다.
   2. payment confirm이 active lock ownership 없이 sold 전환을 수행하지 않는다.
   3. expired/released/other-user lock에 대한 API and E2E regression tests가 추가된다.
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 **Wave 1**
@@ -307,7 +307,7 @@ Plans:
 - [x] 19-04-PLAN.md — Confirm/complete lock rejection UX and E2E coverage
 
 **Wave 3 *(blocked on 19-02 completion)***
-- [ ] 19-03-PLAN.md — Reservation prepare/confirm ownership enforcement
+- [x] 19-03-PLAN.md — Reservation prepare/confirm ownership enforcement
 
 Cross-cutting constraints:
 - Active Valkey ownership is the source of truth for prepare and confirm; client-selected seats and `locked-seats` index membership are not authorization.
@@ -416,7 +416,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 
 | 16. Legal pages launch | v1.1 | 5/6 | Partial | - |
 | 17. Local dev health indicator fix | v1.1 | 2/2 | Complete | 2026-04-29 |
 | 18. Password reset production API origin fix | v1.1 | 2/2 | Complete    | 2026-04-29 |
-| 19. Seat lock ownership enforcement | v1.1 | 3/4 | In Progress|  |
+| 19. Seat lock ownership enforcement | v1.1 | 4/4 | Complete   | 2026-04-29 |
 | 20. Valkey production connectivity contract | v1.1 | 0/0 | Planned | - |
 | 21. Verification artifact backfill | v1.1 | 0/0 | Planned | - |
 | 22. Operator UAT gates | v1.1 | 0/0 | Planned | - |
