@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
-status: executing
-stopped_at: Completed 18-01-PLAN.md
-last_updated: "2026-04-29T05:13:10.106Z"
+status: verifying
+stopped_at: Completed 18-02-PLAN.md
+last_updated: "2026-04-29T05:48:37.656Z"
 last_activity: 2026-04-29
 progress:
   total_phases: 22
-  completed_phases: 13
+  completed_phases: 14
   total_plans: 66
-  completed_plans: 64
-  percent: 97
+  completed_plans: 65
+  percent: 98
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 
 Phase: 18 (password-reset-production-api-origin-fix) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-29
 
-Progress: [██████████] 97%
+Progress: [██████████] 98%
 
 ## Performance Metrics
 
@@ -75,6 +75,7 @@ Progress: [██████████] 97%
 | Phase 17 P01 | <1min | 2 tasks | 3 files |
 | Phase 17 P02 | <1min | 3 tasks | 3 files |
 | Phase 18 P01 | 9min | 3 tasks | 10 files |
+| Phase 18 P02 | 27min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -111,6 +112,9 @@ Full decision log in PROJECT.md Key Decisions table (10 decisions, all Good).
 - [Phase 18-01]: Reset confirm remains raw fetch via apiUrl so token-invalid 401 stays on invalid-link UI.
 - [Phase 18-01]: Production Next rewrites return [] and localhost /api + /socket.io rewrites are development-only.
 - [Phase 18-01]: deploy-web validates CLOUD_RUN_API_URL before Docker build and blocks empty or loopback origins.
+- [Phase 18-02]: Use the user's checkpoint approval as the production email-to-confirm-to-login completion signal.
+- [Phase 18-02]: Do not fabricate Sentry email-service zero-count; record the operator-approved evidence caveat instead.
+- [Phase 18-02]: Keep no-PII redaction gates as the release evidence guard for the UAT artifact.
 
 ### Pending Todos
 
@@ -145,8 +149,8 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-29T05:13:10.102Z
-Stopped at: Completed 18-01-PLAN.md
+Last session: 2026-04-29T05:48:37.651Z
+Stopped at: Completed 18-02-PLAN.md
 Resume file: None
 
 **Planned Phase:** 15 (resend-heygrabit-com-cutover-transactional-email-secret-mana) — 3 plans — 2026-04-24T08:54:14.266Z

@@ -36,7 +36,7 @@ Full details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 - [x] **Phase 15: Resend heygrabit.com cutover** - transactional email 발송 도메인과 Secret Manager 값 전환 (completed 2026-04-27)
 - [ ] **Phase 16: Legal pages launch** - legal 공개 URL cutover와 외부 sign-off 완료 (in progress)
 - [x] **Phase 17: Local dev health indicator fix** - InMemoryRedis ping parity와 health capability probe 보강 (completed)
-- [ ] **Phase 18: Password reset production API origin fix** - password reset confirm의 production API origin break 해소 (gap closure)
+- [x] **Phase 18: Password reset production API origin fix** - password reset confirm의 production API origin break 해소 (gap closure) (completed 2026-04-29)
 - [ ] **Phase 19: Seat lock ownership enforcement** - reservation/payment 경계에서 Valkey lock ownership 강제 (gap closure)
 - [ ] **Phase 20: Valkey production connectivity contract** - Cloud Run → Valkey runtime/cluster contract 검증 (gap closure)
 - [ ] **Phase 21: Verification artifact backfill** - missing `VERIFICATION.md`와 requirement evidence 계약 복구 (gap closure)
@@ -277,14 +277,14 @@ Plans:
   1. password reset confirm submit이 production web에서 public API origin을 사용하고 `/api` rewrite가 `localhost:8080`으로 새지 않는다.
   2. local dev, preview, production 환경별 API base URL contract가 문서화되고 regression test로 고정된다.
   3. password reset email → confirm → login happy path smoke/UAT evidence가 phase artifact에 남는다.
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 **Wave 1**
 - [x] 18-01-PLAN.md — Code + regression contract: shared `apiUrl()` helper, reset confirm public API origin, dev-only localhost rewrites
 
 **Wave 2** *(blocked on Wave 1 completion)*
-- [ ] 18-02-PLAN.md — Production UAT evidence: password reset email → confirm POST to `api.heygrabit.com` → login success
+- [x] 18-02-PLAN.md — Production UAT evidence: password reset email → confirm POST to `api.heygrabit.com` → login success
 
 ### Phase 19: Seat lock ownership enforcement
 
@@ -402,7 +402,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 
 | 15. Resend heygrabit.com cutover | v1.1 | 3/3 | Complete (48h 관측 follow-up pending) | 2026-04-27 |
 | 16. Legal pages launch | v1.1 | 5/6 | Partial | - |
 | 17. Local dev health indicator fix | v1.1 | 2/2 | Complete | 2026-04-29 |
-| 18. Password reset production API origin fix | v1.1 | 1/2 | In Progress|  |
+| 18. Password reset production API origin fix | v1.1 | 2/2 | Complete   | 2026-04-29 |
 | 19. Seat lock ownership enforcement | v1.1 | 0/0 | Planned | - |
 | 20. Valkey production connectivity contract | v1.1 | 0/0 | Planned | - |
 | 21. Verification artifact backfill | v1.1 | 0/0 | Planned | - |
