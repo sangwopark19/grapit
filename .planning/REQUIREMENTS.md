@@ -9,7 +9,7 @@ Requirements for v1.1 안정화 + 고도화. Each maps to roadmap phases.
 
 ### 소셜 로그인 버그
 
-- [x] **AUTH-01**: 소셜 로그인 재로그인 실패 버그 수정 (회원가입 후 로그아웃 → 재로그인 불가, 카카오/네이버/구글 전부)
+- [ ] **AUTH-01**: 소셜 로그인 재로그인 실패 버그 수정 (회원가입 후 로그아웃 → 재로그인 불가, 카카오/네이버/구글 전부)
 
 ### Valkey 마이그레이션
 
@@ -22,10 +22,10 @@ Requirements for v1.1 안정화 + 고도화. Each maps to roadmap phases.
 
 ### R2 프로덕션 연동
 
-- [x] **R2-01**: Cloudflare R2 API 토큰 발급 + 버킷 생성
+- [ ] **R2-01**: Cloudflare R2 API 토큰 발급 + 버킷 생성
 - [ ] **R2-02**: R2 CORS 설정 (AllowedHeaders 명시적 지정)
-- [x] **R2-03**: 포스터/SVG 프로덕션 업로드 및 CDN 서빙 동작
-- [x] **R2-04**: 커스텀 도메인 설정 (CDN 서빙)
+- [ ] **R2-03**: 포스터/SVG 프로덕션 업로드 및 CDN 서빙 동작
+- [ ] **R2-04**: 커스텀 도메인 설정 (CDN 서빙)
 
 ### 기술부채 청산
 
@@ -55,11 +55,11 @@ Requirements for v1.1 안정화 + 고도화. Each maps to roadmap phases.
 ### UX 현대화
 
 - [x] **UX-01**: 전체 디자인 현대화 (테두리/스타일 → 모던 트렌드, 심층 리서치 기반)
-- [x] **UX-02**: SVG 좌석맵 스테이지 방향 표시
-- [x] **UX-03**: SVG 좌석맵 등급별 색상 범례 + 가격 표시
-- [x] **UX-04**: 좌석 선택 상태 전환 애니메이션
-- [x] **UX-05**: 미니맵 네비게이터 (줌 시 전체 뷰 위치)
-- [x] **UX-06**: 모바일 터치 타겟 44px 최소 보장
+- [ ] **UX-02**: SVG 좌석맵 스테이지 방향 표시
+- [ ] **UX-03**: SVG 좌석맵 등급별 색상 범례 + 가격 표시
+- [ ] **UX-04**: 좌석 선택 상태 전환 애니메이션
+- [ ] **UX-05**: 미니맵 네비게이터 (줌 시 전체 뷰 위치)
+- [ ] **UX-06**: 모바일 터치 타겟 44px 최소 보장
 
 ## v2 Requirements
 
@@ -96,25 +96,25 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 6 | Complete |
+| AUTH-01 | Phase 6, Phase 21 | Pending |
 | VALK-01 | Phase 7 | Pending |
-| VALK-02 | Phase 7 | Pending |
-| VALK-03 | Phase 7 | Pending |
-| VALK-04 | Phase 7 | Pending |
-| VALK-05 | Phase 7 | Pending |
+| VALK-02 | Phase 7, Phase 20 | Pending |
+| VALK-03 | Phase 7, Phase 19, Phase 20, Phase 24 | Pending |
+| VALK-04 | Phase 7, Phase 20 | Pending |
+| VALK-05 | Phase 7, Phase 20, Phase 24 | Pending |
 | VALK-06 | Phase 7 | Pending |
-| R2-01 | Phase 8 | Complete |
-| R2-02 | Phase 8 | Pending |
-| R2-03 | Phase 8 | Complete |
-| R2-04 | Phase 8 | Complete |
-| DEBT-01 | Phase 9 | Pending |
-| DEBT-02 | Phase 9 | Pending |
-| DEBT-03 | Phase 9 | Pending |
-| DEBT-04 | Phase 9 | Pending |
-| DEBT-05 | Phase 9 | Pending |
-| DEBT-06 | Phase 9 | Pending |
+| R2-01 | Phase 8, Phase 21, Phase 23 | Pending |
+| R2-02 | Phase 8, Phase 21, Phase 23, Phase 24 | Pending |
+| R2-03 | Phase 8, Phase 21, Phase 23 | Pending |
+| R2-04 | Phase 8, Phase 21, Phase 23 | Pending |
+| DEBT-01 | Phase 9, Phase 18, Phase 23 | Pending |
+| DEBT-02 | Phase 9, Phase 23 | Pending |
+| DEBT-03 | Phase 9, Phase 23 | Pending |
+| DEBT-04 | Phase 9, Phase 23 | Pending |
+| DEBT-05 | Phase 9, Phase 23 | Pending |
+| DEBT-06 | Phase 9, Phase 23 | Pending |
 | SMS-01 | Phase 10 | Pending |
-| SMS-02 | Phase 10 | Pending |
+| SMS-02 | Phase 10, Phase 22, Phase 24 | Pending |
 | SMS-03 | Phase 10 | Pending |
 | SMS-04 | Phase 10 | Pending |
 | ADM-01 | Phase 11 | Complete |
@@ -124,17 +124,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ADM-05 | Phase 11 | Complete |
 | ADM-06 | Phase 11 | Complete |
 | UX-01 | Phase 12 | Complete |
-| UX-02 | Phase 12 | Complete |
-| UX-03 | Phase 12 | Complete |
-| UX-04 | Phase 12 | Complete |
-| UX-05 | Phase 12 | Complete |
-| UX-06 | Phase 12 | Complete |
+| UX-02 | Phase 12, Phase 19 | Pending |
+| UX-03 | Phase 12, Phase 19 | Pending |
+| UX-04 | Phase 12, Phase 19 | Pending |
+| UX-05 | Phase 12, Phase 19 | Pending |
+| UX-06 | Phase 12, Phase 19 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 33 total
 - Mapped to phases: 33/33
+- Gap closure remapped from v1.1 audit: 21/33
+- Open after audit gap planning: 26/33
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-09*
-*Last updated: 2026-04-09 after roadmap creation*
+*Last updated: 2026-04-29 after v1.1 milestone gap planning*

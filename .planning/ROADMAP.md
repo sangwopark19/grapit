@@ -3,7 +3,7 @@
 ## Milestones
 
 - ✅ **v1.0 MVP** -- Phases 1-5 (shipped 2026-04-09)
-- 🚧 **v1.1 안정화 + 고도화** -- Phases 6-12 (in progress)
+- 🚧 **v1.1 안정화 + 고도화** -- Phases 6-24 (in progress)
 
 ## Phases
 
@@ -31,6 +31,18 @@ Full details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 - [x] **Phase 10: SMS 인증 실연동** - dev mock을 실제 SMS 발송/검증으로 전환 (completed 2026-04-16, Phase 10.1 Infobip v3 재작업 shipped 2026-04-20 PR #16)
 - [x] **Phase 11: 어드민 대시보드** - 통계 대시보드 + Valkey 캐싱으로 어드민 고도화 (completed 2026-04-20, 수동 QA 유예 — 11-HUMAN-UAT.md 참조)
 - [x] **Phase 12: UX 현대화** - 디자인 트렌드 반영 + SVG 좌석맵 UX 개선 (completed 2026-04-21)
+- [x] **Phase 13: 브랜드 grapit→grabit rename** - 코드/설정/사용자 노출 카피/도메인 식별자 전환 (completed 2026-04-22)
+- [x] **Phase 14: SMS OTP CROSSSLOT fix** - Valkey Cluster hash tag 적용과 프로덕션 SMS OTP 회귀 방어 (completed 2026-04-24)
+- [x] **Phase 15: Resend heygrabit.com cutover** - transactional email 발송 도메인과 Secret Manager 값 전환 (completed 2026-04-27)
+- [ ] **Phase 16: Legal pages launch** - legal 공개 URL cutover와 외부 sign-off 완료 (in progress)
+- [x] **Phase 17: Local dev health indicator fix** - InMemoryRedis ping parity와 health capability probe 보강 (completed)
+- [ ] **Phase 18: Password reset production API origin fix** - password reset confirm의 production API origin break 해소 (gap closure)
+- [ ] **Phase 19: Seat lock ownership enforcement** - reservation/payment 경계에서 Valkey lock ownership 강제 (gap closure)
+- [ ] **Phase 20: Valkey production connectivity contract** - Cloud Run → Valkey runtime/cluster contract 검증 (gap closure)
+- [ ] **Phase 21: Verification artifact backfill** - missing `VERIFICATION.md`와 requirement evidence 계약 복구 (gap closure)
+- [ ] **Phase 22: Operator UAT gates** - SMS, legal, email operator/human gates 완료 (gap closure)
+- [ ] **Phase 23: Nyquist validation backfill** - partial/missing validation artifacts 보강 (gap closure)
+- [ ] **Phase 24: Operational hardening sweep** - audit tech-debt follow-up를 launch blocker로 승격해 정리 (gap closure)
 
 ## Phase Details
 
@@ -185,45 +197,6 @@ Plans:
 - [x] 12-04-regression-and-manual-qa-PLAN.md — Wave 4: 자동 회귀 + manual QA gate (11개 항목 포함 reviews revision HIGH #1/#2/MED #4) + D-19 SECURITY DEBT PROJECT.md 기록 (reviews revision LOW #9)
 **UI hint**: yes
 
-## Progress
-
-**Execution Order:**
-Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
-
-| Phase | Milestone | Plans Complete | Status | Completed |
-|-------|-----------|----------------|--------|-----------|
-| 1. Foundation + Auth | v1.0 | 5/5 | Complete | 2026-03-30 |
-| 2. Catalog + Admin | v1.0 | 6/6 | Complete | 2026-03-31 |
-| 3. Seat Map + Real-Time | v1.0 | 4/4 | Complete | 2026-04-02 |
-| 4. Booking + Payment | v1.0 | 3/3 | Complete | 2026-04-07 |
-| 5. Polish + Launch | v1.0 | 5/5 | Complete | 2026-04-08 |
-| 6. 소셜 로그인 버그 수정 | v1.1 | 0/2 | Planning | - |
-| 7. Valkey 마이그레이션 | v1.1 | 3/5 | Executing | - |
-| 8. R2 프로덕션 연동 | v1.1 | 0/3 | Planning | - |
-| 9. 기술부채 청산 | v1.1 | 0/0 | Not started | - |
-| 10. SMS 인증 실연동 | v1.1 | 9/9 | Complete    | 2026-04-16 |
-| 11. 어드민 대시보드 | v1.1 | 4/4 | Complete    | 2026-04-20 |
-| 12. UX 현대화 | v1.1 | 6/6 | Complete    | 2026-04-21 |
-| 13. 브랜드 grapit→grabit rename | v1.1 | 4/4 | Complete    | 2026-04-22 |
-| 14. SMS OTP CROSSSLOT fix | v1.1 | 4/4 | Complete    | 2026-04-24 |
-| 15. Resend heygrabit.com cutover | v1.1 | 3/3 | Complete (smoke test ✓, 48h 관측 진행) | 2026-04-27 |
-
-## Backlog
-
-### Phase 999.1: 홈 HOT/신규 오픈 "더보기" 전 장르 라우트 신설 (BACKLOG)
-
-**Goal:** [Captured for future planning]
-**Requirements:** TBD
-**Plans:** 0 plans
-
-**Context (from Phase 12 code review IN-06):**
-- `apps/web/components/home/hot-section.tsx:22-27` 및 `new-section.tsx:18-23`의 "더보기" 링크가 `/genre/musical?sort=popular|latest`로 musical 장르에 하드코딩되어 있음.
-- HOT / 신규 오픈 섹션은 전 장르 큐레이션이므로 제품 의도와 불일치. 코드만으로는 의도 여부를 확정할 수 없어 Info 레벨 finding으로 남음.
-- 제품 결정 필요: (A) 전 장르 대상 `/performances?sort=popular|latest` 같은 통합 목록 라우트 신설 → 링크 교체, (B) MVP 주력이 musical인 의도적 제약 → 주석으로만 명시.
-
-Plans:
-- [ ] TBD (promote with /gsd-review-backlog when ready)
-
 ### Phase 13: 브랜드명 grapit → grabit 일괄 rename
 
 **Goal:** 코드/문서/설정/이메일·SMS 카피/DB/Cloud Run 서비스명을 `grapit`에서 `grabit`으로 일괄 전환하여 확정 도메인 heygrabit.com 런칭에 맞춘 브랜드 정합성 확보
@@ -293,3 +266,158 @@ Plans:
 Plans:
 - [x] 17-01-PLAN.md — Wave 1 RED: InMemoryRedis `ping()` parity + RedisHealthIndicator no-ping capability probe tests
 - [x] 17-02-PLAN.md — Wave 2 implementation: `InMemoryRedis.ping()` + RedisHealthIndicator capability probe + focused/typecheck/lint verification
+
+### Phase 18: Password reset production API origin fix
+
+**Goal:** password reset email → confirm flow가 production Cloud Run에서도 `localhost:8080` rewrite에 의존하지 않고 올바른 API origin으로 submit되어 DEBT-01과 CUTOVER flow break를 해소한다.
+**Requirements:** DEBT-01, CUTOVER-01, CUTOVER-02, CUTOVER-03, CUTOVER-04, CUTOVER-05, CUTOVER-06
+**Gap Closure:** Closes `.planning/v1.1-MILESTONE-AUDIT.md` password reset production API origin gap.
+**Depends on:** Phase 17
+**Success Criteria** (what must be TRUE):
+  1. password reset confirm submit이 production web에서 public API origin을 사용하고 `/api` rewrite가 `localhost:8080`으로 새지 않는다.
+  2. local dev, preview, production 환경별 API base URL contract가 문서화되고 regression test로 고정된다.
+  3. password reset email → confirm → login happy path smoke/UAT evidence가 phase artifact에 남는다.
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run `/gsd-plan-phase 18`)
+
+### Phase 19: Seat lock ownership enforcement
+
+**Goal:** SVG seat select → Valkey lock → reservation/payment flow에서 reservation prepare/confirm이 client-provided seats만 신뢰하지 않고 active Valkey lock ownership을 강제한다.
+**Requirements:** VALK-03, UX-02, UX-03, UX-04, UX-05, UX-06
+**Gap Closure:** Closes `.planning/v1.1-MILESTONE-AUDIT.md` seat selection / Valkey lock → reservation / payment gap.
+**Depends on:** Phase 18
+**Success Criteria** (what must be TRUE):
+  1. reservation prepare가 모든 requested seat의 active lock owner를 검증하고 mismatch/expired lock을 거부한다.
+  2. payment confirm이 active lock ownership 없이 sold 전환을 수행하지 않는다.
+  3. expired/released/other-user lock에 대한 API and E2E regression tests가 추가된다.
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run `/gsd-plan-phase 19`)
+
+### Phase 20: Valkey production connectivity contract
+
+**Goal:** Cloud Run → Google Memorystore for Valkey production runtime contract를 cluster/standalone 설정, VPC egress, idle reconnect, Socket.IO pub/sub까지 실제 운영 조건에서 검증 가능하게 만든다.
+**Requirements:** VALK-02, VALK-03, VALK-04, VALK-05, SC-1, SC-2, SC-3, SC-4
+**Gap Closure:** Closes `.planning/v1.1-MILESTONE-AUDIT.md` Cloud Run → Valkey Cluster and runtime human-needed gaps.
+**Depends on:** Phase 19
+**Success Criteria** (what must be TRUE):
+  1. production Valkey mode detection/connection config가 deployment contract로 고정된다.
+  2. Cloud Run revision에서 Valkey ping, Lua lock path, Socket.IO pub/sub propagation smoke가 evidence로 남는다.
+  3. idle reconnect and multi-instance propagation failure mode가 rollback/checklist에 포함된다.
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run `/gsd-plan-phase 20`)
+
+### Phase 21: Verification artifact backfill
+
+**Goal:** Phase 06, 08, 13, 15의 missing `*-VERIFICATION.md`와 requirement evidence/frontmatter gap을 보강하여 AUTH-01, R2-02 orphaned 상태와 audit artifact blocker를 제거한다.
+**Requirements:** AUTH-01, R2-01, R2-02, R2-03, R2-04
+**Gap Closure:** Closes `.planning/v1.1-MILESTONE-AUDIT.md` missing phase verification artifact and orphaned requirement gaps.
+**Depends on:** Phase 20
+**Success Criteria** (what must be TRUE):
+  1. `06-VERIFICATION.md`, `08-VERIFICATION.md`, `13-VERIFICATION.md`, `15-VERIFICATION.md`가 phase evidence와 일치하게 작성된다.
+  2. orphaned/partial requirement rows가 verification files and SUMMARY frontmatter에서 추적 가능해진다.
+  3. generated artifact는 실제 code/ops evidence를 참조하고 없는 evidence를 satisfied로 표시하지 않는다.
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run `/gsd-plan-phase 21`)
+
+### Phase 22: Operator UAT gates
+
+**Goal:** Phase 14 SMS OTP, Phase 15 email cutover, Phase 16 legal launch에 남은 실기기/외부 sign-off/operator smoke gate를 완료하여 launch-facing partial flows를 닫는다.
+**Requirements:** SMS-02, CUTOVER-05, D-01, D-02, D-03, D-04, D-05, D-06, D-07, D-08, D-09, D-10, D-11, D-12, D-13, D-14, D-15
+**Gap Closure:** Closes `.planning/v1.1-MILESTONE-AUDIT.md` SMS signup OTP, legal pages launch, and email inbox observation gaps.
+**Depends on:** Phase 21
+**Success Criteria** (what must be TRUE):
+  1. SMS signup OTP real-device production UAT and zero-CROSSSLOT/Sentry observation window are recorded.
+  2. legal factual sign-off, mailbox receipt, production URL smoke, robots/canonical checks are complete.
+  3. Naver/Daum/Gmail transactional email receipt status is captured or explicitly risk-accepted.
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run `/gsd-plan-phase 22`)
+
+### Phase 23: Nyquist validation backfill
+
+**Goal:** Audit가 partial/missing으로 분류한 phase validation artifacts를 보강하여 v1.1 Nyquist coverage를 milestone completion gate 수준으로 끌어올린다.
+**Requirements:** R2-01, R2-02, R2-03, R2-04, DEBT-01, DEBT-02, DEBT-03, DEBT-04, DEBT-05, DEBT-06
+**Gap Closure:** Closes `.planning/v1.1-MILESTONE-AUDIT.md` Nyquist validation gaps for phases 08, 09, 09.1, 10.1, 13, 16, 17.
+**Depends on:** Phase 22
+**Success Criteria** (what must be TRUE):
+  1. `$gsd-validate-phase 08`, `09`, `09.1`, `10.1`, `13`, `16`, `17` 결과가 artifact로 남는다.
+  2. validation gaps are resolved or explicitly routed to a new blocker with owner and evidence.
+  3. milestone audit can distinguish implementation gaps from artifact-only gaps after validation backfill.
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run `/gsd-plan-phase 23`)
+
+### Phase 24: Operational hardening sweep
+
+**Goal:** Audit tech-debt에 남은 fragile 운영 항목을 launch blocker 관점에서 정리하여 re-audit 때 반복 gap으로 남지 않게 한다.
+**Requirements:** VALK-03, VALK-05, R2-02, SMS-02, CUTOVER-05, SC-4
+**Gap Closure:** Closes `.planning/v1.1-MILESTONE-AUDIT.md` tech-debt follow-ups across Valkey, R2, SMS, brand cleanup, email observation, and legal operations.
+**Depends on:** Phase 23
+**Success Criteria** (what must be TRUE):
+  1. Valkey `KEYS` invalidation risk and `getMyLocks()` TTL null edge case are either fixed or bounded with documented scale limits.
+  2. production R2 misconfiguration fallback policy is hardened so production cannot silently use local upload mode.
+  3. OTP verified proof binding, legacy OAuth/domain cleanup, email/legal observation leftovers are closed or explicitly deferred with owner/date.
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run `/gsd-plan-phase 24`)
+
+## Progress
+
+**Execution Order:**
+Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16 -> 17 -> 18 -> 19 -> 20 -> 21 -> 22 -> 23 -> 24
+
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 1. Foundation + Auth | v1.0 | 5/5 | Complete | 2026-03-30 |
+| 2. Catalog + Admin | v1.0 | 6/6 | Complete | 2026-03-31 |
+| 3. Seat Map + Real-Time | v1.0 | 4/4 | Complete | 2026-04-02 |
+| 4. Booking + Payment | v1.0 | 3/3 | Complete | 2026-04-07 |
+| 5. Polish + Launch | v1.0 | 5/5 | Complete | 2026-04-08 |
+| 6. 소셜 로그인 버그 수정 | v1.1 | 2/2 | Complete | 2026-04-09 |
+| 7. Valkey 마이그레이션 | v1.1 | 5/5 | Complete | 2026-04-13 |
+| 8. R2 프로덕션 연동 | v1.1 | 2/3 | Partial | 2026-04-13 |
+| 9. 기술부채 청산 | v1.1 | 3/3 | Complete | 2026-04-15 |
+| 09.1. CI-login-E2E | v1.1 | 5/5 | Complete | 2026-04-17 |
+| 10. SMS 인증 실연동 | v1.1 | 9/9 | Complete | 2026-04-16 |
+| 10.1. SMS API v3 전환 | v1.1 | 6/7 | Partial | 2026-04-20 |
+| 11. 어드민 대시보드 | v1.1 | 4/4 | Complete | 2026-04-20 |
+| 12. UX 현대화 | v1.1 | 6/6 | Complete | 2026-04-21 |
+| 13. 브랜드 grapit→grabit rename | v1.1 | 4/4 | Complete | 2026-04-22 |
+| 14. SMS OTP CROSSSLOT fix | v1.1 | 4/4 | Complete | 2026-04-24 |
+| 15. Resend heygrabit.com cutover | v1.1 | 3/3 | Complete (48h 관측 follow-up pending) | 2026-04-27 |
+| 16. Legal pages launch | v1.1 | 5/6 | Partial | - |
+| 17. Local dev health indicator fix | v1.1 | 2/2 | Complete | 2026-04-29 |
+| 18. Password reset production API origin fix | v1.1 | 0/0 | Planned | - |
+| 19. Seat lock ownership enforcement | v1.1 | 0/0 | Planned | - |
+| 20. Valkey production connectivity contract | v1.1 | 0/0 | Planned | - |
+| 21. Verification artifact backfill | v1.1 | 0/0 | Planned | - |
+| 22. Operator UAT gates | v1.1 | 0/0 | Planned | - |
+| 23. Nyquist validation backfill | v1.1 | 0/0 | Planned | - |
+| 24. Operational hardening sweep | v1.1 | 0/0 | Planned | - |
+
+## Backlog
+
+### Phase 999.1: 홈 HOT/신규 오픈 "더보기" 전 장르 라우트 신설 (BACKLOG)
+
+**Goal:** [Captured for future planning]
+**Requirements:** TBD
+**Plans:** 0 plans
+
+**Context (from Phase 12 code review IN-06):**
+- `apps/web/components/home/hot-section.tsx:22-27` 및 `new-section.tsx:18-23`의 "더보기" 링크가 `/genre/musical?sort=popular|latest`로 musical 장르에 하드코딩되어 있음.
+- HOT / 신규 오픈 섹션은 전 장르 큐레이션이므로 제품 의도와 불일치. 코드만으로는 의도 여부를 확정할 수 없어 Info 레벨 finding으로 남음.
+- 제품 결정 필요: (A) 전 장르 대상 `/performances?sort=popular|latest` 같은 통합 목록 라우트 신설 → 링크 교체, (B) MVP 주력이 musical인 의도적 제약 → 주석으로만 명시.
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
