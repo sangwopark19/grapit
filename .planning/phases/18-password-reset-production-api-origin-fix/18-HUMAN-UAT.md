@@ -42,7 +42,7 @@ Record automated regression commands here. Keep output summaries short; do not p
 - [x] command: `pnpm --filter @grabit/web test -- lib/__tests__/api-url.test.ts app/auth/reset-password/__tests__/reset-password.test.tsx`
 - [x] timestamp (UTC): 2026-04-29T05:18:27Z
 - [x] exit code: 0
-- [x] summary: Vitest completed green; 26 files / 180 tests passed. Existing jsdom navigation, jsdom scrollTo, and React act warnings appeared, but the command exited 0.
+- [x] summary: Vitest completed green; latest verification rerun completed with 26 files / 186 tests passed. Existing jsdom navigation, jsdom scrollTo, and React act warnings appeared, but the command exited 0.
 
 ### Full Phase 18 regression gate
 
@@ -54,12 +54,12 @@ Record automated regression commands here. Keep output summaries short; do not p
 - [x] command: `pnpm --filter @grabit/web test -- lib/__tests__/api-url.test.ts lib/__tests__/next-config.test.ts app/auth/reset-password/__tests__/reset-password.test.tsx`
 - [x] timestamp (UTC): 2026-04-29T05:18:49Z
 - [x] exit code: 0
-- [x] summary: Vitest completed green; 26 files / 180 tests passed. Existing jsdom navigation, jsdom scrollTo, and React act warnings appeared, but the command exited 0.
+- [x] summary: Vitest completed green; latest verification rerun completed with 26 files / 186 tests passed. Existing jsdom navigation, jsdom scrollTo, and React act warnings appeared, but the command exited 0.
 
 - [x] command: `pnpm --filter @grabit/web test`
 - [x] timestamp (UTC): 2026-04-29T05:18:56Z
 - [x] exit code: 0
-- [x] summary: Full web Vitest suite completed green; 26 files / 180 tests passed. Existing jsdom navigation, jsdom scrollTo, and React act warnings appeared, but the command exited 0.
+- [x] summary: Full web Vitest suite completed green; latest verification rerun completed with 26 files / 186 tests passed. Existing jsdom navigation, jsdom scrollTo, and React act warnings appeared, but the command exited 0.
 
 - [x] command: `pnpm --filter @grabit/api test -- src/modules/auth/auth.service.spec.ts src/modules/auth/email/email.service.spec.ts`
 - [x] timestamp (UTC): 2026-04-29T05:19:03Z
@@ -69,8 +69,8 @@ Record automated regression commands here. Keep output summaries short; do not p
 ### Deploy workflow contract
 
 - [x] `.github/workflows/deploy.yml` contains build arg `--build-arg NEXT_PUBLIC_API_URL=${{ vars.CLOUD_RUN_API_URL }}`.
-- [x] `.github/workflows/deploy.yml` contains fail-fast step `Validate production public API URL`.
-- [x] `.github/workflows/deploy.yml` contains failure copy `CLOUD_RUN_API_URL must be set for web production build`.
+- [x] `.github/workflows/deploy.yml` contains fail-fast step `Validate production origins`.
+- [x] `.github/workflows/deploy.yml` rejects missing, loopback, non-HTTPS, or non-origin public web/API URLs before the production web build can start.
 
 ---
 
@@ -172,6 +172,8 @@ Use one of these exact statements only after dashboard or API inspection actuall
 - [ ] `Sentry component:email-service captured event id: <redacted-id>`
 
 Sentry dashboard/API evidence was not available to the orchestrator during resume. No zero-count or captured event id is fabricated here; the user/operator explicitly approved moving past the human verification checkpoint with this caveat.
+
+Final verifier status was `human_needed` only for this Sentry dashboard/API observation item. The user/operator instructed the workflow to move on after confirming the production email reset test had already succeeded; phase completion proceeds with this caveat preserved.
 
 **SC-4 fields:**
 
