@@ -416,7 +416,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 
 | 16. Legal pages launch | v1.1 | 5/6 | Partial | - |
 | 17. Local dev health indicator fix | v1.1 | 2/2 | Complete | 2026-04-29 |
 | 18. Password reset production API origin fix | v1.1 | 2/2 | Complete    | 2026-04-29 |
-| 19. Seat lock ownership enforcement | v1.1 | 4/4 | Complete   | 2026-04-29 |
+| 19. Seat lock ownership enforcement | v1.1 | 4/4 | Complete    | 2026-04-29 |
 | 20. Valkey production connectivity contract | v1.1 | 0/0 | Planned | - |
 | 21. Verification artifact backfill | v1.1 | 0/0 | Planned | - |
 | 22. Operator UAT gates | v1.1 | 0/0 | Planned | - |

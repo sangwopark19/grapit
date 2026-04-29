@@ -5,7 +5,7 @@ status: passed
 score: 11/11 must-haves verified
 overrides_applied: 0
 re_verification:
-  previous_status: gaps_found
+  previous_status: blocked_before_fix
   previous_score: 8/11
   gaps_closed:
     - "payment confirm validates locks before Toss and consumes locks before DB sold transition"
