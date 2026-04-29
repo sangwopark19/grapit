@@ -91,10 +91,10 @@ If `status.imageDigest` is unavailable, record the service image string from `sp
 
 **Fields:**
 
-- [x] UAT timestamp (UTC): 2026-04-29T05:43:20Z evidence recording; user-confirmed production smoke completed before resume.
+- [x] UAT timestamp (UTC): 2026-04-29T05:43:20Z initial evidence recording; final web revision evidence refreshed at 2026-04-29T06:22:04Z.
 - [x] account domain only: withheld; no user email address recorded.
-- [x] grabit-web latestReadyRevisionName: `grabit-web-00022-x4r`
-- [x] grabit-web image digest or Git SHA tag: image digest `asia-northeast3-docker.pkg.dev/grapit-491806/grabit/grabit-web@sha256:e5ac2113f9fd9a19fd09aff05078fc1ac02b0204d48f806446fb2f5df6cb5ab1`; Git SHA tag/source commit `62a374b5f05e7ba0e83415616a4fd9b1169ac552`
+- [x] grabit-web latestReadyRevisionName: `grabit-web-00023-62r`
+- [x] grabit-web image digest or Git SHA tag: image digest `asia-northeast3-docker.pkg.dev/grapit-491806/grabit/grabit-web@sha256:9ef6248206034fd403283cb914d104aaf4441d9edde844c3fdabaa28beaf299c`; Git SHA tag/source commit `7b67a6a14bc35c0cd1333af23f6c8ec23428e9fe`
 - [x] grabit-api latestReadyRevisionName: `grabit-api-00021-nnn`
 - [x] grabit-api image digest or Git SHA tag: image digest `asia-northeast3-docker.pkg.dev/grapit-491806/grabit/grabit-api@sha256:e0817312330337961d4fdfe29062027a86606cb9a84fd911b2a616379333b860`
 
@@ -176,7 +176,7 @@ Sentry dashboard/API evidence was not available to the orchestrator during resum
 **SC-4 fields:**
 
 - [x] SC-4 result: PASS - Cloud Run revision/image evidence and revision-scoped Cloud Logging evidence recorded; Sentry caveat user/operator-approved.
-- [x] Cloud Run evidence tied to grabit-web latestReadyRevisionName: `grabit-web-00022-x4r`
+- [x] Cloud Run evidence tied to grabit-web latestReadyRevisionName: `grabit-web-00023-62r`
 - [x] Cloud Run evidence tied to grabit-api latestReadyRevisionName: `grabit-api-00021-nnn`
 - [x] image digest or Git SHA tag evidence recorded: web image digest plus source commit, api image digest.
 - [x] Sentry component:email-service evidence recorded: not independently inspected; checkpoint approved without claiming a zero-count or event id.
