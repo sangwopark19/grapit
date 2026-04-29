@@ -299,10 +299,20 @@ Plans:
 **Plans:** 4 plans
 
 Plans:
+**Wave 1**
 - [ ] 19-01-PLAN.md — Wave 0 backend/web ownership regression tests
+
+**Wave 2 *(blocked on Wave 1 completion)***
 - [ ] 19-02-PLAN.md — BookingService Valkey ownership assert/consume helpers
-- [ ] 19-03-PLAN.md — Reservation prepare/confirm ownership enforcement
 - [ ] 19-04-PLAN.md — Confirm/complete lock rejection UX and E2E coverage
+
+**Wave 3 *(blocked on 19-02 completion)***
+- [ ] 19-03-PLAN.md — Reservation prepare/confirm ownership enforcement
+
+Cross-cutting constraints:
+- Active Valkey ownership is the source of truth for prepare and confirm; client-selected seats and `locked-seats` index membership are not authorization.
+- Ownership helper tests, InMemoryRedis parity, real Valkey integration, reservation service tests, and payment E2E coverage must share one tuple/error-message contract.
+- Confirm/complete UI must surface server lock rejection messages and must not show false success or start Toss after prepare rejection.
 
 ### Phase 20: Valkey production connectivity contract
 
