@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
 status: executing
-stopped_at: Completed 19-01-PLAN.md
-last_updated: "2026-04-29T08:21:31.887Z"
+stopped_at: Completed 19-04-PLAN.md
+last_updated: "2026-04-29T08:35:43.665Z"
 last_activity: 2026-04-29
 progress:
   total_phases: 22
   completed_phases: 14
   total_plans: 70
-  completed_plans: 66
-  percent: 94
+  completed_plans: 68
+  percent: 97
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 ## Current Position
 
 Phase: 19 (seat-lock-ownership-enforcement) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-04-29
 
-Progress: [█████████░] 94%
+Progress: [██████████] 97%
 
 ## Performance Metrics
 
@@ -78,6 +78,8 @@ Progress: [█████████░] 94%
 | Phase 18 P01 | 9min | 3 tasks | 10 files |
 | Phase 18 P02 | 27min | 3 tasks | 2 files |
 | Phase 19 P01 | 9min | 2 tasks | 6 files |
+| Phase 19 P02 | 8min | 2 tasks | 5 files |
+| Phase 19 P04 | 7min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -120,6 +122,11 @@ Full decision log in PROJECT.md Key Decisions table (10 decisions, all Good).
 - [Phase 19-01]: Treat backend ownership helper and ReservationService failures as intentional RED evidence for later Phase 19 implementation plans.
 - [Phase 19-01]: Keep all new tests in existing files per D-21, with only the planned new web hook test file.
 - [Phase 19-01]: Do not modify runtime code in 19-01; this plan establishes the executable contract only.
+- [Phase 19-02]: Assert helpers read only per-seat lock KEYS and do not mutate stale index sets; consume deletes only requested owned locks atomically.
+- [Phase 19-02]: InMemoryRedis marker dispatch mirrors the Valkey ownership tuple contract while production REDIS_URL hard-fail remains unchanged.
+- [Phase 19-04]: Confirm-page lock failure disables payment CTA and prevents Toss requestPayment after prepare rejection.
+- [Phase 19-04]: Complete-page lock rejection bypasses orderId recovery and renders failed UI state instead of success.
+- [Phase 19-04]: Preserve selected seats on prepare lock failure until the user explicitly clicks the recovery CTA.
 
 ### Pending Todos
 
@@ -154,8 +161,8 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-29T08:21:31.881Z
-Stopped at: Completed 19-01-PLAN.md
+Last session: 2026-04-29T08:35:43.658Z
+Stopped at: Completed 19-04-PLAN.md
 Resume file: None
 
 **Planned Phase:** 15 (resend-heygrabit-com-cutover-transactional-email-secret-mana) — 3 plans — 2026-04-24T08:54:14.266Z

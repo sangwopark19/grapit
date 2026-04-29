@@ -296,15 +296,15 @@ Plans:
   1. reservation prepare가 모든 requested seat의 active lock owner를 검증하고 mismatch/expired lock을 거부한다.
   2. payment confirm이 active lock ownership 없이 sold 전환을 수행하지 않는다.
   3. expired/released/other-user lock에 대한 API and E2E regression tests가 추가된다.
-**Plans:** 1/4 plans executed
+**Plans:** 3/4 plans executed
 
 Plans:
 **Wave 1**
 - [x] 19-01-PLAN.md — Wave 0 backend/web ownership regression tests
 
 **Wave 2 *(blocked on Wave 1 completion)***
-- [ ] 19-02-PLAN.md — BookingService Valkey ownership assert/consume helpers
-- [ ] 19-04-PLAN.md — Confirm/complete lock rejection UX and E2E coverage
+- [x] 19-02-PLAN.md — BookingService Valkey ownership assert/consume helpers
+- [x] 19-04-PLAN.md — Confirm/complete lock rejection UX and E2E coverage
 
 **Wave 3 *(blocked on 19-02 completion)***
 - [ ] 19-03-PLAN.md — Reservation prepare/confirm ownership enforcement
@@ -416,7 +416,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 
 | 16. Legal pages launch | v1.1 | 5/6 | Partial | - |
 | 17. Local dev health indicator fix | v1.1 | 2/2 | Complete | 2026-04-29 |
 | 18. Password reset production API origin fix | v1.1 | 2/2 | Complete    | 2026-04-29 |
-| 19. Seat lock ownership enforcement | v1.1 | 1/4 | In Progress|  |
+| 19. Seat lock ownership enforcement | v1.1 | 3/4 | In Progress|  |
 | 20. Valkey production connectivity contract | v1.1 | 0/0 | Planned | - |
 | 21. Verification artifact backfill | v1.1 | 0/0 | Planned | - |
 | 22. Operator UAT gates | v1.1 | 0/0 | Planned | - |
