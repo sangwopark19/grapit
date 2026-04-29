@@ -116,16 +116,19 @@ describe('ReservationService', () => {
   function setupExistingPendingOrder(dto: {
     showtimeId: string;
     orderId: string;
+    userId: string;
   }) {
     mockDb.select
       .mockReturnValueOnce(chainResult([{
         id: 'reservation-existing',
+        userId: dto.userId,
         tossOrderId: dto.orderId,
         showtimeId: dto.showtimeId,
         status: 'PENDING_PAYMENT',
       }]))
       .mockReturnValueOnce(chainResult([
         { seatId: 'A-1', tierName: 'VIP', price: 50000, row: 'A', number: '1' },
+        { seatId: 'A-2', tierName: 'VIP', price: 50000, row: 'A', number: '2' },
       ]));
   }
 
@@ -249,6 +252,26 @@ describe('ReservationService', () => {
   });
 
   describe('prepareReservation - lock ownership', () => {
+    it('prepareReservation checks active locks before creating a new pending reservation', async () => {
+      const userId = randomUUID();
+      const dto = {
+        showtimeId: randomUUID(),
+        orderId: 'GRP-LOCK-PREPARE-SUCCESS',
+        seats: [seatSelection('A-1'), seatSelection('A-2')],
+        amount: 100000,
+      };
+      setupPrepareBase(dto);
+
+      await expect(service.prepareReservation(dto, userId))
+        .resolves
+        .toEqual({ reservationId: 'reservation-created', orderId: dto.orderId });
+
+      expect(mockBookingService.assertOwnedSeatLocks).toHaveBeenCalledWith(userId, dto.showtimeId, ['A-1', 'A-2']);
+      expect(mockDb.transaction).toHaveBeenCalledOnce();
+      expect(mockBookingService.assertOwnedSeatLocks.mock.invocationCallOrder[0])
+        .toBeLessThan(mockDb.transaction.mock.invocationCallOrder[0]!);
+    });
+
     it('prepareReservation rejects missing active lock before creating pending reservation', async () => {
       const userId = randomUUID();
       const dto = {
@@ -299,7 +322,7 @@ describe('ReservationService', () => {
         seats: [seatSelection('A-1')],
         amount: 50000,
       };
-      setupExistingPendingOrder(dto);
+      setupExistingPendingOrder({ ...dto, userId });
       mockBookingService.assertOwnedSeatLocks.mockRejectedValueOnce(
         new ConflictException(LOCK_EXPIRED_MESSAGE),
       );
@@ -308,7 +331,26 @@ describe('ReservationService', () => {
         .rejects
         .toThrow(LOCK_EXPIRED_MESSAGE);
 
-      expect(mockBookingService.assertOwnedSeatLocks).toHaveBeenCalledWith(userId, dto.showtimeId, ['A-1']);
+      expect(mockBookingService.assertOwnedSeatLocks).toHaveBeenCalledWith(userId, dto.showtimeId, ['A-1', 'A-2']);
+      expect(mockDb.transaction).not.toHaveBeenCalled();
+    });
+
+    it('prepareReservation rejects another user existing pending orderId', async () => {
+      const userId = randomUUID();
+      const otherUserId = randomUUID();
+      const dto = {
+        showtimeId: randomUUID(),
+        orderId: 'GRP-LOCK-IDEMPOTENT-OTHER-USER',
+        seats: [seatSelection('A-1')],
+        amount: 50000,
+      };
+      setupExistingPendingOrder({ ...dto, userId: otherUserId });
+
+      await expect(service.prepareReservation(dto, userId))
+        .rejects
+        .toThrow('예매 정보를 찾을 수 없습니다. 다시 시도해주세요.');
+
+      expect(mockBookingService.assertOwnedSeatLocks).not.toHaveBeenCalled();
       expect(mockDb.transaction).not.toHaveBeenCalled();
     });
   });
