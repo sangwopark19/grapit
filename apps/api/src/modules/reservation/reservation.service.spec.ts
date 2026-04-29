@@ -106,7 +106,8 @@ describe('ReservationService', () => {
     mockDb.select
       .mockReturnValueOnce(chainResult([]))
       .mockReturnValueOnce(chainResult([{ id: dto.showtimeId, performanceId: 'performance-1', dateTime: new Date() }]))
-      .mockReturnValueOnce(chainResult([{ tierName: 'VIP', price: 50000 }]));
+      .mockReturnValueOnce(chainResult([{ tierName: 'VIP', price: 50000 }]))
+      .mockReturnValueOnce(chainResult([]));
 
     mockDb.transaction.mockResolvedValue({
       id: 'reservation-created',
@@ -222,15 +223,47 @@ describe('ReservationService', () => {
       // Mock: priceTiers query returns VIP=100000, R=80000
       mockDb.select.mockReturnValue({
         from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([
-            { id: randomUUID(), performanceId, tierName: 'VIP', price: 100000, sortOrder: 0 },
-            { id: randomUUID(), performanceId, tierName: 'R', price: 80000, sortOrder: 1 },
-          ]),
+          where: vi.fn()
+            .mockResolvedValueOnce([
+              { id: randomUUID(), performanceId, tierName: 'VIP', price: 100000, sortOrder: 0 },
+              { id: randomUUID(), performanceId, tierName: 'R', price: 80000, sortOrder: 1 },
+            ])
+            .mockResolvedValueOnce([]),
         }),
       });
 
       const result = await service.calculateTotalAmount(seats, performanceId);
       expect(result).toBe(280000); // 100000 + 100000 + 80000
+    });
+
+    it('should derive tier and price from seat map config when available', async () => {
+      const performanceId = randomUUID();
+      const seats: SeatSelection[] = [
+        { seatId: 'A-1', tierName: 'R', price: 1, row: 'X', number: '999' },
+        { seatId: 'B-1', tierName: 'VIP', price: 1, row: 'Y', number: '999' },
+      ];
+
+      mockDb.select.mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn()
+            .mockResolvedValueOnce([
+              { id: randomUUID(), performanceId, tierName: 'VIP', price: 100000, sortOrder: 0 },
+              { id: randomUUID(), performanceId, tierName: 'R', price: 80000, sortOrder: 1 },
+            ])
+            .mockResolvedValueOnce([{
+              seatConfig: {
+                tiers: [
+                  { tierName: 'VIP', color: '#111111', seatIds: ['A-1'] },
+                  { tierName: 'R', color: '#222222', seatIds: ['B-1'] },
+                ],
+              },
+            }]),
+        }),
+      });
+
+      await expect(service.calculateTotalAmount(seats, performanceId))
+        .resolves
+        .toBe(180000);
     });
 
     it('should throw BadRequestException for invalid tier ID', async () => {
@@ -241,18 +274,51 @@ describe('ReservationService', () => {
 
       mockDb.select.mockReturnValue({
         from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([
-            { id: randomUUID(), performanceId, tierName: 'VIP', price: 100000, sortOrder: 0 },
-          ]),
+          where: vi.fn()
+            .mockResolvedValueOnce([
+              { id: randomUUID(), performanceId, tierName: 'VIP', price: 100000, sortOrder: 0 },
+            ])
+            .mockResolvedValueOnce([]),
         }),
       });
 
       await expect(service.calculateTotalAmount(seats, performanceId))
         .rejects.toThrow(BadRequestException);
     });
+
+    it('should throw BadRequestException for duplicate seat IDs', async () => {
+      const performanceId = randomUUID();
+      const seats: SeatSelection[] = [
+        { seatId: 'A-1', tierName: 'VIP', price: 100000, row: 'A', number: '1' },
+        { seatId: 'A-1', tierName: 'VIP', price: 100000, row: 'A', number: '1' },
+      ];
+
+      await expect(service.calculateTotalAmount(seats, performanceId))
+        .rejects
+        .toThrow('중복된 좌석이 포함되어 있습니다');
+      expect(mockDb.select).not.toHaveBeenCalled();
+    });
   });
 
   describe('prepareReservation - lock ownership', () => {
+    it('prepareReservation rejects duplicate seat IDs before reading database state', async () => {
+      const userId = randomUUID();
+      const dto = {
+        showtimeId: randomUUID(),
+        orderId: 'GRP-DUPLICATE-SEATS',
+        seats: [seatSelection('A-1'), seatSelection('A-1')],
+        amount: 100000,
+      };
+
+      await expect(service.prepareReservation(dto, userId))
+        .rejects
+        .toThrow('중복된 좌석이 포함되어 있습니다');
+
+      expect(mockDb.select).not.toHaveBeenCalled();
+      expect(mockBookingService.assertOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockDb.transaction).not.toHaveBeenCalled();
+    });
+
     it('prepareReservation checks active locks before creating a new pending reservation', async () => {
       const userId = randomUUID();
       const dto = {
@@ -271,6 +337,61 @@ describe('ReservationService', () => {
       expect(mockDb.transaction).toHaveBeenCalledOnce();
       expect(mockBookingService.assertOwnedSeatLocks.mock.invocationCallOrder[0])
         .toBeLessThan(mockDb.transaction.mock.invocationCallOrder[0]!);
+    });
+
+    it('prepareReservation stores canonical tierName and price from seat map config', async () => {
+      const userId = randomUUID();
+      const dto = {
+        showtimeId: randomUUID(),
+        orderId: 'GRP-CANONICAL-SEATS',
+        seats: [{ seatId: 'A-1', tierName: 'R', price: 1, row: 'client', number: '999' }],
+        amount: 100000,
+      };
+      const insertedValues: unknown[] = [];
+
+      mockDb.select
+        .mockReturnValueOnce(chainResult([]))
+        .mockReturnValueOnce(chainResult([{ id: dto.showtimeId, performanceId: 'performance-1', dateTime: new Date() }]))
+        .mockReturnValueOnce(chainResult([
+          { tierName: 'VIP', price: 100000 },
+          { tierName: 'R', price: 80000 },
+        ]))
+        .mockReturnValueOnce(chainResult([{
+          seatConfig: {
+            tiers: [
+              { tierName: 'VIP', color: '#111111', seatIds: ['A-1'] },
+              { tierName: 'R', color: '#222222', seatIds: ['B-1'] },
+            ],
+          },
+        }]));
+
+      const mockTx = {
+        insert: vi.fn().mockReturnValue({
+          values: vi.fn((values: unknown) => {
+            insertedValues.push(values);
+            return {
+              returning: vi.fn().mockResolvedValue([{ id: 'reservation-created', tossOrderId: dto.orderId }]),
+            };
+          }),
+        }),
+      };
+      mockDb.transaction.mockImplementation(async (cb: (tx: typeof mockTx) => Promise<unknown>) => cb(mockTx));
+
+      await expect(service.prepareReservation(dto, userId))
+        .resolves
+        .toEqual({ reservationId: 'reservation-created', orderId: dto.orderId });
+
+      expect(mockBookingService.assertOwnedSeatLocks).toHaveBeenCalledWith(userId, dto.showtimeId, ['A-1']);
+      expect(insertedValues[1]).toEqual([
+        expect.objectContaining({
+          reservationId: 'reservation-created',
+          seatId: 'A-1',
+          tierName: 'VIP',
+          price: 100000,
+          row: 'A',
+          number: '1',
+        }),
+      ]);
     });
 
     it('prepareReservation rejects missing active lock before creating pending reservation', async () => {

@@ -20,6 +20,7 @@ import {
   priceTiers,
   venues,
   seatInventories,
+  seatMaps,
 } from '../../database/schema/index.js';
 import { TossPaymentsClient } from '../payment/toss-payments.client.js';
 import { BookingService } from '../booking/booking.service.js';
@@ -32,6 +33,7 @@ import type {
   ConfirmPaymentRequest,
   PrepareReservationRequest,
   PrepareReservationResponse,
+  SeatMapConfig,
 } from '@grabit/shared';
 
 @Injectable()
@@ -56,24 +58,103 @@ export class ReservationService {
     return `GRP-${dateStr}-${random}`;
   }
 
-  async calculateTotalAmount(seats: SeatSelection[], performanceId: string): Promise<number> {
-    const tiers = await this.db
-      .select()
-      .from(priceTiers)
-      .where(eq(priceTiers.performanceId, performanceId));
+  private assertUniqueSeatIds(seats: SeatSelection[]): void {
+    const uniqueSeatIds = new Set(seats.map((seat) => seat.seatId));
+    if (uniqueSeatIds.size !== seats.length) {
+      throw new BadRequestException('중복된 좌석이 포함되어 있습니다');
+    }
+  }
 
-    const tierMap = new Map(tiers.map((t) => [t.tierName, t.price]));
+  private getSeatTierBySeatId(seatConfig: unknown): Map<string, string> | null {
+    if (!seatConfig || typeof seatConfig !== 'object') return null;
 
-    let total = 0;
-    for (const seat of seats) {
-      const tierPrice = tierMap.get(seat.tierName);
+    const tiers = (seatConfig as SeatMapConfig).tiers;
+    if (!Array.isArray(tiers) || tiers.length === 0) return null;
+
+    const seatTierBySeatId = new Map<string, string>();
+    for (const tier of tiers) {
+      if (!tier || typeof tier.tierName !== 'string' || !Array.isArray(tier.seatIds)) {
+        continue;
+      }
+      for (const seatId of tier.seatIds) {
+        if (typeof seatId === 'string') {
+          seatTierBySeatId.set(seatId, tier.tierName);
+        }
+      }
+    }
+
+    return seatTierBySeatId.size > 0 ? seatTierBySeatId : null;
+  }
+
+  private deriveSeatPosition(
+    seatId: string,
+    fallback: Pick<SeatSelection, 'row' | 'number'>,
+  ): Pick<SeatSelection, 'row' | 'number'> {
+    const hyphenParts = seatId.split('-');
+    if (hyphenParts.length >= 2 && hyphenParts[0] && hyphenParts.slice(1).join('-')) {
+      return { row: hyphenParts[0], number: hyphenParts.slice(1).join('-') };
+    }
+
+    const compactMatch = /^([A-Za-z]+)[-_ ]?(\d+)$/.exec(seatId);
+    if (compactMatch) {
+      return { row: compactMatch[1]!, number: compactMatch[2]! };
+    }
+
+    return fallback;
+  }
+
+  private calculateSeatTotal(seats: SeatSelection[]): number {
+    return seats.reduce((total, seat) => total + seat.price, 0);
+  }
+
+  private async getCanonicalSeatSelections(
+    seats: SeatSelection[],
+    performanceId: string,
+  ): Promise<SeatSelection[]> {
+    this.assertUniqueSeatIds(seats);
+
+    const [tiers, seatMapRows] = await Promise.all([
+      this.db
+        .select()
+        .from(priceTiers)
+        .where(eq(priceTiers.performanceId, performanceId)),
+      this.db
+        .select({ seatConfig: seatMaps.seatConfig })
+        .from(seatMaps)
+        .where(eq(seatMaps.performanceId, performanceId)),
+    ]);
+
+    const tierPriceByName = new Map(tiers.map((tier) => [tier.tierName, tier.price]));
+    const seatTierBySeatId = this.getSeatTierBySeatId(seatMapRows[0]?.seatConfig);
+
+    return seats.map((seat) => {
+      const tierName = seatTierBySeatId?.get(seat.seatId) ?? seat.tierName;
+      if (seatTierBySeatId && !seatTierBySeatId.has(seat.seatId)) {
+        throw new BadRequestException('유효하지 않은 좌석입니다');
+      }
+
+      const tierPrice = tierPriceByName.get(tierName);
       if (tierPrice === undefined) {
         throw new BadRequestException('유효하지 않은 등급입니다');
       }
-      total += tierPrice;
-    }
 
-    return total;
+      const position = seatTierBySeatId
+        ? this.deriveSeatPosition(seat.seatId, seat)
+        : { row: seat.row, number: seat.number };
+
+      return {
+        ...seat,
+        tierName,
+        price: tierPrice,
+        row: position.row,
+        number: position.number,
+      };
+    });
+  }
+
+  async calculateTotalAmount(seats: SeatSelection[], performanceId: string): Promise<number> {
+    const canonicalSeats = await this.getCanonicalSeatSelections(seats, performanceId);
+    return this.calculateSeatTotal(canonicalSeats);
   }
 
   calculateCancelDeadline(showDateTime: Date): Date {
@@ -93,6 +174,8 @@ export class ReservationService {
     dto: PrepareReservationRequest,
     userId: string,
   ): Promise<PrepareReservationResponse> {
+    this.assertUniqueSeatIds(dto.seats);
+
     // 1. Idempotency: if a reservation already exists for this orderId, return it
     const [existing] = await this.db
       .select({
@@ -126,8 +209,9 @@ export class ReservationService {
       throw new NotFoundException('회차를 찾을 수 없습니다');
     }
 
-    // 3. Calculate expected amount from DB (fraud prevention)
-    const expectedAmount = await this.calculateTotalAmount(dto.seats, showtime.performanceId);
+    // 3. Calculate expected amount from DB and canonical seat map metadata
+    const canonicalSeats = await this.getCanonicalSeatSelections(dto.seats, showtime.performanceId);
+    const expectedAmount = this.calculateSeatTotal(canonicalSeats);
 
     if (expectedAmount !== dto.amount) {
       throw new BadRequestException('금액이 일치하지 않습니다');
@@ -136,7 +220,7 @@ export class ReservationService {
     await this.bookingService.assertOwnedSeatLocks(
       userId,
       dto.showtimeId,
-      dto.seats.map((seat) => seat.seatId),
+      canonicalSeats.map((seat) => seat.seatId),
     );
 
     // 4. Create pending reservation + seats atomically
@@ -152,7 +236,7 @@ export class ReservationService {
           tossOrderId: dto.orderId,
           reservationNumber,
           status: 'PENDING_PAYMENT',
-          totalAmount: dto.amount,
+          totalAmount: expectedAmount,
           cancelDeadline,
         })
         .returning();
@@ -160,7 +244,7 @@ export class ReservationService {
       const reservationId = reservation!.id;
 
       await tx.insert(reservationSeats).values(
-        dto.seats.map((seat) => ({
+        canonicalSeats.map((seat) => ({
           reservationId,
           seatId: seat.seatId,
           tierName: seat.tierName,
