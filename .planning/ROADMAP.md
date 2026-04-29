@@ -277,10 +277,14 @@ Plans:
   1. password reset confirm submit이 production web에서 public API origin을 사용하고 `/api` rewrite가 `localhost:8080`으로 새지 않는다.
   2. local dev, preview, production 환경별 API base URL contract가 문서화되고 regression test로 고정된다.
   3. password reset email → confirm → login happy path smoke/UAT evidence가 phase artifact에 남는다.
-**Plans:** 0 plans
+**Plans:** 0/2 plans executed
 
 Plans:
-- [ ] TBD (run `/gsd-plan-phase 18`)
+**Wave 1**
+- [ ] 18-01-PLAN.md — Code + regression contract: shared `apiUrl()` helper, reset confirm public API origin, dev-only localhost rewrites
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 18-02-PLAN.md — Production UAT evidence: password reset email → confirm POST to `api.heygrabit.com` → login success
 
 ### Phase 19: Seat lock ownership enforcement
 
@@ -398,7 +402,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 
 | 15. Resend heygrabit.com cutover | v1.1 | 3/3 | Complete (48h 관측 follow-up pending) | 2026-04-27 |
 | 16. Legal pages launch | v1.1 | 5/6 | Partial | - |
 | 17. Local dev health indicator fix | v1.1 | 2/2 | Complete | 2026-04-29 |
-| 18. Password reset production API origin fix | v1.1 | 0/0 | Planned | - |
+| 18. Password reset production API origin fix | v1.1 | 0/2 | Planned    |  |
 | 19. Seat lock ownership enforcement | v1.1 | 0/0 | Planned | - |
 | 20. Valkey production connectivity contract | v1.1 | 0/0 | Planned | - |
 | 21. Verification artifact backfill | v1.1 | 0/0 | Planned | - |
