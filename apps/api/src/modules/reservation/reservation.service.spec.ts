@@ -119,19 +119,33 @@ describe('ReservationService', () => {
     showtimeId: string;
     orderId: string;
     userId: string;
+    amount?: number;
+    status?: string;
+    seats?: Array<string | SeatSelection>;
   }) {
+    const seats = (dto.seats ?? ['A-1', 'A-2']).map((seat) => (
+      typeof seat === 'string' ? seat : seat.seatId
+    ));
+    const amount = dto.amount ?? seats.length * 50000;
     mockDb.select
       .mockReturnValueOnce(chainResult([{
         id: 'reservation-existing',
         userId: dto.userId,
         tossOrderId: dto.orderId,
         showtimeId: dto.showtimeId,
-        status: 'PENDING_PAYMENT',
+        status: dto.status ?? 'PENDING_PAYMENT',
+        totalAmount: amount,
       }]))
-      .mockReturnValueOnce(chainResult([
-        { seatId: 'A-1', tierName: 'VIP', price: 50000, row: 'A', number: '1' },
-        { seatId: 'A-2', tierName: 'VIP', price: 50000, row: 'A', number: '2' },
-      ]));
+      .mockReturnValueOnce(chainResult([{ id: dto.showtimeId, performanceId: 'performance-1', dateTime: new Date() }]))
+      .mockReturnValueOnce(chainResult([{ tierName: 'VIP', price: 50000 }]))
+      .mockReturnValueOnce(chainResult([]))
+      .mockReturnValueOnce(chainResult(seats.map((seatId) => ({
+        seatId,
+        tierName: 'VIP',
+        price: 50000,
+        row: seatId.split('-')[0] ?? 'A',
+        number: seatId.split('-')[1] ?? '1',
+      }))));
   }
 
   function setupConfirmReservationBase(args: {
@@ -441,8 +455,8 @@ describe('ReservationService', () => {
       const dto = {
         showtimeId: randomUUID(),
         orderId: 'GRP-LOCK-IDEMPOTENT-PENDING',
-        seats: [seatSelection('A-1')],
-        amount: 50000,
+        seats: [seatSelection('A-1'), seatSelection('A-2')],
+        amount: 100000,
       };
       setupExistingPendingOrder({ ...dto, userId });
       mockBookingService.assertOwnedSeatLocks.mockRejectedValueOnce(
@@ -454,6 +468,70 @@ describe('ReservationService', () => {
         .toThrow(LOCK_EXPIRED_MESSAGE);
 
       expect(mockBookingService.assertOwnedSeatLocks).toHaveBeenCalledWith(userId, dto.showtimeId, ['A-1', 'A-2']);
+      expect(mockDb.transaction).not.toHaveBeenCalled();
+    });
+
+    it('prepareReservation rejects reused orderId when existing reservation is not pending', async () => {
+      const userId = randomUUID();
+      const dto = {
+        showtimeId: randomUUID(),
+        orderId: 'GRP-IDEMPOTENT-CANCELLED',
+        seats: [seatSelection('A-1')],
+        amount: 50000,
+      };
+      setupExistingPendingOrder({ ...dto, userId, status: 'CANCELLED', seats: ['A-1'] });
+
+      await expect(service.prepareReservation(dto, userId))
+        .rejects
+        .toThrow('이미 처리된 주문 ID입니다. 새 주문 ID로 다시 시도해주세요.');
+
+      expect(mockBookingService.assertOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockDb.transaction).not.toHaveBeenCalled();
+    });
+
+    it('prepareReservation rejects reused orderId when request seats do not match existing pending reservation', async () => {
+      const userId = randomUUID();
+      const dto = {
+        showtimeId: randomUUID(),
+        orderId: 'GRP-IDEMPOTENT-SEAT-MISMATCH',
+        seats: [seatSelection('A-1')],
+        amount: 50000,
+      };
+      setupExistingPendingOrder({
+        ...dto,
+        userId,
+        amount: 50000,
+        seats: ['A-2'],
+      });
+
+      await expect(service.prepareReservation(dto, userId))
+        .rejects
+        .toThrow('기존 예매 요청과 일치하지 않습니다. 새 주문 ID로 다시 시도해주세요.');
+
+      expect(mockBookingService.assertOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockDb.transaction).not.toHaveBeenCalled();
+    });
+
+    it('prepareReservation rejects reused orderId when request amount does not match existing pending reservation', async () => {
+      const userId = randomUUID();
+      const dto = {
+        showtimeId: randomUUID(),
+        orderId: 'GRP-IDEMPOTENT-AMOUNT-MISMATCH',
+        seats: [seatSelection('A-1')],
+        amount: 40000,
+      };
+      setupExistingPendingOrder({
+        ...dto,
+        userId,
+        amount: 50000,
+        seats: ['A-1'],
+      });
+
+      await expect(service.prepareReservation(dto, userId))
+        .rejects
+        .toThrow('기존 예매 요청과 일치하지 않습니다. 새 주문 ID로 다시 시도해주세요.');
+
+      expect(mockBookingService.assertOwnedSeatLocks).not.toHaveBeenCalled();
       expect(mockDb.transaction).not.toHaveBeenCalled();
     });
 

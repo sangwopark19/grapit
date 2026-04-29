@@ -162,12 +162,37 @@ export class ReservationService {
   }
 
   private async getReservationSeatIds(reservationId: string): Promise<string[]> {
-    const rows = await this.db
-      .select({ seatId: reservationSeats.seatId })
+    const rows = await this.getReservationSeatSelections(reservationId);
+    return rows.map((row) => row.seatId);
+  }
+
+  private async getReservationSeatSelections(reservationId: string): Promise<SeatSelection[]> {
+    return this.db
+      .select({
+        seatId: reservationSeats.seatId,
+        tierName: reservationSeats.tierName,
+        price: reservationSeats.price,
+        row: reservationSeats.row,
+        number: reservationSeats.number,
+      })
       .from(reservationSeats)
       .where(eq(reservationSeats.reservationId, reservationId));
+  }
 
-    return rows.map((row) => row.seatId);
+  private hasSameSeatSelections(left: SeatSelection[], right: SeatSelection[]): boolean {
+    if (left.length !== right.length) return false;
+
+    const signature = (seat: SeatSelection) => [
+      seat.seatId,
+      seat.tierName,
+      seat.price,
+      seat.row,
+      seat.number,
+    ].join('\u0000');
+
+    const leftSignatures = left.map(signature).sort();
+    const rightSignatures = right.map(signature).sort();
+    return leftSignatures.every((value, index) => value === rightSignatures[index]);
   }
 
   async prepareReservation(
@@ -184,6 +209,7 @@ export class ReservationService {
         showtimeId: reservations.showtimeId,
         status: reservations.status,
         tossOrderId: reservations.tossOrderId,
+        totalAmount: reservations.totalAmount,
       })
       .from(reservations)
       .where(eq(reservations.tossOrderId, dto.orderId));
@@ -193,7 +219,38 @@ export class ReservationService {
         throw new NotFoundException('예매 정보를 찾을 수 없습니다. 다시 시도해주세요.');
       }
 
-      const existingSeatIds = await this.getReservationSeatIds(existing.id);
+      if (existing.status !== 'PENDING_PAYMENT') {
+        throw new ConflictException('이미 처리된 주문 ID입니다. 새 주문 ID로 다시 시도해주세요.');
+      }
+
+      if (existing.showtimeId !== dto.showtimeId) {
+        throw new ConflictException('기존 예매 요청과 일치하지 않습니다. 새 주문 ID로 다시 시도해주세요.');
+      }
+
+      const [existingShowtime] = await this.db
+        .select()
+        .from(showtimes)
+        .where(eq(showtimes.id, existing.showtimeId));
+
+      if (!existingShowtime) {
+        throw new NotFoundException('회차를 찾을 수 없습니다');
+      }
+
+      const canonicalSeats = await this.getCanonicalSeatSelections(
+        dto.seats,
+        existingShowtime.performanceId,
+      );
+      const expectedAmount = this.calculateSeatTotal(canonicalSeats);
+      if (existing.totalAmount !== expectedAmount || dto.amount !== expectedAmount) {
+        throw new ConflictException('기존 예매 요청과 일치하지 않습니다. 새 주문 ID로 다시 시도해주세요.');
+      }
+
+      const existingSeats = await this.getReservationSeatSelections(existing.id);
+      if (!this.hasSameSeatSelections(existingSeats, canonicalSeats)) {
+        throw new ConflictException('기존 예매 요청과 일치하지 않습니다. 새 주문 ID로 다시 시도해주세요.');
+      }
+
+      const existingSeatIds = existingSeats.map((seat) => seat.seatId);
       await this.bookingService.assertOwnedSeatLocks(userId, existing.showtimeId, existingSeatIds);
 
       return { reservationId: existing.id, orderId: dto.orderId };
