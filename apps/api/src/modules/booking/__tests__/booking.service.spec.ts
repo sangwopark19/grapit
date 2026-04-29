@@ -421,6 +421,34 @@ describe('BookingService', () => {
     });
   });
 
+  describe('getMyLocks', () => {
+    it('uses hash-tagged seat lock keys and returns the earliest valid TTL', async () => {
+      const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(1_000_000);
+      mockRedis.smembers.mockResolvedValue(['A-1', 'A-2', 'A-3']);
+      mockRedis.get
+        .mockResolvedValueOnce(userId)
+        .mockResolvedValueOnce(userId)
+        .mockResolvedValueOnce('other-user');
+      mockRedis.ttl
+        .mockResolvedValueOnce(120)
+        .mockResolvedValueOnce(60);
+
+      const result = await service.getMyLocks(userId, showtimeId);
+
+      expect(result).toEqual({
+        seatIds: ['A-1', 'A-2'],
+        expiresAt: 1_000_000 + 60_000,
+      });
+      expect(mockRedis.get).toHaveBeenCalledWith(`{${showtimeId}}:seat:A-1`);
+      expect(mockRedis.get).toHaveBeenCalledWith(`{${showtimeId}}:seat:A-2`);
+      expect(mockRedis.get).toHaveBeenCalledWith(`{${showtimeId}}:seat:A-3`);
+      expect(mockRedis.ttl).toHaveBeenCalledWith(`{${showtimeId}}:seat:A-1`);
+      expect(mockRedis.ttl).toHaveBeenCalledWith(`{${showtimeId}}:seat:A-2`);
+      expect(mockRedis.ttl).not.toHaveBeenCalledWith(`seat:${showtimeId}:A-1`);
+      nowSpy.mockRestore();
+    });
+  });
+
   describe('getSeatStatus', () => {
     it('returns Record of seatId to SeatState combining Redis locks + DB sold records', async () => {
       // Mock Lua eval returning valid locked seats (stale entries cleaned by script)

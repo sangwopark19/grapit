@@ -368,16 +368,21 @@ export class BookingService {
       return { seatIds: [], expiresAt: null };
     }
 
-    // Get actual remaining TTL from Redis
-    const firstSeatKey = `seat:${showtimeId}:${userSeats[0]}`;
-    const remainingTtl = await this.redis.ttl(firstSeatKey);
-    const expiresAt = remainingTtl > 0 ? Date.now() + remainingTtl * 1000 : null;
-
     // Filter to only seats still actually locked by this user
     const validSeats: string[] = [];
+    let expiresAt: number | null = null;
+
     for (const seatId of userSeats) {
-      const owner = await this.redis.get(`{${showtimeId}}:seat:${seatId}`);
-      if (owner === userId) validSeats.push(seatId);
+      const lockKey = `{${showtimeId}}:seat:${seatId}`;
+      const owner = await this.redis.get(lockKey);
+      if (owner === userId) {
+        validSeats.push(seatId);
+        const remainingTtl = await this.redis.ttl(lockKey);
+        if (remainingTtl > 0) {
+          const seatExpiresAt = Date.now() + remainingTtl * 1000;
+          expiresAt = expiresAt === null ? seatExpiresAt : Math.min(expiresAt, seatExpiresAt);
+        }
+      }
     }
 
     return { seatIds: validSeats, expiresAt };
