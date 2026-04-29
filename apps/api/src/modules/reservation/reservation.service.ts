@@ -213,12 +213,37 @@ export class ReservationService {
       throw new BadRequestException('금액이 일치하지 않습니다');
     }
 
+    const pendingSeatIds = await this.getReservationSeatIds(reservation.id);
+    await this.bookingService.assertOwnedSeatLocks(userId, reservation.showtimeId, pendingSeatIds);
+
     // 4. Call Toss Payments confirm API
     const tossResponse = await this.tossClient.confirmPayment({
       paymentKey: dto.paymentKey,
       orderId: dto.orderId,
       amount: dto.amount,
     });
+
+    try {
+      await this.bookingService.consumeOwnedSeatLocks(userId, reservation.showtimeId, pendingSeatIds);
+    } catch (consumeError) {
+      this.logger.error(
+        `Seat lock consume failed after Toss confirm. paymentKey=${tossResponse.paymentKey}, orderId=${dto.orderId}`,
+        consumeError instanceof Error ? consumeError.stack : String(consumeError),
+      );
+      try {
+        await this.tossClient.cancelPayment(tossResponse.paymentKey, '좌석 점유 만료로 인한 자동 취소');
+        this.logger.log(`Compensation cancel succeeded. paymentKey=${tossResponse.paymentKey}`);
+      } catch (cancelError) {
+        this.logger.error(
+          `CRITICAL: Compensation cancel also failed after seat lock consume failure. paymentKey=${tossResponse.paymentKey}. Manual refund required.`,
+          cancelError instanceof Error ? cancelError.stack : String(cancelError),
+        );
+        throw new InternalServerErrorException(
+          '결제는 승인되었으나 좌석 점유가 만료되어 자동 취소를 시도했습니다. 고객센터에 문의해주세요.',
+        );
+      }
+      throw consumeError;
+    }
 
     // 5. Update reservation status + create payment record + mark seats sold
     try {
@@ -294,9 +319,6 @@ export class ReservationService {
         '결제는 승인되었으나 처리 중 오류가 발생했습니다. 자동 취소를 시도했습니다. 고객센터에 문의해주세요.',
       );
     }
-
-    // Release Redis locks for this user's seats in this showtime
-    await this.bookingService.unlockAllSeats(userId, reservation.showtimeId);
 
     // Broadcast sold status via WebSocket for each seat
     const confirmedSeats = await this.db
