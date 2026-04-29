@@ -520,17 +520,17 @@ const result = await redis.eval(
 |---|-------|---------|---------------|
 | — | No `[ASSUMED]` claims recorded. | — | All recommendations are grounded in CONTEXT.md, local code, official docs, npm registry, or explicit command output. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should `TossPaymentsClient.cancelPayment()` add a Toss idempotency key for automatic compensation?**
    - What we know: Toss docs state payment cancel accepts an idempotency key header to avoid duplicate cancel processing. [CITED: https://docs.tosspayments.com/reference#cancel-payment]
    - What's unclear: Existing client has no idempotency-header abstraction, and CONTEXT says preserve existing compensation behavior rather than add provider behavior. [VERIFIED: apps/api/src/modules/payment/toss-payments.client.ts; 19-CONTEXT.md]
-   - Recommendation: Do not block Phase 19 on this. Planner may add a small low-risk `cancelPayment(paymentKey, reason, idempotencyKey?)` hardening task only if it stays scoped; otherwise document residual risk in the security plan. [VERIFIED: 19-CONTEXT.md D-10/D-23]
+   - RESOLVED: Phase 19 does not block on adding Toss provider API idempotency behavior. Keep the current compensation cancel path unless a scoped `cancelPayment(paymentKey, reason, idempotencyKey?)` implementation is already present in an execution plan; if omitted, track the Toss cancel idempotency key as residual payment-compensation hardening rather than a Phase 19 blocker. [VERIFIED: 19-CONTEXT.md D-10/D-23]
 
 2. **Should DB sold transition be hardened with `onConflictDoUpdate()` or row-status guard?**
    - What we know: `seat_inventories` has a unique index on `(showtimeId, seatId)`, and Drizzle supports `onConflictDoUpdate`. [VERIFIED: apps/api/src/database/schema/seat-inventories.ts:15-17; VERIFIED: Context7 /drizzle-team/drizzle-orm-docs]
    - What's unclear: Phase 19 can close the audit gap without a schema change; adding an upsert/status guard improves duplicate-booking defense but broadens DB logic. [VERIFIED: 19-CONTEXT.md D-23]
-   - Recommendation: Keep no new table. Add a targeted transaction guard only if planner can keep it local to `seat_inventories` write logic and test duplicate sold conflict. [VERIFIED: 19-CONTEXT.md D-23]
+   - RESOLVED: Do not add a new table or schema. If a local transaction guard around the existing `seat_inventories` write logic is already planned, keep it local and covered by a duplicate sold conflict test; otherwise track DB sold transition duplicate-booking hardening as residual work outside the minimum ownership enforcement contract. [VERIFIED: 19-CONTEXT.md D-23]
 
 ## Environment Availability
 
