@@ -15,7 +15,7 @@ Requirements for v1.1 안정화 + 고도화. Each maps to roadmap phases.
 
 - [ ] **VALK-01**: @upstash/redis 제거, ioredis 단일 클라이언트로 Valkey 연결 통합
 - [ ] **VALK-02**: Google Memorystore for Valkey 프로비저닝 (PSC + Direct VPC Egress)
-- [ ] **VALK-03**: 좌석 잠금 Lua 스크립트 Valkey 호환성 검증 및 수정
+- [x] **VALK-03**: 좌석 잠금 Lua 스크립트 Valkey 호환성 검증 및 수정
 - [ ] **VALK-04**: Socket.IO Redis adapter가 ioredis로 Valkey pub/sub 정상 동작 확인
 - [ ] **VALK-05**: Cloud Run → Valkey VPC 네트워킹 설정
 - [ ] **VALK-06**: 성능 카탈로그 캐시 레이어 구현
@@ -55,11 +55,11 @@ Requirements for v1.1 안정화 + 고도화. Each maps to roadmap phases.
 ### UX 현대화
 
 - [x] **UX-01**: 전체 디자인 현대화 (테두리/스타일 → 모던 트렌드, 심층 리서치 기반)
-- [ ] **UX-02**: SVG 좌석맵 스테이지 방향 표시
-- [ ] **UX-03**: SVG 좌석맵 등급별 색상 범례 + 가격 표시
-- [ ] **UX-04**: 좌석 선택 상태 전환 애니메이션
-- [ ] **UX-05**: 미니맵 네비게이터 (줌 시 전체 뷰 위치)
-- [ ] **UX-06**: 모바일 터치 타겟 44px 최소 보장
+- [x] **UX-02**: SVG 좌석맵 스테이지 방향 표시
+- [x] **UX-03**: SVG 좌석맵 등급별 색상 범례 + 가격 표시
+- [x] **UX-04**: 좌석 선택 상태 전환 애니메이션
+- [x] **UX-05**: 미니맵 네비게이터 (줌 시 전체 뷰 위치)
+- [x] **UX-06**: 모바일 터치 타겟 44px 최소 보장
 
 ## v2 Requirements
 
@@ -99,7 +99,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-01 | Phase 6, Phase 21 | Pending |
 | VALK-01 | Phase 7 | Pending |
 | VALK-02 | Phase 7, Phase 20 | Pending |
-| VALK-03 | Phase 7, Phase 19, Phase 20, Phase 24 | Pending |
+| VALK-03 | Phase 7, Phase 19, Phase 20, Phase 24 | Complete |
 | VALK-04 | Phase 7, Phase 20 | Pending |
 | VALK-05 | Phase 7, Phase 20, Phase 24 | Pending |
 | VALK-06 | Phase 7 | Pending |
@@ -124,11 +124,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ADM-05 | Phase 11 | Complete |
 | ADM-06 | Phase 11 | Complete |
 | UX-01 | Phase 12 | Complete |
-| UX-02 | Phase 12, Phase 19 | Pending |
-| UX-03 | Phase 12, Phase 19 | Pending |
-| UX-04 | Phase 12, Phase 19 | Pending |
-| UX-05 | Phase 12, Phase 19 | Pending |
-| UX-06 | Phase 12, Phase 19 | Pending |
+| UX-02 | Phase 12, Phase 19 | Complete |
+| UX-03 | Phase 12, Phase 19 | Complete |
+| UX-04 | Phase 12, Phase 19 | Complete |
+| UX-05 | Phase 12, Phase 19 | Complete |
+| UX-06 | Phase 12, Phase 19 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 33 total
