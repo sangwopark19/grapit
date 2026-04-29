@@ -2,6 +2,7 @@ import {
   Injectable,
   Inject,
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   InternalServerErrorException,
   Logger,
@@ -223,28 +224,6 @@ export class ReservationService {
       amount: dto.amount,
     });
 
-    try {
-      await this.bookingService.consumeOwnedSeatLocks(userId, reservation.showtimeId, pendingSeatIds);
-    } catch (consumeError) {
-      this.logger.error(
-        `Seat lock consume failed after Toss confirm. paymentKey=${tossResponse.paymentKey}, orderId=${dto.orderId}`,
-        consumeError instanceof Error ? consumeError.stack : String(consumeError),
-      );
-      try {
-        await this.tossClient.cancelPayment(tossResponse.paymentKey, '좌석 점유 만료로 인한 자동 취소');
-        this.logger.log(`Compensation cancel succeeded. paymentKey=${tossResponse.paymentKey}`);
-      } catch (cancelError) {
-        this.logger.error(
-          `CRITICAL: Compensation cancel also failed after seat lock consume failure. paymentKey=${tossResponse.paymentKey}. Manual refund required.`,
-          cancelError instanceof Error ? cancelError.stack : String(cancelError),
-        );
-        throw new InternalServerErrorException(
-          '결제는 승인되었으나 좌석 점유가 만료되어 자동 취소를 시도했습니다. 고객센터에 문의해주세요.',
-        );
-      }
-      throw consumeError;
-    }
-
     // 5. Update reservation status + create payment record + mark seats sold
     try {
       await this.db.transaction(async (tx) => {
@@ -266,37 +245,35 @@ export class ReservationService {
           paidAt: new Date(tossResponse.approvedAt),
         });
 
-        // Mark seats as sold in seat_inventories
-        const resSeats = await tx
-          .select({ seatId: reservationSeats.seatId })
-          .from(reservationSeats)
-          .where(eq(reservationSeats.reservationId, reservation.id));
-
-        for (const seat of resSeats) {
-          const [existing] = await tx
-            .select({ id: seatInventories.id })
-            .from(seatInventories)
+        // Mark seats sold only when no committed sold row already exists.
+        for (const seatId of pendingSeatIds) {
+          const updated = await tx
+            .update(seatInventories)
+            .set({ status: 'sold', soldAt: new Date(), lockedBy: null, lockedUntil: null })
             .where(
               and(
                 eq(seatInventories.showtimeId, reservation.showtimeId),
-                eq(seatInventories.seatId, seat.seatId),
+                eq(seatInventories.seatId, seatId),
+                sql`${seatInventories.status} <> 'sold'`,
               ),
-            );
+            )
+            .returning({ id: seatInventories.id });
 
-          if (existing) {
-            await tx
-              .update(seatInventories)
-              .set({ status: 'sold', soldAt: new Date(), lockedBy: null, lockedUntil: null })
-              .where(eq(seatInventories.id, existing.id));
-          } else {
-            await tx
-              .insert(seatInventories)
-              .values({
-                showtimeId: reservation.showtimeId,
-                seatId: seat.seatId,
-                status: 'sold',
-                soldAt: new Date(),
-              });
+          if (updated.length > 0) continue;
+
+          const inserted = await tx
+            .insert(seatInventories)
+            .values({
+              showtimeId: reservation.showtimeId,
+              seatId,
+              status: 'sold',
+              soldAt: new Date(),
+            })
+            .onConflictDoNothing()
+            .returning({ id: seatInventories.id });
+
+          if (inserted.length === 0) {
+            throw new ConflictException('이미 판매된 좌석입니다');
           }
         }
       });
@@ -315,19 +292,26 @@ export class ReservationService {
           cancelError instanceof Error ? cancelError.stack : String(cancelError),
         );
       }
+      if (dbError instanceof ConflictException) {
+        throw dbError;
+      }
       throw new InternalServerErrorException(
         '결제는 승인되었으나 처리 중 오류가 발생했습니다. 자동 취소를 시도했습니다. 고객센터에 문의해주세요.',
       );
     }
 
-    // Broadcast sold status via WebSocket for each seat
-    const confirmedSeats = await this.db
-      .select({ seatId: reservationSeats.seatId })
-      .from(reservationSeats)
-      .where(eq(reservationSeats.reservationId, reservation.id));
+    try {
+      await this.bookingService.consumeOwnedSeatLocks(userId, reservation.showtimeId, pendingSeatIds);
+    } catch (consumeError) {
+      this.logger.error(
+        `Seat lock cleanup failed after DB sold commit. reservationId=${reservation.id}, orderId=${dto.orderId}`,
+        consumeError instanceof Error ? consumeError.stack : String(consumeError),
+      );
+    }
 
-    for (const seat of confirmedSeats) {
-      this.bookingGateway.broadcastSeatUpdate(reservation.showtimeId, seat.seatId, 'sold', userId);
+    // Broadcast sold status via WebSocket after the DB transaction commits.
+    for (const seatId of pendingSeatIds) {
+      this.bookingGateway.broadcastSeatUpdate(reservation.showtimeId, seatId, 'sold', userId);
     }
 
     return this.getReservationDetail(reservation.id, userId);

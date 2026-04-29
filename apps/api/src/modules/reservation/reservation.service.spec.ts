@@ -530,7 +530,9 @@ describe('ReservationService', () => {
           txOps.push({ operation: 'update', args });
           return {
             set: vi.fn().mockReturnValue({
-              where: vi.fn().mockResolvedValue([]),
+              where: vi.fn().mockReturnValue({
+                returning: vi.fn().mockResolvedValue([{ id: randomUUID() }]),
+              }),
             }),
           };
         }),
@@ -539,6 +541,9 @@ describe('ReservationService', () => {
           return {
             values: vi.fn().mockReturnValue({
               returning: vi.fn().mockResolvedValue([{ id: randomUUID() }]),
+              onConflictDoNothing: vi.fn().mockReturnValue({
+                returning: vi.fn().mockResolvedValue([{ id: randomUUID() }]),
+              }),
             }),
           };
         }),
@@ -556,16 +561,6 @@ describe('ReservationService', () => {
 
       mockDb.transaction.mockImplementation(async (cb: (tx: typeof mockTx) => Promise<unknown>) => {
         return cb(mockTx);
-      });
-
-      // After-transaction select for seats (for WS broadcast)
-      mockDb.select.mockReturnValueOnce({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([
-            { seatId: 'A-1' },
-            { seatId: 'A-2' },
-          ]),
-        }),
       });
 
       // getReservationDetail mocks (called at the end of confirm)
@@ -629,10 +624,10 @@ describe('ReservationService', () => {
         userId,
       );
 
-      // tx.select should have been called for reservation seats
-      expect(mockTx.select).toHaveBeenCalled();
       // tx.update should be called for reservation status AND seat_inventories (at least 3 calls: 1 for reservation + 2 for seats)
       expect(mockTx.update.mock.calls.length).toBeGreaterThanOrEqual(3);
+      expect(mockBookingService.consumeOwnedSeatLocks.mock.invocationCallOrder[0])
+        .toBeGreaterThan(mockDb.transaction.mock.invocationCallOrder[0]!);
     });
 
     it('should not call BookingService.unlockAllSeats after confirm success', async () => {
@@ -689,7 +684,7 @@ describe('ReservationService', () => {
       expect(mockDb.transaction).not.toHaveBeenCalled();
     });
 
-    it('confirmAndCreateReservation cancels Toss and skips DB sold transition when consumeOwnedSeatLocks fails after Toss confirm', async () => {
+    it('confirmAndCreateReservation keeps confirmed reservation when post-commit lock cleanup fails', async () => {
       setupConfirmReservationBase({
         reservationId,
         showtimeId,
@@ -706,12 +701,51 @@ describe('ReservationService', () => {
       await expect(service.confirmAndCreateReservation(
         { paymentKey: 'pk_test_123', orderId, amount: 150000 },
         userId,
-      )).rejects.toThrow(LOCK_OTHER_OWNER_MESSAGE);
+      )).resolves.toMatchObject({ id: reservationId });
 
       expect(mockTossClient.confirmPayment).toHaveBeenCalledOnce();
       expect(mockBookingService.consumeOwnedSeatLocks).toHaveBeenCalledWith(userId, showtimeId, ['A-1', 'A-2']);
-      expect(mockTossClient.cancelPayment).toHaveBeenCalledWith('pk_test_123', '좌석 점유 만료로 인한 자동 취소');
-      expect(mockDb.transaction).not.toHaveBeenCalled();
+      expect(mockTossClient.cancelPayment).not.toHaveBeenCalled();
+      expect(mockDb.transaction).toHaveBeenCalledOnce();
+    });
+
+    it('cancels Toss and rejects when conditional sold transition detects an already sold seat', async () => {
+      setupConfirmReservationBase({
+        reservationId,
+        showtimeId,
+        orderId,
+        userId,
+        amount: 150000,
+      });
+
+      const mockTx = {
+        update: vi.fn().mockReturnValue({
+          set: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              returning: vi.fn().mockResolvedValue([]),
+            }),
+          }),
+        }),
+        insert: vi.fn().mockReturnValue({
+          values: vi.fn().mockReturnValue({
+            onConflictDoNothing: vi.fn().mockReturnValue({
+              returning: vi.fn().mockResolvedValue([]),
+            }),
+            returning: vi.fn().mockResolvedValue([{ id: randomUUID() }]),
+          }),
+        }),
+      };
+      mockDb.transaction.mockImplementation(async (cb: (tx: typeof mockTx) => Promise<unknown>) => cb(mockTx));
+
+      await expect(service.confirmAndCreateReservation(
+        { paymentKey: 'pk_test_123', orderId, amount: 150000 },
+        userId,
+      )).rejects.toThrow('이미 판매된 좌석입니다');
+
+      expect(mockTossClient.confirmPayment).toHaveBeenCalledOnce();
+      expect(mockTossClient.cancelPayment).toHaveBeenCalledWith('pk_test_123', '서버 오류로 인한 자동 취소');
+      expect(mockBookingService.consumeOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockBookingGateway.broadcastSeatUpdate).not.toHaveBeenCalled();
     });
 
     it('existing payment idempotency returns detail without active lock ownership check', async () => {
