@@ -189,9 +189,15 @@ for i = 2, #KEYS do
   end
 end
 for i = 2, #KEYS do
-  redis.call('EXPIRE', KEYS[i], ttl)
+  local currentTtl = redis.call('TTL', KEYS[i])
+  if currentTtl < ttl then
+    redis.call('EXPIRE', KEYS[i], ttl)
+  end
 end
-redis.call('EXPIRE', KEYS[1], ttl)
+local userSeatsTtl = redis.call('TTL', KEYS[1])
+if userSeatsTtl < ttl then
+  redis.call('EXPIRE', KEYS[1], ttl)
+end
 return {1, 'OK', tostring(#ARGV - 2), ''}
 `;
 

@@ -359,6 +359,26 @@ describe('redisProvider factory', () => {
         expect(await redis.ttl(userSeatsKey)).toBeGreaterThan(10);
       });
 
+      it('EXTEND_OWNED_SEAT_LOCKS_LUA does not shorten longer existing TTLs', async () => {
+        const redis = createMock();
+        await redis.set(seatA1Key, userId, 'EX', 300);
+        await redis.sadd(userSeatsKey, 'A-1');
+        await redis.expire(userSeatsKey, 300);
+
+        await expect(redis.eval(
+          EXTEND_OWNED_SEAT_LOCKS_LUA,
+          2,
+          userSeatsKey,
+          seatA1Key,
+          userId,
+          '60',
+          'A-1',
+        )).resolves.toEqual([1, 'OK', '1', '']);
+
+        expect(await redis.ttl(seatA1Key)).toBeGreaterThan(60);
+        expect(await redis.ttl(userSeatsKey)).toBeGreaterThan(60);
+      });
+
       it('RELEASE_PAYMENT_CONFIRM_LOCK_LUA deletes only the matching order lock token', async () => {
         const redis = createMock();
         const lockKey = '{payment-confirm}:order-123';

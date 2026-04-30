@@ -388,9 +388,13 @@ class InMemoryRedis {
 
     const ttl = Number(ttlSeconds);
     for (const lockKey of seatLockKeys) {
-      await this.expire(lockKey, ttl);
+      if (await this.ttl(lockKey) < ttl) {
+        await this.expire(lockKey, ttl);
+      }
     }
-    await this.expire(userSeatsKey!, ttl);
+    if (await this.ttl(userSeatsKey!) < ttl) {
+      await this.expire(userSeatsKey!, ttl);
+    }
 
     return [1, 'OK', String(seatIds.length), ''];
   }

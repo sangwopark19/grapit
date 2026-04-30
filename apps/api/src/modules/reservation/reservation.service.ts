@@ -372,6 +372,27 @@ export class ReservationService {
     }, refreshEveryMs);
   }
 
+  private startOwnedSeatLockRefresh(
+    userId: string,
+    showtimeId: string,
+    seatIds: string[],
+  ): ReturnType<typeof setInterval> {
+    const refreshEveryMs = Math.max(1000, Math.floor(PAYMENT_CONFIRM_LOCK_TTL * 1000 / 2));
+    return setInterval(() => {
+      void this.bookingService.extendOwnedSeatLocks(
+        userId,
+        showtimeId,
+        seatIds,
+        PAYMENT_CONFIRM_LOCK_TTL,
+      ).catch((refreshError) => {
+        this.logger.error(
+          `Seat lock refresh failed during payment confirm. showtimeId=${showtimeId}`,
+          refreshError instanceof Error ? refreshError.stack : String(refreshError),
+        );
+      });
+    }, refreshEveryMs);
+  }
+
   private async cancelConfirmedPaymentOrThrow(paymentKey: string, reason: string): Promise<void> {
     try {
       await this.tossClient.cancelPayment(paymentKey, reason);
@@ -438,6 +459,8 @@ export class ReservationService {
       PAYMENT_CONFIRM_LOCK_TTL,
     );
 
+    const seatLockRefreshTimer = this.startOwnedSeatLockRefresh(userId, reservation.showtimeId, pendingSeatIds);
+    try {
     // 4. Call Toss Payments confirm API
     const tossResponse = await this.tossClient.confirmPayment({
       paymentKey: dto.paymentKey,
@@ -567,6 +590,7 @@ export class ReservationService {
       );
     }
 
+    clearInterval(seatLockRefreshTimer);
     try {
       await this.bookingService.consumeOwnedSeatLocks(userId, reservation.showtimeId, pendingSeatIds);
     } catch (cleanupError) {
@@ -582,6 +606,9 @@ export class ReservationService {
     }
 
     return this.getReservationDetail(reservation.id, userId);
+    } finally {
+      clearInterval(seatLockRefreshTimer);
+    }
   }
 
   async getMyReservations(userId: string, status?: ReservationStatus): Promise<ReservationListItem[]> {
