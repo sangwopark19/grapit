@@ -93,6 +93,10 @@ function CompletePageContent() {
         amount: parsedAmount,
       });
 
+      if (result.status !== 'CONFIRMED') {
+        throw new Error('예매를 완료하지 못했습니다. 예매 내역을 확인해주세요.');
+      }
+
       setBookingData(result);
       clearBooking();
     } catch (err) {

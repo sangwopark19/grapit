@@ -929,6 +929,31 @@ describe('ReservationService', () => {
       expect(mockBookingService.releasePaymentConfirmLock).not.toHaveBeenCalled();
     });
 
+    it('rejects cancelled reservation instead of treating it as confirmed', async () => {
+      mockDb.select
+        .mockReturnValueOnce(chainResult([]))
+        .mockReturnValueOnce(chainResult([{
+          id: reservationId,
+          userId,
+          showtimeId,
+          tossOrderId: orderId,
+          status: 'CANCELLED',
+          totalAmount: 150000,
+        }]));
+
+      await expect(service.confirmAndCreateReservation(
+        { paymentKey: 'pk_test_123', orderId, amount: 150000 },
+        userId,
+      )).rejects.toThrow(LOCK_EXPIRED_MESSAGE);
+
+      expect(mockBookingService.extendOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockTossClient.confirmPayment).not.toHaveBeenCalled();
+      expect(mockDb.transaction).not.toHaveBeenCalled();
+      const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
+      expect(mockBookingService.refreshPaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
+      expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
+    });
+
     it('confirmAndCreateReservation extends locks before Toss confirm and rejects invalid locks', async () => {
       setupConfirmReservationBase({
         reservationId,

@@ -402,9 +402,12 @@ export class ReservationService {
       throw new NotFoundException('예매 정보를 찾을 수 없습니다. 다시 시도해주세요.');
     }
 
-    if (reservation.status !== 'PENDING_PAYMENT') {
-      // Already confirmed — return detail
+    if (reservation.status === 'CONFIRMED') {
       return this.getReservationDetail(reservation.id, userId);
+    }
+
+    if (reservation.status !== 'PENDING_PAYMENT') {
+      throw new ConflictException('좌석 점유 시간이 만료되었습니다. 좌석을 다시 선택해주세요.');
     }
 
     // 3. Amount validation against the prepared reservation
