@@ -154,6 +154,7 @@ function ConfirmPageContent() {
         err instanceof Error ? err.message : '결제 요청에 실패했습니다.';
       if (isLockFailureMessage(errorMessage)) {
         setLockFailureMessage(errorMessage);
+        return;
       }
       toast.error(errorMessage);
     }

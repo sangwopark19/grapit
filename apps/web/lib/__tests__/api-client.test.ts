@@ -166,6 +166,22 @@ describe('api-client error interceptor', () => {
     );
   });
 
+  it('suppresses the global error toast when showErrorToast is false', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 409,
+      json: async () => ({ message: '이미 다른 사용자가 선택한 좌석입니다.', statusCode: 409 }),
+    });
+
+    const { apiClient } = await import('@/lib/api-client');
+
+    await expect(
+      apiClient.post('/api/v1/payments/confirm', { orderId: 'GRP-LOCK' }, { showErrorToast: false }),
+    ).rejects.toThrow('이미 다른 사용자가 선택한 좌석입니다.');
+
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
   it('Test 8: STATUS_MESSAGES에 400, 403, 404, 408, 429 키가 존재한다', async () => {
     const { STATUS_MESSAGES } = await import('@/lib/error-messages');
 

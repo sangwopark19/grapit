@@ -102,7 +102,6 @@ function CompletePageContent() {
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : '결제 확인에 실패했습니다.';
-      toast.error(errorMessage);
       if (
         err instanceof ApiClientError &&
         err.statusCode === 409 &&
@@ -112,6 +111,7 @@ function CompletePageContent() {
         setConfirmFailed(false);
         return;
       }
+      toast.error(errorMessage);
       // Try recovery — maybe already confirmed on a previous attempt
       setConfirmFailed(true);
     } finally {

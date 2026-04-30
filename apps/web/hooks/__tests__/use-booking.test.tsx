@@ -69,7 +69,9 @@ describe('use-booking payment mutations', () => {
       reservationId: 'reservation-lock-test',
       orderId: payload.orderId,
     });
-    expect(apiClient.post).toHaveBeenCalledWith('/api/v1/reservations/prepare', payload);
+    expect(apiClient.post).toHaveBeenCalledWith('/api/v1/reservations/prepare', payload, {
+      showErrorToast: false,
+    });
   });
 
   it('useConfirmPayment() calls /api/v1/payments/confirm with payload', async () => {
@@ -102,7 +104,9 @@ describe('use-booking payment mutations', () => {
     });
 
     await result.current.mutateAsync(payload);
-    expect(apiClient.post).toHaveBeenCalledWith('/api/v1/payments/confirm', payload);
+    expect(apiClient.post).toHaveBeenCalledWith('/api/v1/payments/confirm', payload, {
+      showErrorToast: false,
+    });
   });
 
   it('keeps ApiClientError 409 lock-expired message as the mutation error', async () => {
