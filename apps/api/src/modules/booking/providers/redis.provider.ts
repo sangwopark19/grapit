@@ -51,11 +51,14 @@ class InMemoryRedis {
     }
 
     if (nx && this.store.has(key)) return null;
-    this.store.set(key, value);
 
+    const prev = this.ttls.get(key);
+    if (prev) clearTimeout(prev);
+    this.ttls.delete(key);
+    this.expiries.delete(key);
+
+    this.store.set(key, value);
     if (ttlMs !== undefined && !Number.isNaN(ttlMs)) {
-      const prev = this.ttls.get(key);
-      if (prev) clearTimeout(prev);
       this.expiries.set(key, Date.now() + ttlMs);
       this.ttls.set(key, setTimeout(() => {
         this.store.delete(key);
@@ -146,7 +149,14 @@ class InMemoryRedis {
 
   async del(...keys: string[]): Promise<number> {
     let count = 0;
-    for (const k of keys) { if (this.store.delete(k)) count++; }
+    for (const key of keys) {
+      const existed = this.store.delete(key) || this.sets.delete(key);
+      const timer = this.ttls.get(key);
+      if (timer) clearTimeout(timer);
+      this.ttls.delete(key);
+      this.expiries.delete(key);
+      if (existed) count++;
+    }
     return count;
   }
 
@@ -210,6 +220,21 @@ class InMemoryRedis {
     const keys = keysAndArgs.slice(0, numKeys).map(String);
     const args = keysAndArgs.slice(numKeys).map(String);
 
+    if (script.includes('ASSERT_OWNED_SEAT_LOCKS_LUA')) {
+      return this.evalAssertOwnedSeatLocks(keys, args);
+    }
+    if (script.includes('CONSUME_OWNED_SEAT_LOCKS_LUA')) {
+      return this.evalConsumeOwnedSeatLocks(keys, args);
+    }
+    if (script.includes('EXTEND_OWNED_SEAT_LOCKS_LUA')) {
+      return this.evalExtendOwnedSeatLocks(keys, args);
+    }
+    if (script.includes('RELEASE_PAYMENT_CONFIRM_LOCK_LUA')) {
+      return this.evalReleasePaymentConfirmLock(keys, args);
+    }
+    if (script.includes('REFRESH_PAYMENT_CONFIRM_LOCK_LUA')) {
+      return this.evalRefreshPaymentConfirmLock(keys, args);
+    }
     if (keys.length === 3 && args.length === 3 && script.includes('VERIFIED')) {
       return this.evalVerifyAndIncrement(keys, args);
     }
@@ -273,13 +298,16 @@ class InMemoryRedis {
     const members = Array.from(this.sets.get(userSeatsKey) ?? []);
     let alive = 0;
     for (const sid of members) {
-      if (this.store.has(`${keyPrefix}${sid}`)) {
+      const owner = this.store.get(`${keyPrefix}${sid}`);
+      if (owner === userId) {
         alive++;
       } else {
         const userSet = this.sets.get(userSeatsKey);
         if (userSet) userSet.delete(sid);
-        const lockedSet = this.sets.get(lockedSeatsKey);
-        if (lockedSet) lockedSet.delete(sid);
+        if (owner === undefined) {
+          const lockedSet = this.sets.get(lockedSeatsKey);
+          if (lockedSet) lockedSet.delete(sid);
+        }
       }
     }
 
@@ -320,6 +348,114 @@ class InMemoryRedis {
     if (lockedSet) lockedSet.delete(seatId);
 
     return 1;
+  }
+
+  private evalAssertOwnedSeatLocks(keys: string[], args: string[]): [number, string, string, string] {
+    const [userId, ...seatIds] = args;
+
+    for (let i = 0; i < keys.length; i++) {
+      const lockKey = keys[i]!;
+      const seatId = seatIds[i] ?? '';
+      const owner = this.store.get(lockKey);
+
+      if (owner === undefined) {
+        return [0, 'MISSING', seatId, ''];
+      }
+      if (owner !== userId) {
+        return [0, 'OTHER_OWNER', seatId, owner];
+      }
+    }
+
+    return [1, 'OK', String(seatIds.length), ''];
+  }
+
+  private async evalExtendOwnedSeatLocks(keys: string[], args: string[]): Promise<[number, string, string, string]> {
+    const [userSeatsKey, ...seatLockKeys] = keys;
+    const [userId, ttlSeconds, ...seatIds] = args;
+
+    for (let i = 0; i < seatLockKeys.length; i++) {
+      const lockKey = seatLockKeys[i]!;
+      const seatId = seatIds[i] ?? '';
+      const owner = this.store.get(lockKey);
+
+      if (owner === undefined) {
+        return [0, 'MISSING', seatId, ''];
+      }
+      if (owner !== userId) {
+        return [0, 'OTHER_OWNER', seatId, owner];
+      }
+    }
+
+    const ttl = Number(ttlSeconds);
+    for (const lockKey of seatLockKeys) {
+      if (await this.ttl(lockKey) < ttl) {
+        await this.expire(lockKey, ttl);
+      }
+    }
+    if (await this.ttl(userSeatsKey!) < ttl) {
+      await this.expire(userSeatsKey!, ttl);
+    }
+
+    return [1, 'OK', String(seatIds.length), ''];
+  }
+
+  private evalConsumeOwnedSeatLocks(keys: string[], args: string[]): [number, string, string, string] {
+    const [userSeatsKey, lockedSeatsKey, ...seatLockKeys] = keys;
+    const [userId, ...seatIds] = args;
+
+    for (let i = 0; i < seatLockKeys.length; i++) {
+      const lockKey = seatLockKeys[i]!;
+      const seatId = seatIds[i] ?? '';
+      const owner = this.store.get(lockKey);
+
+      if (owner === undefined) {
+        return [0, 'MISSING', seatId, ''];
+      }
+      if (owner !== userId) {
+        return [0, 'OTHER_OWNER', seatId, owner];
+      }
+    }
+
+    for (let i = 0; i < seatLockKeys.length; i++) {
+      const lockKey = seatLockKeys[i]!;
+      const seatId = seatIds[i] ?? '';
+
+      this.store.delete(lockKey);
+      const timer = this.ttls.get(lockKey);
+      if (timer) clearTimeout(timer);
+      this.ttls.delete(lockKey);
+      this.expiries.delete(lockKey);
+
+      const userSet = this.sets.get(userSeatsKey!);
+      if (userSet) userSet.delete(seatId);
+
+      const lockedSet = this.sets.get(lockedSeatsKey!);
+      if (lockedSet) lockedSet.delete(seatId);
+    }
+
+    return [1, 'OK', String(seatIds.length), ''];
+  }
+
+  private async evalReleasePaymentConfirmLock(keys: string[], args: string[]): Promise<number> {
+    const [lockKey] = keys;
+    const [lockToken] = args;
+
+    if (this.store.get(lockKey!) !== lockToken) {
+      return 0;
+    }
+
+    return this.del(lockKey!);
+  }
+
+  private async evalRefreshPaymentConfirmLock(keys: string[], args: string[]): Promise<number> {
+    const [lockKey] = keys;
+    const [lockToken, ttlSeconds] = args;
+
+    if (this.store.get(lockKey!) !== lockToken) {
+      return 0;
+    }
+
+    return this.expire(lockKey!, Number(ttlSeconds));
   }
 
   private evalGetValidLockedSeats(keys: string[], args: string[]): string[] {

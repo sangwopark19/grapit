@@ -13,7 +13,7 @@ import {
   type ResetPasswordRequestInput,
   type ResetPasswordInput,
 } from '@grabit/shared';
-import { apiClient } from '@/lib/api-client';
+import { apiUrl } from '@/lib/api-url';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/auth/password-input';
@@ -40,7 +40,7 @@ function ResetPasswordInner() {
   const token = searchParams.get('token') ?? '';
 
   if (token !== '') {
-    return <ConfirmView token={token} />;
+    return <ConfirmView key={token} token={token} />;
   }
   return <RequestView />;
 }
@@ -60,7 +60,12 @@ function RequestView() {
   async function onSubmit(data: ResetPasswordRequestInput) {
     setIsLoading(true);
     try {
-      await apiClient.post('/api/v1/auth/password-reset/request', data);
+      await fetch(apiUrl('/api/v1/auth/password-reset/request'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      });
     } catch {
       // Always show success to prevent email enumeration
     } finally {
@@ -168,7 +173,7 @@ function ConfirmView({ token }: { token: string }) {
   async function onSubmit(data: ResetPasswordInput) {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/v1/auth/password-reset/confirm', {
+      const res = await fetch(apiUrl('/api/v1/auth/password-reset/confirm'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

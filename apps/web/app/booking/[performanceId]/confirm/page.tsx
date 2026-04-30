@@ -20,6 +20,15 @@ function generateOrderId(): string {
   return `GRP-${Date.now()}-${random}`;
 }
 
+const LOCK_FAILURE_MESSAGES = [
+  '좌석 점유 시간이 만료되었습니다. 좌석을 다시 선택해주세요.',
+  '이미 다른 사용자가 선택한 좌석입니다.',
+] as const;
+
+function isLockFailureMessage(message: string): boolean {
+  return LOCK_FAILURE_MESSAGES.some((candidate) => candidate === message);
+}
+
 function ConfirmPageContent() {
   const params = useParams();
   const router = useRouter();
@@ -33,6 +42,7 @@ function ConfirmPageContent() {
   const [agreed, setAgreed] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [widgetReady, setWidgetReady] = useState(false);
+  const [lockFailureMessage, setLockFailureMessage] = useState<string | null>(null);
   const [bookerInfo, setBookerInfo] = useState<{ name: string; phone: string }>({
     name: user?.name ?? '',
     phone: user?.phone ?? '',
@@ -116,7 +126,13 @@ function ConfirmPageContent() {
     setBookerInfo(data);
   }, []);
 
+  const handleLockFailureRecovery = useCallback(() => {
+    useBookingStore.getState().clearSeats();
+    router.replace(`/booking/${performanceId}`);
+  }, [performanceId, router]);
+
   async function handlePayment() {
+    if (lockFailureMessage) return;
     if (!paymentWidgetRef.current || !agreed || isProcessing) return;
 
     setIsProcessing(true);
@@ -136,6 +152,10 @@ function ConfirmPageContent() {
       setIsProcessing(false);
       const errorMessage =
         err instanceof Error ? err.message : '결제 요청에 실패했습니다.';
+      if (isLockFailureMessage(errorMessage)) {
+        setLockFailureMessage(errorMessage);
+        return;
+      }
       toast.error(errorMessage);
     }
   }
@@ -148,8 +168,10 @@ function ConfirmPageContent() {
     );
   }
 
-  const ctaDisabled = !agreed || isProcessing || !widgetReady;
-  const ctaText = isProcessing
+  const ctaDisabled = !!lockFailureMessage || !agreed || isProcessing || !widgetReady;
+  const ctaText = lockFailureMessage
+    ? '좌석을 다시 선택해주세요'
+    : isProcessing
     ? '결제 처리 중...'
     : !agreed
       ? '약관에 동의해주세요'
@@ -179,6 +201,20 @@ function ConfirmPageContent() {
 
         {/* Terms Agreement */}
         <TermsAgreement agreed={agreed} onAgreementChange={handleAgreementChange} />
+
+        {lockFailureMessage && (
+          <section role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4">
+            <p className="text-sm font-medium text-red-700">{lockFailureMessage}</p>
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-3"
+              onClick={handleLockFailureRecovery}
+            >
+              좌석 다시 선택하기
+            </Button>
+          </section>
+        )}
 
         {/* Payment Widget */}
         <section className="space-y-3">

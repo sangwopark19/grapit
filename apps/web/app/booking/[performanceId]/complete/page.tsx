@@ -7,8 +7,18 @@ import { toast } from 'sonner';
 import { AuthGuard } from '@/components/auth/auth-guard';
 import { BookingComplete } from '@/components/booking/booking-complete';
 import { useConfirmPayment, useReservationByOrderId } from '@/hooks/use-booking';
+import { ApiClientError } from '@/lib/api-client';
 import { useBookingStore } from '@/stores/use-booking-store';
 import type { ReservationDetail } from '@grabit/shared';
+
+const LOCK_FAILURE_MESSAGES = [
+  '좌석 점유 시간이 만료되었습니다. 좌석을 다시 선택해주세요.',
+  '이미 다른 사용자가 선택한 좌석입니다.',
+] as const;
+
+function isLockFailureMessage(message: string): boolean {
+  return LOCK_FAILURE_MESSAGES.some((candidate) => candidate === message);
+}
 
 function CompleteSkeleton() {
   return (
@@ -32,36 +42,44 @@ function CompletePageContent() {
   const paymentKey = searchParams.get('paymentKey');
   const orderId = searchParams.get('orderId');
   const amount = searchParams.get('amount');
+  const parsedAmount = Number(amount);
+  const hasValidAmount = amount !== null && Number.isFinite(parsedAmount) && parsedAmount > 0;
 
   const clearBooking = useBookingStore((s) => s.clearBooking);
+  const performanceId = useBookingStore((s) => s.performanceId);
 
   const confirmMutation = useConfirmPayment();
   const [bookingData, setBookingData] = useState<ReservationDetail | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [confirmationErrorMessage, setConfirmationErrorMessage] = useState<string | null>(null);
   const hasConfirmedRef = useRef(false);
 
   // Recovery: on refresh after confirm already succeeded, fetch by orderId
   const [confirmFailed, setConfirmFailed] = useState(false);
   const shouldRecover = confirmFailed && !!orderId;
 
-  const { data: recoveredReservation } = useReservationByOrderId(
-    shouldRecover ? orderId : null,
-  );
+  const {
+    data: recoveredReservation,
+    isFetched: recoveryFetched,
+    isError: recoveryError,
+  } = useReservationByOrderId(shouldRecover ? orderId : null);
 
   useEffect(() => {
-    if (!shouldRecover || !recoveredReservation) return;
+    if (!shouldRecover || (!recoveryFetched && !recoveryError)) return;
 
-    if (recoveredReservation.status === 'CONFIRMED') {
+    if (recoveredReservation?.status === 'CONFIRMED') {
       setBookingData(recoveredReservation);
-    } else {
-      toast.info('예매 내역에서 확인해주세요.');
-      router.replace('/mypage?tab=reservations');
+      clearBooking();
+      return;
     }
-  }, [shouldRecover, recoveredReservation, router]);
+
+    setConfirmationErrorMessage('결제 확인에 실패했습니다. 예매 내역을 확인해주세요.');
+    setConfirmFailed(false);
+  }, [shouldRecover, recoveryFetched, recoveryError, recoveredReservation, clearBooking]);
 
   // Confirm payment on mount — only needs URL params (server has pending order)
   const confirmPayment = useCallback(async () => {
-    if (hasConfirmedRef.current || !paymentKey || !orderId || !amount) {
+    if (hasConfirmedRef.current || !paymentKey || !orderId || !hasValidAmount) {
       return;
     }
 
@@ -72,14 +90,27 @@ function CompletePageContent() {
       const result = await confirmMutation.mutateAsync({
         paymentKey,
         orderId,
-        amount: Number(amount),
+        amount: parsedAmount,
       });
+
+      if (result.status !== 'CONFIRMED') {
+        throw new Error('예매를 완료하지 못했습니다. 예매 내역을 확인해주세요.');
+      }
 
       setBookingData(result);
       clearBooking();
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : '결제 확인에 실패했습니다.';
+      if (
+        err instanceof ApiClientError &&
+        err.statusCode === 409 &&
+        isLockFailureMessage(errorMessage)
+      ) {
+        setConfirmationErrorMessage(errorMessage);
+        setConfirmFailed(false);
+        return;
+      }
       toast.error(errorMessage);
       // Try recovery — maybe already confirmed on a previous attempt
       setConfirmFailed(true);
@@ -89,16 +120,17 @@ function CompletePageContent() {
   }, [
     paymentKey,
     orderId,
-    amount,
+    parsedAmount,
+    hasValidAmount,
     confirmMutation,
     clearBooking,
   ]);
 
   useEffect(() => {
-    if (paymentKey && orderId && amount) {
+    if (paymentKey && orderId && hasValidAmount) {
       confirmPayment();
     }
-  }, [paymentKey, orderId, amount, confirmPayment]);
+  }, [paymentKey, orderId, hasValidAmount, confirmPayment]);
 
   // Focus heading on success
   useEffect(() => {
@@ -109,7 +141,7 @@ function CompletePageContent() {
   }, [bookingData]);
 
   // Handle missing params
-  if (!paymentKey || !orderId) {
+  if (!paymentKey || !orderId || !hasValidAmount) {
     if (!shouldRecover) {
       return (
         <div className="mx-auto flex min-h-[50vh] max-w-[720px] items-center justify-center px-6 py-12">
@@ -127,8 +159,41 @@ function CompletePageContent() {
     }
   }
 
+  if (confirmationErrorMessage) {
+    return (
+      <main className="mx-auto flex min-h-[50vh] w-full max-w-[720px] items-center justify-center px-6 py-12">
+        <section role="alert" className="w-full rounded-lg border border-red-200 bg-red-50 p-5 text-center">
+          <h1 className="text-lg font-semibold text-red-700">예매를 완료하지 못했습니다</h1>
+          <p className="mt-2 text-sm text-red-700">{confirmationErrorMessage}</p>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
+            {performanceId && (
+              <button
+                type="button"
+                onClick={() => router.replace(`/booking/${performanceId}`)}
+                className="text-sm font-medium text-primary underline"
+              >
+                좌석 다시 선택하기
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => router.replace('/mypage?tab=reservations')}
+              className="text-sm font-medium text-primary underline"
+            >
+              예매 내역 확인
+            </button>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   // Loading state
-  if (isConfirming || (!bookingData && !confirmMutation.isError)) {
+  if (
+    isConfirming ||
+    (shouldRecover && !recoveryFetched && !recoveryError) ||
+    (!bookingData && !confirmMutation.isError)
+  ) {
     return <CompleteSkeleton />;
   }
 

@@ -14,6 +14,13 @@ const MAX_SEATS = 4;
 /** Lock TTL in seconds (10 minutes, per BOOK-03) */
 const LOCK_TTL = 600;
 
+export const LOCK_EXPIRED_MESSAGE = '좌석 점유 시간이 만료되었습니다. 좌석을 다시 선택해주세요.';
+export const LOCK_OTHER_OWNER_MESSAGE = '이미 다른 사용자가 선택한 좌석입니다.';
+
+export type SeatLockOwnershipFailureReason = 'MISSING' | 'OTHER_OWNER';
+
+type SeatLockOwnershipResult = [number, string, string, string];
+
 /**
  * Lua script for atomic seat locking.
  * Cleans stale user-seats entries, checks count, SET NX, SADD + EXPIRE.
@@ -33,11 +40,14 @@ const LOCK_SEAT_LUA = `
 local members = redis.call('SMEMBERS', KEYS[1])
 local alive = 0
 for i, sid in ipairs(members) do
-  if redis.call('EXISTS', ARGV[5] .. sid) == 1 then
+  local owner = redis.call('GET', ARGV[5] .. sid)
+  if owner == ARGV[1] then
     alive = alive + 1
   else
     redis.call('SREM', KEYS[1], sid)
-    redis.call('SREM', KEYS[3], sid)
+    if not owner then
+      redis.call('SREM', KEYS[3], sid)
+    end
   end
 end
 if alive >= tonumber(ARGV[3]) then
@@ -93,6 +103,120 @@ for i, sid in ipairs(members) do
   end
 end
 return alive
+`;
+
+/**
+ * Lua script for asserting that all requested seats are actively locked by the user.
+ *
+ * KEYS[i] = {showtimeId}:seat:{seatId}
+ * ARGV[1] = userId
+ * ARGV[2..] = requested seat IDs
+ *
+ * Returns: {1, 'OK', count, ''} or {0, 'MISSING'|'OTHER_OWNER', seatId, owner}
+ */
+export const ASSERT_OWNED_SEAT_LOCKS_LUA = `
+-- ASSERT_OWNED_SEAT_LOCKS_LUA
+local userId = ARGV[1]
+for i = 1, #KEYS do
+  local owner = redis.call('GET', KEYS[i])
+  local seatId = ARGV[i + 1]
+  if not owner then
+    return {0, 'MISSING', seatId, ''}
+  end
+  if owner ~= userId then
+    return {0, 'OTHER_OWNER', seatId, owner}
+  end
+end
+return {1, 'OK', tostring(#ARGV - 1), ''}
+`;
+
+/**
+ * Lua script for atomically consuming requested locks owned by the user.
+ *
+ * KEYS[1] = {showtimeId}:user-seats:{userId}
+ * KEYS[2] = {showtimeId}:locked-seats
+ * KEYS[3..] = {showtimeId}:seat:{seatId}
+ * ARGV[1] = userId
+ * ARGV[2..] = requested seat IDs
+ *
+ * Returns: {1, 'OK', count, ''} or {0, 'MISSING'|'OTHER_OWNER', seatId, owner}
+ */
+export const CONSUME_OWNED_SEAT_LOCKS_LUA = `
+-- CONSUME_OWNED_SEAT_LOCKS_LUA
+local userId = ARGV[1]
+for i = 3, #KEYS do
+  local owner = redis.call('GET', KEYS[i])
+  local seatId = ARGV[i - 1]
+  if not owner then
+    return {0, 'MISSING', seatId, ''}
+  end
+  if owner ~= userId then
+    return {0, 'OTHER_OWNER', seatId, owner}
+  end
+end
+for i = 3, #KEYS do
+  local seatId = ARGV[i - 1]
+  redis.call('DEL', KEYS[i])
+  redis.call('SREM', KEYS[1], seatId)
+  redis.call('SREM', KEYS[2], seatId)
+end
+return {1, 'OK', tostring(#ARGV - 1), ''}
+`;
+
+/**
+ * Lua script for atomically verifying ownership and extending requested locks.
+ *
+ * KEYS[1] = {showtimeId}:user-seats:{userId}
+ * KEYS[2..] = {showtimeId}:seat:{seatId}
+ * ARGV[1] = userId
+ * ARGV[2] = ttl seconds
+ * ARGV[3..] = requested seat IDs
+ *
+ * Returns: {1, 'OK', count, ''} or {0, 'MISSING'|'OTHER_OWNER', seatId, owner}
+ */
+export const EXTEND_OWNED_SEAT_LOCKS_LUA = `
+-- EXTEND_OWNED_SEAT_LOCKS_LUA
+local userId = ARGV[1]
+local ttl = tonumber(ARGV[2])
+for i = 2, #KEYS do
+  local owner = redis.call('GET', KEYS[i])
+  local seatId = ARGV[i + 1]
+  if not owner then
+    return {0, 'MISSING', seatId, ''}
+  end
+  if owner ~= userId then
+    return {0, 'OTHER_OWNER', seatId, owner}
+  end
+end
+for i = 2, #KEYS do
+  local currentTtl = redis.call('TTL', KEYS[i])
+  if currentTtl < ttl then
+    redis.call('EXPIRE', KEYS[i], ttl)
+  end
+end
+local userSeatsTtl = redis.call('TTL', KEYS[1])
+if userSeatsTtl < ttl then
+  redis.call('EXPIRE', KEYS[1], ttl)
+end
+return {1, 'OK', tostring(#ARGV - 2), ''}
+`;
+
+export const PAYMENT_CONFIRM_LOCK_TTL = 60;
+
+export const RELEASE_PAYMENT_CONFIRM_LOCK_LUA = `
+-- RELEASE_PAYMENT_CONFIRM_LOCK_LUA
+if redis.call('GET', KEYS[1]) == ARGV[1] then
+  return redis.call('DEL', KEYS[1])
+end
+return 0
+`;
+
+export const REFRESH_PAYMENT_CONFIRM_LOCK_LUA = `
+-- REFRESH_PAYMENT_CONFIRM_LOCK_LUA
+if redis.call('GET', KEYS[1]) == ARGV[1] then
+  return redis.call('EXPIRE', KEYS[1], tonumber(ARGV[2]))
+end
+return 0
 `;
 
 @Injectable()
@@ -225,6 +349,102 @@ export class BookingService {
     return { unlockedSeats };
   }
 
+  async assertOwnedSeatLocks(userId: string, showtimeId: string, seatIds: string[]): Promise<void> {
+    const seatLockKeys = seatIds.map((seatId) => `{${showtimeId}}:seat:${seatId}`);
+
+    const result = (await this.redis.eval(ASSERT_OWNED_SEAT_LOCKS_LUA,
+      seatIds.length,
+      ...seatLockKeys,
+      userId,
+      ...seatIds,
+    )) as SeatLockOwnershipResult;
+
+    const conflict = this.lockConflictFromResult(result);
+    if (conflict) throw conflict;
+  }
+
+  async consumeOwnedSeatLocks(userId: string, showtimeId: string, seatIds: string[]): Promise<{ consumedSeatIds: string[] }> {
+    const userSeatsKey = `{${showtimeId}}:user-seats:${userId}`;
+    const lockedSeatsKey = `{${showtimeId}}:locked-seats`;
+    const seatLockKeys = seatIds.map((seatId) => `{${showtimeId}}:seat:${seatId}`);
+
+    const result = (await this.redis.eval(CONSUME_OWNED_SEAT_LOCKS_LUA,
+      2 + seatIds.length,
+      userSeatsKey,
+      lockedSeatsKey,
+      ...seatLockKeys,
+      userId,
+      ...seatIds,
+    )) as SeatLockOwnershipResult;
+
+    const conflict = this.lockConflictFromResult(result);
+    if (conflict) throw conflict;
+
+    return { consumedSeatIds: seatIds };
+  }
+
+  async extendOwnedSeatLocks(
+    userId: string,
+    showtimeId: string,
+    seatIds: string[],
+    ttlSeconds: number,
+  ): Promise<void> {
+    const userSeatsKey = `{${showtimeId}}:user-seats:${userId}`;
+    const seatLockKeys = seatIds.map((seatId) => `{${showtimeId}}:seat:${seatId}`);
+
+    const result = (await this.redis.eval(EXTEND_OWNED_SEAT_LOCKS_LUA,
+      1 + seatIds.length,
+      userSeatsKey,
+      ...seatLockKeys,
+      userId,
+      String(ttlSeconds),
+      ...seatIds,
+    )) as SeatLockOwnershipResult;
+
+    const conflict = this.lockConflictFromResult(result);
+    if (conflict) throw conflict;
+  }
+
+  async acquirePaymentConfirmLock(orderId: string, lockToken: string): Promise<boolean> {
+    const lockKey = `{payment-confirm}:${orderId}`;
+    const result = await this.redis.set(lockKey, lockToken, 'EX', PAYMENT_CONFIRM_LOCK_TTL, 'NX');
+    return result === 'OK';
+  }
+
+  async refreshPaymentConfirmLock(
+    orderId: string,
+    lockToken: string,
+    ttlSeconds = PAYMENT_CONFIRM_LOCK_TTL,
+  ): Promise<boolean> {
+    const lockKey = `{payment-confirm}:${orderId}`;
+    const result = await this.redis.eval(
+      REFRESH_PAYMENT_CONFIRM_LOCK_LUA,
+      1,
+      lockKey,
+      lockToken,
+      String(ttlSeconds),
+    );
+    return result === 1;
+  }
+
+  async releasePaymentConfirmLock(orderId: string, lockToken: string): Promise<void> {
+    const lockKey = `{payment-confirm}:${orderId}`;
+    await this.redis.eval(RELEASE_PAYMENT_CONFIRM_LOCK_LUA, 1, lockKey, lockToken);
+  }
+
+  private lockConflictFromResult(result: SeatLockOwnershipResult): ConflictException | null {
+    const [status, reason] = result;
+    if (status === 1) return null;
+
+    if (reason === 'MISSING') {
+      return new ConflictException(LOCK_EXPIRED_MESSAGE);
+    }
+    if (reason === 'OTHER_OWNER') {
+      return new ConflictException(LOCK_OTHER_OWNER_MESSAGE);
+    }
+    return new ConflictException(LOCK_EXPIRED_MESSAGE);
+  }
+
   /**
    * Returns the current user's locked seats for a showtime.
    */
@@ -235,16 +455,21 @@ export class BookingService {
       return { seatIds: [], expiresAt: null };
     }
 
-    // Get actual remaining TTL from Redis
-    const firstSeatKey = `seat:${showtimeId}:${userSeats[0]}`;
-    const remainingTtl = await this.redis.ttl(firstSeatKey);
-    const expiresAt = remainingTtl > 0 ? Date.now() + remainingTtl * 1000 : null;
-
     // Filter to only seats still actually locked by this user
     const validSeats: string[] = [];
+    let expiresAt: number | null = null;
+
     for (const seatId of userSeats) {
-      const owner = await this.redis.get(`{${showtimeId}}:seat:${seatId}`);
-      if (owner === userId) validSeats.push(seatId);
+      const lockKey = `{${showtimeId}}:seat:${seatId}`;
+      const owner = await this.redis.get(lockKey);
+      if (owner === userId) {
+        validSeats.push(seatId);
+        const remainingTtl = await this.redis.ttl(lockKey);
+        if (remainingTtl > 0) {
+          const seatExpiresAt = Date.now() + remainingTtl * 1000;
+          expiresAt = expiresAt === null ? seatExpiresAt : Math.min(expiresAt, seatExpiresAt);
+        }
+      }
     }
 
     return { seatIds: validSeats, expiresAt };

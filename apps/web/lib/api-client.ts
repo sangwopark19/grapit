@@ -1,16 +1,21 @@
 import { toast } from 'sonner';
+import { apiUrl } from '@/lib/api-url';
 import { useAuthStore } from '@/stores/use-auth-store';
 import {
   STATUS_MESSAGES,
   DEFAULT_ERROR_MESSAGE,
 } from './error-messages';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-
 interface ApiError {
   message: string;
   statusCode: number;
 }
+
+interface ApiClientOptions {
+  showErrorToast?: boolean;
+}
+
+type ApiPath = `/${string}`;
 
 class ApiClientError extends Error {
   statusCode: number;
@@ -31,7 +36,7 @@ async function refreshAccessToken(): Promise<string | null> {
 
   refreshPromise = (async () => {
     try {
-      const res = await fetch(`${API_URL}/api/v1/auth/refresh`, {
+      const res = await fetch(apiUrl('/api/v1/auth/refresh'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -55,8 +60,9 @@ async function refreshAccessToken(): Promise<string | null> {
 
 async function request<T>(
   method: string,
-  path: string,
+  path: ApiPath,
   body?: unknown,
+  options: ApiClientOptions = {},
 ): Promise<T> {
   const { accessToken } = useAuthStore.getState();
 
@@ -78,7 +84,7 @@ async function request<T>(
     config.body = JSON.stringify(body);
   }
 
-  let res = await fetch(`${API_URL}${path}`, config);
+  let res = await fetch(apiUrl(path), config);
 
   // On 401, attempt silent refresh and retry once
   if (res.status === 401 && accessToken) {
@@ -93,7 +99,7 @@ async function request<T>(
 
       // Retry with new token
       headers['Authorization'] = `Bearer ${newToken}`;
-      res = await fetch(`${API_URL}${path}`, { ...config, headers });
+      res = await fetch(apiUrl(path), { ...config, headers });
     } else {
       // Refresh failed -- clear auth and redirect
       useAuthStore.getState().clearAuth();
@@ -115,7 +121,7 @@ async function request<T>(
     }
 
     // 401 is handled above (redirect). No toast needed here.
-    if (status !== 401) {
+    if (status !== 401 && options.showErrorToast !== false) {
       toast.error(errorMessage, {
         description: `오류 코드: ERR-${status}`,
         duration: 5000,
@@ -134,11 +140,16 @@ async function request<T>(
 }
 
 export const apiClient = {
-  get: <T>(path: string) => request<T>('GET', path),
-  post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
-  put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body),
-  patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body),
-  delete: <T>(path: string) => request<T>('DELETE', path),
+  get: <T>(path: ApiPath, options?: ApiClientOptions) =>
+    request<T>('GET', path, undefined, options),
+  post: <T>(path: ApiPath, body?: unknown, options?: ApiClientOptions) =>
+    request<T>('POST', path, body, options),
+  put: <T>(path: ApiPath, body?: unknown, options?: ApiClientOptions) =>
+    request<T>('PUT', path, body, options),
+  patch: <T>(path: ApiPath, body?: unknown, options?: ApiClientOptions) =>
+    request<T>('PATCH', path, body, options),
+  delete: <T>(path: ApiPath, options?: ApiClientOptions) =>
+    request<T>('DELETE', path, undefined, options),
 };
 
 export { ApiClientError };

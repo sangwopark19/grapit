@@ -1,11 +1,10 @@
+import { apiUrl } from '@/lib/api-url';
 import { useAuthStore } from '@/stores/use-auth-store';
 import type { UserProfile } from '@grabit/shared';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-
 export async function initializeAuth(): Promise<void> {
   try {
-    const res = await fetch(`${API_URL}/api/v1/auth/refresh`, {
+    const res = await fetch(apiUrl('/api/v1/auth/refresh'), {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -15,7 +14,7 @@ export async function initializeAuth(): Promise<void> {
       const data = (await res.json()) as { accessToken: string };
 
       // Fetch user profile with new token
-      const userRes = await fetch(`${API_URL}/api/v1/users/me`, {
+      const userRes = await fetch(apiUrl('/api/v1/users/me'), {
         headers: {
           Authorization: `Bearer ${data.accessToken}`,
           'Content-Type': 'application/json',

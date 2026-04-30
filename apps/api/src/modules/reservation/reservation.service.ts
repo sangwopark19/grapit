@@ -2,11 +2,13 @@ import {
   Injectable,
   Inject,
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   InternalServerErrorException,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { eq, and, sql, desc, inArray } from 'drizzle-orm';
 import { DRIZZLE, type DrizzleDB } from '../../database/drizzle.provider.js';
 import {
@@ -18,9 +20,10 @@ import {
   priceTiers,
   venues,
   seatInventories,
+  seatMaps,
 } from '../../database/schema/index.js';
 import { TossPaymentsClient } from '../payment/toss-payments.client.js';
-import { BookingService } from '../booking/booking.service.js';
+import { BookingService, PAYMENT_CONFIRM_LOCK_TTL } from '../booking/booking.service.js';
 import { BookingGateway } from '../booking/booking.gateway.js';
 import type {
   SeatSelection,
@@ -30,6 +33,7 @@ import type {
   ConfirmPaymentRequest,
   PrepareReservationRequest,
   PrepareReservationResponse,
+  SeatMapConfig,
 } from '@grabit/shared';
 
 @Injectable()
@@ -54,41 +58,202 @@ export class ReservationService {
     return `GRP-${dateStr}-${random}`;
   }
 
-  async calculateTotalAmount(seats: SeatSelection[], performanceId: string): Promise<number> {
-    const tiers = await this.db
-      .select()
-      .from(priceTiers)
-      .where(eq(priceTiers.performanceId, performanceId));
+  private assertUniqueSeatIds(seats: SeatSelection[]): void {
+    const uniqueSeatIds = new Set(seats.map((seat) => seat.seatId));
+    if (uniqueSeatIds.size !== seats.length) {
+      throw new BadRequestException('중복된 좌석이 포함되어 있습니다');
+    }
+  }
 
-    const tierMap = new Map(tiers.map((t) => [t.tierName, t.price]));
+  private getSeatTierBySeatId(seatConfig: unknown): Map<string, string> | null {
+    if (!seatConfig || typeof seatConfig !== 'object') return null;
 
-    let total = 0;
-    for (const seat of seats) {
-      const tierPrice = tierMap.get(seat.tierName);
+    const tiers = (seatConfig as SeatMapConfig).tiers;
+    if (!Array.isArray(tiers) || tiers.length === 0) return null;
+
+    const seatTierBySeatId = new Map<string, string>();
+    for (const tier of tiers) {
+      if (!tier || typeof tier.tierName !== 'string' || !Array.isArray(tier.seatIds)) {
+        continue;
+      }
+      for (const seatId of tier.seatIds) {
+        if (typeof seatId === 'string') {
+          seatTierBySeatId.set(seatId, tier.tierName);
+        }
+      }
+    }
+
+    return seatTierBySeatId.size > 0 ? seatTierBySeatId : null;
+  }
+
+  private deriveSeatPosition(
+    seatId: string,
+    fallback: Pick<SeatSelection, 'row' | 'number'>,
+  ): Pick<SeatSelection, 'row' | 'number'> {
+    const hyphenParts = seatId.split('-');
+    if (hyphenParts.length >= 2 && hyphenParts[0] && hyphenParts.slice(1).join('-')) {
+      return { row: hyphenParts[0], number: hyphenParts.slice(1).join('-') };
+    }
+
+    const compactMatch = /^([A-Za-z]+)[-_ ]?(\d+)$/.exec(seatId);
+    if (compactMatch) {
+      return { row: compactMatch[1]!, number: compactMatch[2]! };
+    }
+
+    return fallback;
+  }
+
+  private calculateSeatTotal(seats: SeatSelection[]): number {
+    return seats.reduce((total, seat) => total + seat.price, 0);
+  }
+
+  private async getCanonicalSeatSelections(
+    seats: SeatSelection[],
+    performanceId: string,
+  ): Promise<SeatSelection[]> {
+    this.assertUniqueSeatIds(seats);
+
+    const [tiers, seatMapRows] = await Promise.all([
+      this.db
+        .select()
+        .from(priceTiers)
+        .where(eq(priceTiers.performanceId, performanceId)),
+      this.db
+        .select({ seatConfig: seatMaps.seatConfig })
+        .from(seatMaps)
+        .where(eq(seatMaps.performanceId, performanceId)),
+    ]);
+
+    const tierPriceByName = new Map(tiers.map((tier) => [tier.tierName, tier.price]));
+    const seatTierBySeatId = this.getSeatTierBySeatId(seatMapRows[0]?.seatConfig);
+    if (!seatTierBySeatId) {
+      throw new BadRequestException('좌석 배치 정보가 유효하지 않습니다');
+    }
+
+    return seats.map((seat) => {
+      const tierName = seatTierBySeatId.get(seat.seatId);
+      if (!tierName) {
+        throw new BadRequestException('유효하지 않은 좌석입니다');
+      }
+
+      const tierPrice = tierPriceByName.get(tierName);
       if (tierPrice === undefined) {
         throw new BadRequestException('유효하지 않은 등급입니다');
       }
-      total += tierPrice;
-    }
 
-    return total;
+      const position = this.deriveSeatPosition(seat.seatId, seat);
+
+      return {
+        ...seat,
+        tierName,
+        price: tierPrice,
+        row: position.row,
+        number: position.number,
+      };
+    });
+  }
+
+  async calculateTotalAmount(seats: SeatSelection[], performanceId: string): Promise<number> {
+    const canonicalSeats = await this.getCanonicalSeatSelections(seats, performanceId);
+    return this.calculateSeatTotal(canonicalSeats);
   }
 
   calculateCancelDeadline(showDateTime: Date): Date {
     return new Date(showDateTime.getTime() - 24 * 60 * 60 * 1000);
   }
 
+  private async getReservationSeatIds(reservationId: string): Promise<string[]> {
+    const rows = await this.getReservationSeatSelections(reservationId);
+    return rows.map((row) => row.seatId);
+  }
+
+  private async getReservationSeatSelections(reservationId: string): Promise<SeatSelection[]> {
+    return this.db
+      .select({
+        seatId: reservationSeats.seatId,
+        tierName: reservationSeats.tierName,
+        price: reservationSeats.price,
+        row: reservationSeats.row,
+        number: reservationSeats.number,
+      })
+      .from(reservationSeats)
+      .where(eq(reservationSeats.reservationId, reservationId));
+  }
+
+  private hasSameSeatSelections(left: SeatSelection[], right: SeatSelection[]): boolean {
+    if (left.length !== right.length) return false;
+
+    const signature = (seat: SeatSelection) => [
+      seat.seatId,
+      seat.tierName,
+      seat.price,
+      seat.row,
+      seat.number,
+    ].join('\u0000');
+
+    const leftSignatures = left.map(signature).sort();
+    const rightSignatures = right.map(signature).sort();
+    return leftSignatures.every((value, index) => value === rightSignatures[index]);
+  }
+
   async prepareReservation(
     dto: PrepareReservationRequest,
     userId: string,
   ): Promise<PrepareReservationResponse> {
+    this.assertUniqueSeatIds(dto.seats);
+
     // 1. Idempotency: if a reservation already exists for this orderId, return it
     const [existing] = await this.db
-      .select({ id: reservations.id, tossOrderId: reservations.tossOrderId })
+      .select({
+        id: reservations.id,
+        userId: reservations.userId,
+        showtimeId: reservations.showtimeId,
+        status: reservations.status,
+        tossOrderId: reservations.tossOrderId,
+        totalAmount: reservations.totalAmount,
+      })
       .from(reservations)
       .where(eq(reservations.tossOrderId, dto.orderId));
 
     if (existing) {
+      if (existing.userId !== userId) {
+        throw new NotFoundException('예매 정보를 찾을 수 없습니다. 다시 시도해주세요.');
+      }
+
+      if (existing.status !== 'PENDING_PAYMENT') {
+        throw new ConflictException('이미 처리된 주문 ID입니다. 새 주문 ID로 다시 시도해주세요.');
+      }
+
+      if (existing.showtimeId !== dto.showtimeId) {
+        throw new ConflictException('기존 예매 요청과 일치하지 않습니다. 새 주문 ID로 다시 시도해주세요.');
+      }
+
+      const [existingShowtime] = await this.db
+        .select()
+        .from(showtimes)
+        .where(eq(showtimes.id, existing.showtimeId));
+
+      if (!existingShowtime) {
+        throw new NotFoundException('회차를 찾을 수 없습니다');
+      }
+
+      const canonicalSeats = await this.getCanonicalSeatSelections(
+        dto.seats,
+        existingShowtime.performanceId,
+      );
+      const expectedAmount = this.calculateSeatTotal(canonicalSeats);
+      if (existing.totalAmount !== expectedAmount || dto.amount !== expectedAmount) {
+        throw new ConflictException('기존 예매 요청과 일치하지 않습니다. 새 주문 ID로 다시 시도해주세요.');
+      }
+
+      const existingSeats = await this.getReservationSeatSelections(existing.id);
+      if (!this.hasSameSeatSelections(existingSeats, canonicalSeats)) {
+        throw new ConflictException('기존 예매 요청과 일치하지 않습니다. 새 주문 ID로 다시 시도해주세요.');
+      }
+
+      const existingSeatIds = existingSeats.map((seat) => seat.seatId);
+      await this.bookingService.assertOwnedSeatLocks(userId, existing.showtimeId, existingSeatIds);
+
       return { reservationId: existing.id, orderId: dto.orderId };
     }
 
@@ -102,12 +267,19 @@ export class ReservationService {
       throw new NotFoundException('회차를 찾을 수 없습니다');
     }
 
-    // 3. Calculate expected amount from DB (fraud prevention)
-    const expectedAmount = await this.calculateTotalAmount(dto.seats, showtime.performanceId);
+    // 3. Calculate expected amount from DB and canonical seat map metadata
+    const canonicalSeats = await this.getCanonicalSeatSelections(dto.seats, showtime.performanceId);
+    const expectedAmount = this.calculateSeatTotal(canonicalSeats);
 
     if (expectedAmount !== dto.amount) {
       throw new BadRequestException('금액이 일치하지 않습니다');
     }
+
+    await this.bookingService.assertOwnedSeatLocks(
+      userId,
+      dto.showtimeId,
+      canonicalSeats.map((seat) => seat.seatId),
+    );
 
     // 4. Create pending reservation + seats atomically
     const reservationNumber = this.generateReservationNumber();
@@ -122,7 +294,7 @@ export class ReservationService {
           tossOrderId: dto.orderId,
           reservationNumber,
           status: 'PENDING_PAYMENT',
-          totalAmount: dto.amount,
+          totalAmount: expectedAmount,
           cancelDeadline,
         })
         .returning();
@@ -130,7 +302,7 @@ export class ReservationService {
       const reservationId = reservation!.id;
 
       await tx.insert(reservationSeats).values(
-        dto.seats.map((seat) => ({
+        canonicalSeats.map((seat) => ({
           reservationId,
           seatId: seat.seatId,
           tierName: seat.tierName,
@@ -149,6 +321,97 @@ export class ReservationService {
   async confirmAndCreateReservation(
     dto: ConfirmPaymentRequest,
     userId: string,
+  ): Promise<ReservationDetail> {
+    const confirmLockToken = randomUUID();
+    const confirmLockAcquired = await this.bookingService.acquirePaymentConfirmLock(
+      dto.orderId,
+      confirmLockToken,
+    );
+
+    if (!confirmLockAcquired) {
+      throw new ConflictException('결제 확인이 이미 진행 중입니다.');
+    }
+
+    const refreshTimer = this.startPaymentConfirmLockRefresh(dto.orderId, confirmLockToken);
+
+    try {
+      const lockStillOwned = await this.bookingService.refreshPaymentConfirmLock(
+        dto.orderId,
+        confirmLockToken,
+      );
+      if (!lockStillOwned) {
+        throw new ConflictException('결제 확인이 이미 진행 중입니다.');
+      }
+
+      return await this.confirmAndCreateReservationLocked(dto, userId, confirmLockToken);
+    } finally {
+      clearInterval(refreshTimer);
+      try {
+        await this.bookingService.releasePaymentConfirmLock(dto.orderId, confirmLockToken);
+      } catch (releaseError) {
+        this.logger.error(
+          `Payment confirm lock release failed. orderId=${dto.orderId}`,
+          releaseError instanceof Error ? releaseError.stack : String(releaseError),
+        );
+      }
+    }
+  }
+
+  private startPaymentConfirmLockRefresh(
+    orderId: string,
+    lockToken: string,
+  ): ReturnType<typeof setInterval> {
+    const refreshEveryMs = Math.max(1000, Math.floor(PAYMENT_CONFIRM_LOCK_TTL * 1000 / 2));
+    return setInterval(() => {
+      void this.bookingService.refreshPaymentConfirmLock(orderId, lockToken).catch((refreshError) => {
+        this.logger.error(
+          `Payment confirm lock refresh failed. orderId=${orderId}`,
+          refreshError instanceof Error ? refreshError.stack : String(refreshError),
+        );
+      });
+    }, refreshEveryMs);
+  }
+
+  private startOwnedSeatLockRefresh(
+    userId: string,
+    showtimeId: string,
+    seatIds: string[],
+  ): ReturnType<typeof setInterval> {
+    const refreshEveryMs = Math.max(1000, Math.floor(PAYMENT_CONFIRM_LOCK_TTL * 1000 / 2));
+    return setInterval(() => {
+      void this.bookingService.extendOwnedSeatLocks(
+        userId,
+        showtimeId,
+        seatIds,
+        PAYMENT_CONFIRM_LOCK_TTL,
+      ).catch((refreshError) => {
+        this.logger.error(
+          `Seat lock refresh failed during payment confirm. showtimeId=${showtimeId}`,
+          refreshError instanceof Error ? refreshError.stack : String(refreshError),
+        );
+      });
+    }, refreshEveryMs);
+  }
+
+  private async cancelConfirmedPaymentOrThrow(paymentKey: string, reason: string): Promise<void> {
+    try {
+      await this.tossClient.cancelPayment(paymentKey, reason);
+      this.logger.log(`Compensation cancel succeeded. paymentKey=${paymentKey}`);
+    } catch (cancelError) {
+      this.logger.error(
+        `CRITICAL: compensation cancel failed. paymentKey=${paymentKey}. Manual refund required.`,
+        cancelError instanceof Error ? cancelError.stack : String(cancelError),
+      );
+      throw new InternalServerErrorException(
+        '결제는 승인되었으나 자동 취소에 실패했습니다. 고객센터에 문의해주세요.',
+      );
+    }
+  }
+
+  private async confirmAndCreateReservationLocked(
+    dto: ConfirmPaymentRequest,
+    userId: string,
+    confirmLockToken: string,
   ): Promise<ReservationDetail> {
     // 1. Idempotency: check if payment already exists for this orderId
     const [existingPayment] = await this.db
@@ -175,9 +438,12 @@ export class ReservationService {
       throw new NotFoundException('예매 정보를 찾을 수 없습니다. 다시 시도해주세요.');
     }
 
-    if (reservation.status !== 'PENDING_PAYMENT') {
-      // Already confirmed — return detail
+    if (reservation.status === 'CONFIRMED') {
       return this.getReservationDetail(reservation.id, userId);
+    }
+
+    if (reservation.status !== 'PENDING_PAYMENT') {
+      throw new ConflictException('좌석 점유 시간이 만료되었습니다. 좌석을 다시 선택해주세요.');
     }
 
     // 3. Amount validation against the prepared reservation
@@ -185,12 +451,57 @@ export class ReservationService {
       throw new BadRequestException('금액이 일치하지 않습니다');
     }
 
+    const pendingSeatIds = await this.getReservationSeatIds(reservation.id);
+    await this.bookingService.extendOwnedSeatLocks(
+      userId,
+      reservation.showtimeId,
+      pendingSeatIds,
+      PAYMENT_CONFIRM_LOCK_TTL,
+    );
+
+    const seatLockRefreshTimer = this.startOwnedSeatLockRefresh(userId, reservation.showtimeId, pendingSeatIds);
+    try {
     // 4. Call Toss Payments confirm API
     const tossResponse = await this.tossClient.confirmPayment({
       paymentKey: dto.paymentKey,
       orderId: dto.orderId,
       amount: dto.amount,
     });
+
+    let confirmLockStillOwned: boolean;
+    try {
+      confirmLockStillOwned = await this.bookingService.refreshPaymentConfirmLock(
+        dto.orderId,
+        confirmLockToken,
+      );
+    } catch (lockError) {
+      this.logger.error(
+        `Payment confirm lock refresh failed after Toss confirm. paymentKey=${tossResponse.paymentKey}, orderId=${dto.orderId}`,
+        lockError instanceof Error ? lockError.stack : String(lockError),
+      );
+      await this.cancelConfirmedPaymentOrThrow(tossResponse.paymentKey, '결제 확인 상태 검증 실패로 인한 자동 취소');
+      throw new InternalServerErrorException(
+        '결제는 승인되었으나 처리 중 오류가 발생했습니다. 자동 취소를 시도했습니다. 고객센터에 문의해주세요.',
+      );
+    }
+    if (!confirmLockStillOwned) {
+      this.logger.error(
+        `Payment confirm lock ownership lost after Toss confirm. paymentKey=${tossResponse.paymentKey}, orderId=${dto.orderId}`,
+      );
+      await this.cancelConfirmedPaymentOrThrow(tossResponse.paymentKey, '결제 확인 중복 처리로 인한 자동 취소');
+      throw new ConflictException('결제 확인이 이미 진행 중입니다.');
+    }
+
+    try {
+      await this.bookingService.assertOwnedSeatLocks(userId, reservation.showtimeId, pendingSeatIds);
+    } catch (lockError) {
+      this.logger.error(
+        `Seat lock ownership lost after Toss confirm. paymentKey=${tossResponse.paymentKey}, orderId=${dto.orderId}`,
+        lockError instanceof Error ? lockError.stack : String(lockError),
+      );
+      await this.cancelConfirmedPaymentOrThrow(tossResponse.paymentKey, '좌석 점유 만료로 인한 자동 취소');
+      throw lockError;
+    }
 
     // 5. Update reservation status + create payment record + mark seats sold
     try {
@@ -213,74 +524,91 @@ export class ReservationService {
           paidAt: new Date(tossResponse.approvedAt),
         });
 
-        // Mark seats as sold in seat_inventories
-        const resSeats = await tx
-          .select({ seatId: reservationSeats.seatId })
-          .from(reservationSeats)
-          .where(eq(reservationSeats.reservationId, reservation.id));
-
-        for (const seat of resSeats) {
-          const [existing] = await tx
-            .select({ id: seatInventories.id })
-            .from(seatInventories)
+        // Mark seats sold only when no committed sold row already exists.
+        for (const seatId of pendingSeatIds) {
+          const updated = await tx
+            .update(seatInventories)
+            .set({ status: 'sold', soldAt: new Date(), lockedBy: null, lockedUntil: null })
             .where(
               and(
                 eq(seatInventories.showtimeId, reservation.showtimeId),
-                eq(seatInventories.seatId, seat.seatId),
+                eq(seatInventories.seatId, seatId),
+                sql`${seatInventories.status} <> 'sold'`,
               ),
-            );
+            )
+            .returning({ id: seatInventories.id });
 
-          if (existing) {
-            await tx
-              .update(seatInventories)
-              .set({ status: 'sold', soldAt: new Date(), lockedBy: null, lockedUntil: null })
-              .where(eq(seatInventories.id, existing.id));
-          } else {
-            await tx
-              .insert(seatInventories)
-              .values({
-                showtimeId: reservation.showtimeId,
-                seatId: seat.seatId,
-                status: 'sold',
-                soldAt: new Date(),
-              });
+          if (updated.length > 0) continue;
+
+          const inserted = await tx
+            .insert(seatInventories)
+            .values({
+              showtimeId: reservation.showtimeId,
+              seatId,
+              status: 'sold',
+              soldAt: new Date(),
+            })
+            .onConflictDoNothing()
+            .returning({ id: seatInventories.id });
+
+          if (inserted.length === 0) {
+            throw new ConflictException('이미 판매된 좌석입니다');
           }
         }
       });
     } catch (dbError) {
+      try {
+        const [committedPayment] = await this.db
+          .select()
+          .from(payments)
+          .where(eq(payments.tossOrderId, dto.orderId));
+
+        if (committedPayment) {
+          this.logger.warn(
+            `Payment row already exists after confirm transaction failure. orderId=${dto.orderId}, reservationId=${committedPayment.reservationId}`,
+          );
+          return this.getReservationDetail(committedPayment.reservationId, userId);
+        }
+      } catch (lookupError) {
+        this.logger.error(
+          `Failed to re-read payment after confirm transaction failure. orderId=${dto.orderId}`,
+          lookupError instanceof Error ? lookupError.stack : String(lookupError),
+        );
+      }
+
       // Compensation: attempt to cancel the Toss payment
       this.logger.error(
         `DB transaction failed after Toss confirm. paymentKey=${tossResponse.paymentKey}, orderId=${dto.orderId}`,
         dbError instanceof Error ? dbError.stack : String(dbError),
       );
-      try {
-        await this.tossClient.cancelPayment(tossResponse.paymentKey, '서버 오류로 인한 자동 취소');
-        this.logger.log(`Compensation cancel succeeded. paymentKey=${tossResponse.paymentKey}`);
-      } catch (cancelError) {
-        this.logger.error(
-          `CRITICAL: Compensation cancel also failed. paymentKey=${tossResponse.paymentKey}. Manual refund required.`,
-          cancelError instanceof Error ? cancelError.stack : String(cancelError),
-        );
+      await this.cancelConfirmedPaymentOrThrow(tossResponse.paymentKey, '서버 오류로 인한 자동 취소');
+      if (dbError instanceof ConflictException) {
+        throw dbError;
       }
       throw new InternalServerErrorException(
         '결제는 승인되었으나 처리 중 오류가 발생했습니다. 자동 취소를 시도했습니다. 고객센터에 문의해주세요.',
       );
     }
 
-    // Release Redis locks for this user's seats in this showtime
-    await this.bookingService.unlockAllSeats(userId, reservation.showtimeId);
+    clearInterval(seatLockRefreshTimer);
+    try {
+      await this.bookingService.consumeOwnedSeatLocks(userId, reservation.showtimeId, pendingSeatIds);
+    } catch (cleanupError) {
+      this.logger.warn(
+        `Post-commit seat lock cleanup failed. reservationId=${reservation.id}`,
+        cleanupError instanceof Error ? cleanupError.stack : String(cleanupError),
+      );
+    }
 
-    // Broadcast sold status via WebSocket for each seat
-    const confirmedSeats = await this.db
-      .select({ seatId: reservationSeats.seatId })
-      .from(reservationSeats)
-      .where(eq(reservationSeats.reservationId, reservation.id));
-
-    for (const seat of confirmedSeats) {
-      this.bookingGateway.broadcastSeatUpdate(reservation.showtimeId, seat.seatId, 'sold', userId);
+    // Broadcast sold status via WebSocket after the DB transaction commits.
+    for (const seatId of pendingSeatIds) {
+      this.bookingGateway.broadcastSeatUpdate(reservation.showtimeId, seatId, 'sold', userId);
     }
 
     return this.getReservationDetail(reservation.id, userId);
+    } finally {
+      clearInterval(seatLockRefreshTimer);
+    }
   }
 
   async getMyReservations(userId: string, status?: ReservationStatus): Promise<ReservationListItem[]> {
@@ -580,7 +908,7 @@ export class ReservationService {
       return;
     }
 
-    await this.db
+    const [cancelled] = await this.db
       .update(reservations)
       .set({
         status: 'CANCELLED',
@@ -588,6 +916,17 @@ export class ReservationService {
         cancelReason: '좌석 점유 만료',
         updatedAt: new Date(),
       })
-      .where(eq(reservations.id, reservation.id));
+      .where(
+        and(
+          eq(reservations.id, reservation.id),
+          eq(reservations.userId, userId),
+          eq(reservations.status, 'PENDING_PAYMENT'),
+        ),
+      )
+      .returning({ id: reservations.id });
+
+    if (!cancelled) {
+      return;
+    }
   }
 }

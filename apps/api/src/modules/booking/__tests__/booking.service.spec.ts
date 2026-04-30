@@ -1,7 +1,17 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ConflictException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { BookingService } from '../booking.service.js';
+import {
+  ASSERT_OWNED_SEAT_LOCKS_LUA,
+  BookingService,
+  CONSUME_OWNED_SEAT_LOCKS_LUA,
+  EXTEND_OWNED_SEAT_LOCKS_LUA,
+  LOCK_EXPIRED_MESSAGE,
+  LOCK_OTHER_OWNER_MESSAGE,
+  PAYMENT_CONFIRM_LOCK_TTL,
+  REFRESH_PAYMENT_CONFIRM_LOCK_LUA,
+  RELEASE_PAYMENT_CONFIRM_LOCK_LUA,
+} from '../booking.service.js';
 import type { BookingGateway } from '../booking.gateway.js';
 
 // Mock Redis client
@@ -77,7 +87,7 @@ describe('BookingService', () => {
       const result = await service.lockSeat(userId, showtimeId, seatId);
       const after = Date.now();
 
-      // Verify redis.eval called with script containing SMEMBERS + EXISTS loop
+      // Verify redis.eval called with script containing SMEMBERS + owner check loop
       // ioredis flat signature: eval(script, numKeys, ...keysAndArgs)
       expect(mockRedis.eval).toHaveBeenCalledOnce();
       const callArgs = mockRedis.eval.mock.calls[0] as unknown[];
@@ -85,7 +95,8 @@ describe('BookingService', () => {
       const numKeys = callArgs[1] as number;
       const flatKeys = callArgs.slice(2, 2 + numKeys) as string[];
       expect(script).toContain('SMEMBERS');
-      expect(script).toContain('EXISTS');
+      expect(script).toContain('GET');
+      expect(script).toContain('owner == ARGV[1]');
       expect(numKeys).toBe(3);
       expect(flatKeys).toContain(`{${showtimeId}}:user-seats:${userId}`);
       expect(flatKeys).toContain(`{${showtimeId}}:seat:${seatId}`);
@@ -306,6 +317,200 @@ describe('BookingService', () => {
 
       expect(result.unlockedSeats).toEqual([]);
       expect(mockGateway.broadcastSeatUpdate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('lock ownership helpers', () => {
+    it('assertOwnedSeatLocks succeeds when all requested seat locks belong to the user', async () => {
+      mockRedis.eval.mockResolvedValue([1, 'OK', '2', '']);
+
+      await expect(service.assertOwnedSeatLocks(userId, showtimeId, ['A-1', 'A-2']))
+        .resolves
+        .toBeUndefined();
+
+      expect(mockRedis.eval).toHaveBeenCalledOnce();
+      expect(mockRedis.eval.mock.calls[0]?.[0]).toBe(ASSERT_OWNED_SEAT_LOCKS_LUA);
+    });
+
+    it('assertOwnedSeatLocks rejects missing or expired locks with lock-expired message', async () => {
+      mockRedis.eval.mockResolvedValue([0, 'MISSING', 'A-2', '']);
+
+      await expect(service.assertOwnedSeatLocks(userId, showtimeId, ['A-1', 'A-2']))
+        .rejects
+        .toThrow(LOCK_EXPIRED_MESSAGE);
+    });
+
+    it('assertOwnedSeatLocks rejects other-user locks with other-user message', async () => {
+      mockRedis.eval.mockResolvedValue([0, 'OTHER_OWNER', 'A-2', 'other-user']);
+
+      await expect(service.assertOwnedSeatLocks(userId, showtimeId, ['A-1', 'A-2']))
+        .rejects
+        .toThrow(LOCK_OTHER_OWNER_MESSAGE);
+    });
+
+    it('consumeOwnedSeatLocks uses KEYS [userSeatsKey, lockedSeatsKey, ...seatLockKeys] and ARGV [userId, ...seatIds]', async () => {
+      mockRedis.eval.mockResolvedValue([1, 'OK', '2', '']);
+
+      await expect(service.consumeOwnedSeatLocks(userId, showtimeId, ['A-1', 'A-2']))
+        .resolves
+        .toEqual({ consumedSeatIds: ['A-1', 'A-2'] });
+
+      expect(mockRedis.eval).toHaveBeenCalledOnce();
+      const callArgs = mockRedis.eval.mock.calls[0] as unknown[];
+      const script = callArgs[0] as string;
+      const numKeys = callArgs[1] as number;
+      const flatKeys = callArgs.slice(2, 2 + numKeys) as string[];
+      const flatArgs = callArgs.slice(2 + numKeys) as string[];
+      expect(script).toBe(CONSUME_OWNED_SEAT_LOCKS_LUA);
+      expect(numKeys).toBe(4);
+      expect(flatKeys).toEqual([
+        `{${showtimeId}}:user-seats:${userId}`,
+        `{${showtimeId}}:locked-seats`,
+        `{${showtimeId}}:seat:A-1`,
+        `{${showtimeId}}:seat:A-2`,
+      ]);
+      expect(flatArgs).toEqual([userId, 'A-1', 'A-2']);
+    });
+
+    it('consumeOwnedSeatLocks preserves unrelated same-showtime locks', async () => {
+      mockRedis.eval.mockResolvedValue([1, 'OK', '2', '']);
+
+      await service.consumeOwnedSeatLocks(userId, showtimeId, ['A-1', 'A-2']);
+
+      const callArgs = mockRedis.eval.mock.calls[0] as unknown[];
+      const numKeys = callArgs[1] as number;
+      const flatKeys = callArgs.slice(2, 2 + numKeys) as string[];
+      expect(flatKeys).not.toContain(`{${showtimeId}}:seat:A-3`);
+      expect(mockRedis.del).not.toHaveBeenCalled();
+      expect(mockRedis.srem).not.toHaveBeenCalled();
+    });
+
+    it('extendOwnedSeatLocks verifies ownership and extends each requested lock atomically', async () => {
+      mockRedis.eval.mockResolvedValue([1, 'OK', '2', '']);
+
+      await expect(service.extendOwnedSeatLocks(
+        userId,
+        showtimeId,
+        ['A-1', 'A-2'],
+        PAYMENT_CONFIRM_LOCK_TTL,
+      )).resolves.toBeUndefined();
+
+      expect(mockRedis.eval).toHaveBeenCalledOnce();
+      const callArgs = mockRedis.eval.mock.calls[0] as unknown[];
+      const script = callArgs[0] as string;
+      const numKeys = callArgs[1] as number;
+      const flatKeys = callArgs.slice(2, 2 + numKeys) as string[];
+      const flatArgs = callArgs.slice(2 + numKeys) as string[];
+      expect(script).toBe(EXTEND_OWNED_SEAT_LOCKS_LUA);
+      expect(numKeys).toBe(3);
+      expect(flatKeys).toEqual([
+        `{${showtimeId}}:user-seats:${userId}`,
+        `{${showtimeId}}:seat:A-1`,
+        `{${showtimeId}}:seat:A-2`,
+      ]);
+      expect(flatArgs).toEqual([userId, String(PAYMENT_CONFIRM_LOCK_TTL), 'A-1', 'A-2']);
+    });
+
+    it('extendOwnedSeatLocks rejects missing locks with lock-expired message', async () => {
+      mockRedis.eval.mockResolvedValue([0, 'MISSING', 'A-2', '']);
+
+      await expect(service.extendOwnedSeatLocks(
+        userId,
+        showtimeId,
+        ['A-1', 'A-2'],
+        PAYMENT_CONFIRM_LOCK_TTL,
+      )).rejects.toThrow(LOCK_EXPIRED_MESSAGE);
+    });
+  });
+
+  describe('payment confirm lock helpers', () => {
+    it('acquirePaymentConfirmLock stores an order-level NX lock with a 60 second TTL', async () => {
+      mockRedis.set.mockResolvedValue('OK');
+
+      await expect(service.acquirePaymentConfirmLock('order-123', 'token-123'))
+        .resolves
+        .toBe(true);
+
+      expect(mockRedis.set).toHaveBeenCalledWith(
+        '{payment-confirm}:order-123',
+        'token-123',
+        'EX',
+        60,
+        'NX',
+      );
+    });
+
+    it('acquirePaymentConfirmLock returns false when another confirm owns the order lock', async () => {
+      mockRedis.set.mockResolvedValue(null);
+
+      await expect(service.acquirePaymentConfirmLock('order-123', 'token-123'))
+        .resolves
+        .toBe(false);
+    });
+
+    it('releasePaymentConfirmLock compares the lock token before deleting', async () => {
+      mockRedis.eval.mockResolvedValue(1);
+
+      await service.releasePaymentConfirmLock('order-123', 'token-123');
+
+      expect(mockRedis.eval).toHaveBeenCalledWith(
+        RELEASE_PAYMENT_CONFIRM_LOCK_LUA,
+        1,
+        '{payment-confirm}:order-123',
+        'token-123',
+      );
+    });
+
+    it('refreshPaymentConfirmLock extends only a matching order-level lock token', async () => {
+      mockRedis.eval.mockResolvedValue(1);
+
+      await expect(service.refreshPaymentConfirmLock('order-123', 'token-123'))
+        .resolves
+        .toBe(true);
+
+      expect(mockRedis.eval).toHaveBeenCalledWith(
+        REFRESH_PAYMENT_CONFIRM_LOCK_LUA,
+        1,
+        '{payment-confirm}:order-123',
+        'token-123',
+        String(PAYMENT_CONFIRM_LOCK_TTL),
+      );
+    });
+
+    it('refreshPaymentConfirmLock returns false when the order lock token changed', async () => {
+      mockRedis.eval.mockResolvedValue(0);
+
+      await expect(service.refreshPaymentConfirmLock('order-123', 'token-123'))
+        .resolves
+        .toBe(false);
+    });
+  });
+
+  describe('getMyLocks', () => {
+    it('uses hash-tagged seat lock keys and returns the earliest valid TTL', async () => {
+      const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(1_000_000);
+      mockRedis.smembers.mockResolvedValue(['A-1', 'A-2', 'A-3']);
+      mockRedis.get
+        .mockResolvedValueOnce(userId)
+        .mockResolvedValueOnce(userId)
+        .mockResolvedValueOnce('other-user');
+      mockRedis.ttl
+        .mockResolvedValueOnce(120)
+        .mockResolvedValueOnce(60);
+
+      const result = await service.getMyLocks(userId, showtimeId);
+
+      expect(result).toEqual({
+        seatIds: ['A-1', 'A-2'],
+        expiresAt: 1_000_000 + 60_000,
+      });
+      expect(mockRedis.get).toHaveBeenCalledWith(`{${showtimeId}}:seat:A-1`);
+      expect(mockRedis.get).toHaveBeenCalledWith(`{${showtimeId}}:seat:A-2`);
+      expect(mockRedis.get).toHaveBeenCalledWith(`{${showtimeId}}:seat:A-3`);
+      expect(mockRedis.ttl).toHaveBeenCalledWith(`{${showtimeId}}:seat:A-1`);
+      expect(mockRedis.ttl).toHaveBeenCalledWith(`{${showtimeId}}:seat:A-2`);
+      expect(mockRedis.ttl).not.toHaveBeenCalledWith(`seat:${showtimeId}:A-1`);
+      nowSpy.mockRestore();
     });
   });
 

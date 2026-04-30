@@ -165,4 +165,149 @@ test.describe('Toss Payments E2E', () => {
     );
     await expect(page.getByText(/카드 승인 거절|결제에 실패/)).toBeVisible({ timeout: 5000 });
   });
+
+  test('lock ownership: prepare 409 surfaces server message and does not request Toss payment', async ({
+    page,
+  }) => {
+    let confirmIntercepted = false;
+    const perfId = 'e2e-test-performance';
+
+    await loginAsTestUser(page);
+    await injectBookingFixture(page, {
+      performanceId: perfId,
+      showtimeId: 'e2e-test-showtime',
+      seats: [{ seatId: 's1', tierName: 'VIP', price: 50000, row: 'A', number: '1' }],
+      performanceTitle: 'E2E Test Performance',
+      showDateTime: new Date(Date.now() + 86400000).toISOString(),
+      venue: 'E2E Venue',
+    });
+
+    await page.route('**/api/v1/reservations/prepare', async (route: Route) => {
+      await route.fulfill({
+        status: 409,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          statusCode: 409,
+          message: '좌석 점유 시간이 만료되었습니다. 좌석을 다시 선택해주세요.',
+          error: 'Conflict',
+        }),
+      });
+    });
+    await page.route('**/api/v1/payments/confirm', async (route: Route) => {
+      confirmIntercepted = true;
+      await route.fulfill({ status: 500, body: 'unexpected confirm call' });
+    });
+
+    await page.goto(`/booking/${perfId}/confirm`);
+    await expect(page).toHaveURL(/\/confirm/);
+    await expect(page.locator('#payment-method iframe')).toBeVisible({ timeout: 20000 });
+
+    await page.getByLabel('전체 동의').click();
+    await page.getByRole('button', { name: '결제하기' }).click();
+
+    await expect(page.getByText('좌석 점유 시간이 만료되었습니다. 좌석을 다시 선택해주세요.')).toBeVisible({
+      timeout: 5000,
+    });
+    await expect(page.getByRole('button', { name: '좌석 다시 선택하기' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '좌석을 다시 선택해주세요' })).toBeDisabled();
+    await expect.poll(() => confirmIntercepted).toBe(false);
+    await expect(page).toHaveURL(/\/booking\/e2e-test-performance\/confirm/);
+  });
+
+  test('lock ownership: confirm 409 renders failed state instead of booking success', async ({
+    page,
+  }) => {
+    await loginAsTestUser(page);
+
+    await page.route('**/api/v1/payments/confirm', async (route: Route) => {
+      await route.fulfill({
+        status: 409,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          statusCode: 409,
+          message: '이미 다른 사용자가 선택한 좌석입니다.',
+          error: 'Conflict',
+        }),
+      });
+    });
+    await page.route('**/api/v1/reservations?orderId=**', async (route: Route) => {
+      await route.fulfill({
+        status: 404,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          statusCode: 404,
+          message: '예매 정보를 찾을 수 없습니다.',
+          error: 'Not Found',
+        }),
+      });
+    });
+
+    await page.goto(
+      '/booking/e2e-test-performance/complete?paymentKey=test_payment_key_lock_failure&orderId=test_order_lock_failure&amount=50000',
+    );
+
+    await expect(page.getByText('예매를 완료하지 못했습니다')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('이미 다른 사용자가 선택한 좌석입니다.')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('button', { name: '예매 내역 확인' })).toBeVisible();
+    await expect(page.getByText(/예매가 완료|완료되었습니다/)).not.toBeVisible();
+  });
+
+  test('complete page: recovery failure after non-lock confirm error renders terminal failed state', async ({
+    page,
+  }) => {
+    await loginAsTestUser(page);
+
+    await page.route('**/api/v1/payments/confirm', async (route: Route) => {
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          statusCode: 500,
+          message: '결제 승인 후 처리 중 오류가 발생했습니다.',
+          error: 'Internal Server Error',
+        }),
+      });
+    });
+    await page.route('**/api/v1/reservations?orderId=**', async (route: Route) => {
+      await route.fulfill({
+        status: 404,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          statusCode: 404,
+          message: '예매 정보를 찾을 수 없습니다.',
+          error: 'Not Found',
+        }),
+      });
+    });
+
+    await page.goto(
+      '/booking/e2e-test-performance/complete?paymentKey=test_payment_key_recovery_failure&orderId=test_order_recovery_failure&amount=50000',
+    );
+
+    await expect(page.getByText('예매를 완료하지 못했습니다')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('결제 확인에 실패했습니다. 예매 내역을 확인해주세요.')).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.getByRole('button', { name: '예매 내역 확인' })).toBeVisible();
+    await expect(page.locator('.animate-spin')).not.toBeVisible();
+  });
+
+  test('complete page: missing or invalid amount renders invalid access without confirm request', async ({
+    page,
+  }) => {
+    let confirmIntercepted = false;
+    await loginAsTestUser(page);
+
+    await page.route('**/api/v1/payments/confirm', async (route: Route) => {
+      confirmIntercepted = true;
+      await route.fulfill({ status: 500, body: 'unexpected confirm call' });
+    });
+
+    await page.goto(
+      '/booking/e2e-test-performance/complete?paymentKey=test_payment_key_invalid_amount&orderId=test_order_invalid_amount&amount=abc',
+    );
+
+    await expect(page.getByText('잘못된 접근입니다.')).toBeVisible({ timeout: 5000 });
+    await expect.poll(() => confirmIntercepted).toBe(false);
+  });
 });

@@ -1,6 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { ConfigService } from '@nestjs/config';
 import IORedis from 'ioredis';
+import {
+  ASSERT_OWNED_SEAT_LOCKS_LUA,
+  CONSUME_OWNED_SEAT_LOCKS_LUA,
+  EXTEND_OWNED_SEAT_LOCKS_LUA,
+  REFRESH_PAYMENT_CONFIRM_LOCK_LUA,
+  RELEASE_PAYMENT_CONFIRM_LOCK_LUA,
+} from '../../booking.service.js';
 import { redisProvider, REDIS_CLIENT } from '../redis.provider.js';
 import {
   smsAttemptsKey,
@@ -104,6 +111,11 @@ describe('redisProvider factory', () => {
       decr: (key: string) => Promise<number>;
       ping: () => Promise<string>;
       pttl: (key: string) => Promise<number>;
+      ttl: (key: string) => Promise<number>;
+      eval: (script: string, numKeys: number, ...keysAndArgs: (string | number)[]) => Promise<unknown>;
+      sadd: (key: string, ...members: string[]) => Promise<number>;
+      srem: (key: string, ...members: string[]) => Promise<number>;
+      smembers: (key: string) => Promise<string[]>;
       pipeline: () => {
         set: (key: string, value: string, ...args: unknown[]) => ReturnType<MemRedis['pipeline']>;
         del: (...keys: string[]) => ReturnType<MemRedis['pipeline']>;
@@ -150,6 +162,18 @@ describe('redisProvider factory', () => {
       expect(await redis.get('cache:perf:123')).toBe('{"v":1}');
     });
 
+    it('set(key, value) clears a previous TTL like real Redis', async () => {
+      const redis = createMock();
+      await redis.set('cache:ttl-clear', 'expires', 'EX', 60);
+      expect(await redis.pttl('cache:ttl-clear')).toBeGreaterThan(0);
+
+      await redis.set('cache:ttl-clear', 'persistent');
+
+      expect(await redis.get('cache:ttl-clear')).toBe('persistent');
+      expect(await redis.pttl('cache:ttl-clear')).toBe(-1);
+      expect(await redis.ttl('cache:ttl-clear')).toBe(-1);
+    });
+
     it('decr() decrements and can go below zero (rollback parity with real Redis)', async () => {
       const redis = createMock();
       // [Phase 14 / WR-01] Source the key via sms.service's exported builder so
@@ -183,6 +207,223 @@ describe('redisProvider factory', () => {
 
       // Post-pipeline state: OTP stored with TTL (Phase 14 hash-tag form)
       expect(await redis.get(smsOtpKey(TEST_PHONE))).toBe('654321');
+    });
+
+    it('del() deletes string keys, set keys, and returns the number of removed keys', async () => {
+      const redis = createMock();
+      await redis.set('string:key', 'value', 'EX', 60);
+      await redis.sadd('set:key', 'A-1', 'A-2');
+
+      await expect(redis.del('string:key', 'set:key', 'missing:key'))
+        .resolves
+        .toBe(2);
+
+      expect(await redis.get('string:key')).toBeNull();
+      expect(await redis.smembers('set:key')).toEqual([]);
+    });
+
+    describe('lock ownership Lua parity', () => {
+      const showtimeId = 'showtime-owned';
+      const userId = 'user-123';
+      const userSeatsKey = `{${showtimeId}}:user-seats:${userId}`;
+      const lockedSeatsKey = `{${showtimeId}}:locked-seats`;
+      const seatA1Key = `{${showtimeId}}:seat:A-1`;
+      const seatA2Key = `{${showtimeId}}:seat:A-2`;
+
+      it('ASSERT_OWNED_SEAT_LOCKS_LUA returns success tuple when every requested lock is owned', async () => {
+        const redis = createMock();
+        await redis.set(seatA1Key, userId);
+        await redis.set(seatA2Key, userId);
+
+        await expect(redis.eval(
+          ASSERT_OWNED_SEAT_LOCKS_LUA,
+          2,
+          seatA1Key,
+          seatA2Key,
+          userId,
+          'A-1',
+          'A-2',
+        )).resolves.toEqual([1, 'OK', '2', '']);
+      });
+
+      it('ASSERT_OWNED_SEAT_LOCKS_LUA returns MISSING tuple for missing or expired locks', async () => {
+        const redis = createMock();
+        await redis.set(seatA1Key, userId);
+
+        await expect(redis.eval(
+          ASSERT_OWNED_SEAT_LOCKS_LUA,
+          2,
+          seatA1Key,
+          seatA2Key,
+          userId,
+          'A-1',
+          'A-2',
+        )).resolves.toEqual([0, 'MISSING', 'A-2', '']);
+      });
+
+      it('ASSERT_OWNED_SEAT_LOCKS_LUA returns OTHER_OWNER tuple with current owner', async () => {
+        const redis = createMock();
+        await redis.set(seatA1Key, userId);
+        await redis.set(seatA2Key, 'other-user');
+
+        await expect(redis.eval(
+          ASSERT_OWNED_SEAT_LOCKS_LUA,
+          2,
+          seatA1Key,
+          seatA2Key,
+          userId,
+          'A-1',
+          'A-2',
+        )).resolves.toEqual([0, 'OTHER_OWNER', 'A-2', 'other-user']);
+      });
+
+      it('lock seat cleanup does not count stale user-seat members owned by another user', async () => {
+        const redis = createMock();
+        const otherSeatKey = `{${showtimeId}}:seat:A-3`;
+        const newSeatKey = `{${showtimeId}}:seat:A-4`;
+        await redis.set(seatA1Key, userId);
+        await redis.set(seatA2Key, userId);
+        await redis.set(otherSeatKey, 'other-user');
+        await redis.sadd(userSeatsKey, 'A-1', 'A-2', 'A-3');
+        await redis.sadd(lockedSeatsKey, 'A-1', 'A-2', 'A-3');
+
+        await expect(redis.eval(
+          'lock-seat-lua',
+          3,
+          userSeatsKey,
+          newSeatKey,
+          lockedSeatsKey,
+          userId,
+          '600',
+          '3',
+          'A-4',
+          `{${showtimeId}}:seat:`,
+        )).resolves.toEqual([1, newSeatKey, 'A-4']);
+
+        expect(await redis.get(newSeatKey)).toBe(userId);
+        expect(await redis.smembers(userSeatsKey)).not.toContain('A-3');
+        expect(await redis.smembers(lockedSeatsKey)).toContain('A-3');
+      });
+
+      it('CONSUME_OWNED_SEAT_LOCKS_LUA returns success tuple and preserves unrelated same-showtime locks', async () => {
+        const redis = createMock();
+        const seatA3Key = `{${showtimeId}}:seat:A-3`;
+        await redis.set(seatA1Key, userId);
+        await redis.set(seatA2Key, userId);
+        await redis.set(seatA3Key, userId);
+        await redis.sadd(userSeatsKey, 'A-1', 'A-2', 'A-3');
+        await redis.sadd(lockedSeatsKey, 'A-1', 'A-2', 'A-3');
+
+        await expect(redis.eval(
+          CONSUME_OWNED_SEAT_LOCKS_LUA,
+          4,
+          userSeatsKey,
+          lockedSeatsKey,
+          seatA1Key,
+          seatA2Key,
+          userId,
+          'A-1',
+          'A-2',
+        )).resolves.toEqual([1, 'OK', '2', '']);
+
+        expect(await redis.get(seatA1Key)).toBeNull();
+        expect(await redis.get(seatA2Key)).toBeNull();
+        expect(await redis.get(seatA3Key)).toBe(userId);
+        expect(await redis.smembers(userSeatsKey)).toContain('A-3');
+        expect(await redis.smembers(lockedSeatsKey)).toContain('A-3');
+      });
+
+      it('EXTEND_OWNED_SEAT_LOCKS_LUA extends owned seat lock TTLs without consuming them', async () => {
+        const redis = createMock();
+        await redis.set(seatA1Key, userId, 'EX', 10);
+        await redis.set(seatA2Key, userId, 'EX', 10);
+        await redis.sadd(userSeatsKey, 'A-1', 'A-2');
+        await redis.expire(userSeatsKey, 10);
+
+        await expect(redis.eval(
+          EXTEND_OWNED_SEAT_LOCKS_LUA,
+          3,
+          userSeatsKey,
+          seatA1Key,
+          seatA2Key,
+          userId,
+          '60',
+          'A-1',
+          'A-2',
+        )).resolves.toEqual([1, 'OK', '2', '']);
+
+        expect(await redis.get(seatA1Key)).toBe(userId);
+        expect(await redis.get(seatA2Key)).toBe(userId);
+        expect(await redis.smembers(userSeatsKey)).toEqual(['A-1', 'A-2']);
+        expect(await redis.ttl(seatA1Key)).toBeGreaterThan(10);
+        expect(await redis.ttl(userSeatsKey)).toBeGreaterThan(10);
+      });
+
+      it('EXTEND_OWNED_SEAT_LOCKS_LUA does not shorten longer existing TTLs', async () => {
+        const redis = createMock();
+        await redis.set(seatA1Key, userId, 'EX', 300);
+        await redis.sadd(userSeatsKey, 'A-1');
+        await redis.expire(userSeatsKey, 300);
+
+        await expect(redis.eval(
+          EXTEND_OWNED_SEAT_LOCKS_LUA,
+          2,
+          userSeatsKey,
+          seatA1Key,
+          userId,
+          '60',
+          'A-1',
+        )).resolves.toEqual([1, 'OK', '1', '']);
+
+        expect(await redis.ttl(seatA1Key)).toBeGreaterThan(60);
+        expect(await redis.ttl(userSeatsKey)).toBeGreaterThan(60);
+      });
+
+      it('RELEASE_PAYMENT_CONFIRM_LOCK_LUA deletes only the matching order lock token', async () => {
+        const redis = createMock();
+        const lockKey = '{payment-confirm}:order-123';
+        await redis.set(lockKey, 'token-123', 'EX', 60);
+
+        await expect(redis.eval(
+          RELEASE_PAYMENT_CONFIRM_LOCK_LUA,
+          1,
+          lockKey,
+          'wrong-token',
+        )).resolves.toBe(0);
+        expect(await redis.get(lockKey)).toBe('token-123');
+
+        await expect(redis.eval(
+          RELEASE_PAYMENT_CONFIRM_LOCK_LUA,
+          1,
+          lockKey,
+          'token-123',
+        )).resolves.toBe(1);
+        expect(await redis.get(lockKey)).toBeNull();
+      });
+
+      it('REFRESH_PAYMENT_CONFIRM_LOCK_LUA extends only the matching order lock token', async () => {
+        const redis = createMock();
+        const lockKey = '{payment-confirm}:order-refresh';
+        await redis.set(lockKey, 'token-123', 'EX', 10);
+
+        await expect(redis.eval(
+          REFRESH_PAYMENT_CONFIRM_LOCK_LUA,
+          1,
+          lockKey,
+          'wrong-token',
+          '60',
+        )).resolves.toBe(0);
+        expect(await redis.ttl(lockKey)).toBeLessThanOrEqual(10);
+
+        await expect(redis.eval(
+          REFRESH_PAYMENT_CONFIRM_LOCK_LUA,
+          1,
+          lockKey,
+          'token-123',
+          '60',
+        )).resolves.toBe(1);
+        expect(await redis.ttl(lockKey)).toBeGreaterThan(10);
+      });
     });
   });
 });

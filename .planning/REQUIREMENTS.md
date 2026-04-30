@@ -9,27 +9,27 @@ Requirements for v1.1 안정화 + 고도화. Each maps to roadmap phases.
 
 ### 소셜 로그인 버그
 
-- [x] **AUTH-01**: 소셜 로그인 재로그인 실패 버그 수정 (회원가입 후 로그아웃 → 재로그인 불가, 카카오/네이버/구글 전부)
+- [ ] **AUTH-01**: 소셜 로그인 재로그인 실패 버그 수정 (회원가입 후 로그아웃 → 재로그인 불가, 카카오/네이버/구글 전부)
 
 ### Valkey 마이그레이션
 
 - [ ] **VALK-01**: @upstash/redis 제거, ioredis 단일 클라이언트로 Valkey 연결 통합
 - [ ] **VALK-02**: Google Memorystore for Valkey 프로비저닝 (PSC + Direct VPC Egress)
-- [ ] **VALK-03**: 좌석 잠금 Lua 스크립트 Valkey 호환성 검증 및 수정
+- [x] **VALK-03**: 좌석 잠금 Lua 스크립트 Valkey 호환성 검증 및 수정
 - [ ] **VALK-04**: Socket.IO Redis adapter가 ioredis로 Valkey pub/sub 정상 동작 확인
 - [ ] **VALK-05**: Cloud Run → Valkey VPC 네트워킹 설정
 - [ ] **VALK-06**: 성능 카탈로그 캐시 레이어 구현
 
 ### R2 프로덕션 연동
 
-- [x] **R2-01**: Cloudflare R2 API 토큰 발급 + 버킷 생성
+- [ ] **R2-01**: Cloudflare R2 API 토큰 발급 + 버킷 생성
 - [ ] **R2-02**: R2 CORS 설정 (AllowedHeaders 명시적 지정)
-- [x] **R2-03**: 포스터/SVG 프로덕션 업로드 및 CDN 서빙 동작
-- [x] **R2-04**: 커스텀 도메인 설정 (CDN 서빙)
+- [ ] **R2-03**: 포스터/SVG 프로덕션 업로드 및 CDN 서빙 동작
+- [ ] **R2-04**: 커스텀 도메인 설정 (CDN 서빙)
 
 ### 기술부채 청산
 
-- [ ] **DEBT-01**: Password reset 이메일 기능 실구현 (console.log stub → 실제 이메일 발송)
+- [x] **DEBT-01**: Password reset 이메일 기능 실구현 (console.log stub → 실제 이메일 발송)
 - [ ] **DEBT-02**: 이용약관 dialog에 실제 약관 텍스트 적용
 - [ ] **DEBT-03**: seat-map-viewer.test.tsx locked seat click 테스트 회귀 수정
 - [ ] **DEBT-04**: admin-booking-detail-modal formatDateTime null 타입 경고 수정
@@ -96,25 +96,25 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 6 | Complete |
+| AUTH-01 | Phase 6, Phase 21 | Pending |
 | VALK-01 | Phase 7 | Pending |
-| VALK-02 | Phase 7 | Pending |
-| VALK-03 | Phase 7 | Pending |
-| VALK-04 | Phase 7 | Pending |
-| VALK-05 | Phase 7 | Pending |
+| VALK-02 | Phase 7, Phase 20 | Pending |
+| VALK-03 | Phase 7, Phase 19, Phase 20, Phase 24 | Complete |
+| VALK-04 | Phase 7, Phase 20 | Pending |
+| VALK-05 | Phase 7, Phase 20, Phase 24 | Pending |
 | VALK-06 | Phase 7 | Pending |
-| R2-01 | Phase 8 | Complete |
-| R2-02 | Phase 8 | Pending |
-| R2-03 | Phase 8 | Complete |
-| R2-04 | Phase 8 | Complete |
-| DEBT-01 | Phase 9 | Pending |
-| DEBT-02 | Phase 9 | Pending |
-| DEBT-03 | Phase 9 | Pending |
-| DEBT-04 | Phase 9 | Pending |
-| DEBT-05 | Phase 9 | Pending |
-| DEBT-06 | Phase 9 | Pending |
+| R2-01 | Phase 8, Phase 21, Phase 23 | Pending |
+| R2-02 | Phase 8, Phase 21, Phase 23, Phase 24 | Pending |
+| R2-03 | Phase 8, Phase 21, Phase 23 | Pending |
+| R2-04 | Phase 8, Phase 21, Phase 23 | Pending |
+| DEBT-01 | Phase 9, Phase 18, Phase 23 | Complete |
+| DEBT-02 | Phase 9, Phase 23 | Pending |
+| DEBT-03 | Phase 9, Phase 23 | Pending |
+| DEBT-04 | Phase 9, Phase 23 | Pending |
+| DEBT-05 | Phase 9, Phase 23 | Pending |
+| DEBT-06 | Phase 9, Phase 23 | Pending |
 | SMS-01 | Phase 10 | Pending |
-| SMS-02 | Phase 10 | Pending |
+| SMS-02 | Phase 10, Phase 22, Phase 24 | Pending |
 | SMS-03 | Phase 10 | Pending |
 | SMS-04 | Phase 10 | Pending |
 | ADM-01 | Phase 11 | Complete |
@@ -124,17 +124,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ADM-05 | Phase 11 | Complete |
 | ADM-06 | Phase 11 | Complete |
 | UX-01 | Phase 12 | Complete |
-| UX-02 | Phase 12 | Complete |
-| UX-03 | Phase 12 | Complete |
-| UX-04 | Phase 12 | Complete |
-| UX-05 | Phase 12 | Complete |
-| UX-06 | Phase 12 | Complete |
+| UX-02 | Phase 12, Phase 19 | Complete |
+| UX-03 | Phase 12, Phase 19 | Complete |
+| UX-04 | Phase 12, Phase 19 | Complete |
+| UX-05 | Phase 12, Phase 19 | Complete |
+| UX-06 | Phase 12, Phase 19 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 33 total
 - Mapped to phases: 33/33
+- Gap closure remapped from v1.1 audit: 21/33
+- Open after audit gap planning: 26/33
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-09*
-*Last updated: 2026-04-09 after roadmap creation*
+*Last updated: 2026-04-29 after v1.1 milestone gap planning*

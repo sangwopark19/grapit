@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: 안정화 + 고도화
-status: "Phase 17 shipped — PR #28"
-stopped_at: Phase 17 context gathered
-last_updated: "2026-04-29T01:29:27.920Z"
-last_activity: 2026-04-29
+status: "Phase 19 shipped — PR #29"
+stopped_at: Completed 19-03-PLAN.md
+last_updated: "2026-04-30T02:29:19.659Z"
+last_activity: 2026-04-30
 progress:
-  total_phases: 15
-  completed_phases: 13
-  total_plans: 64
-  completed_plans: 63
-  percent: 98
+  total_phases: 22
+  completed_phases: 17
+  total_plans: 70
+  completed_plans: 69
+  percent: 77
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** 사용자가 원하는 공연을 발견하고, 좌석을 직접 선택하여, 안정적으로 예매를 완료할 수 있는 것
-**Current focus:** Phase 17 — local-dev-health-indicator-fix-inmemoryredis-ping-capability complete; Phase 16 shipped with external sign-off pending
+**Current focus:** Phase 20 — valkey-production-connectivity-contract
 
 ## Current Position
 
-Phase: 17 (local-dev-health-indicator-fix-inmemoryredis-ping-capability) — COMPLETE
-Plan: 2 of 2 complete
-Status: Phase 17 shipped — PR #28
-Last activity: 2026-04-29
+Phase: 20
+Plan: Not started
+Status: Phase 19 shipped — PR #29
+Last activity: 2026-04-30
 
 Progress: [██████████] 99%
 
@@ -36,7 +36,7 @@ Progress: [██████████] 99%
 
 **Velocity:**
 
-- Total plans completed: 69 (v1.0)
+- Total plans completed: 79 (v1.0)
 - Average duration: ~10min
 - Total execution time: ~3 hours
 
@@ -56,6 +56,8 @@ Progress: [██████████] 99%
 | 11 | 4 | - | - |
 | 12 | 6 | - | - |
 | 14 | 4 | - | - |
+| 18 | 2 | - | - |
+| 19 | 4 | - | - |
 
 **Recent Trend:**
 
@@ -74,6 +76,12 @@ Progress: [██████████] 99%
 | Phase 16 P05 | 6min | 3 tasks | 4 files |
 | Phase 17 P01 | <1min | 2 tasks | 3 files |
 | Phase 17 P02 | <1min | 3 tasks | 3 files |
+| Phase 18 P01 | 9min | 3 tasks | 10 files |
+| Phase 18 P02 | 27min | 3 tasks | 2 files |
+| Phase 19 P01 | 9min | 2 tasks | 6 files |
+| Phase 19 P02 | 8min | 2 tasks | 5 files |
+| Phase 19 P04 | 7min | 2 tasks | 4 files |
+| Phase 19 P03 | 6min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -107,6 +115,23 @@ Full decision log in PROJECT.md Key Decisions table (10 decisions, all Good).
 - [Phase 16-05]: Signup dialogs keep prop-less TermsMarkdown. — DialogTitle remains the only visible title and D-11 dialog compatibility is preserved.
 - [Phase 16-05]: Cutover prerequisites centralized in 16-HUMAN-UAT.md. — Business values, mailbox checks, generic placeholder grep, and post-deploy URL/Footer/dialog checks remain operational gates for Plan 16-06.
 - [Phase 17]: Use a two-layer local health fix. — Add `InMemoryRedis.ping()` for ioredis surface parity and keep a RedisHealthIndicator capability probe so future local/test fallbacks without `ping()` report local fallback as up without masking real Redis ping failures.
+- [Phase 18-01]: Reset confirm remains raw fetch via apiUrl so token-invalid 401 stays on invalid-link UI.
+- [Phase 18-01]: Production Next rewrites return [] and localhost /api + /socket.io rewrites are development-only.
+- [Phase 18-01]: deploy-web validates CLOUD_RUN_API_URL before Docker build and blocks empty or loopback origins.
+- [Phase 18-02]: Use the user's checkpoint approval as the production email-to-confirm-to-login completion signal.
+- [Phase 18-02]: Do not fabricate Sentry email-service zero-count; record the operator-approved evidence caveat instead.
+- [Phase 18-02]: Keep no-PII redaction gates as the release evidence guard for the UAT artifact.
+- [Phase 19-01]: Treat backend ownership helper and ReservationService failures as intentional RED evidence for later Phase 19 implementation plans.
+- [Phase 19-01]: Keep all new tests in existing files per D-21, with only the planned new web hook test file.
+- [Phase 19-01]: Do not modify runtime code in 19-01; this plan establishes the executable contract only.
+- [Phase 19-02]: Assert helpers read only per-seat lock KEYS and do not mutate stale index sets; consume deletes only requested owned locks atomically.
+- [Phase 19-02]: InMemoryRedis marker dispatch mirrors the Valkey ownership tuple contract while production REDIS_URL hard-fail remains unchanged.
+- [Phase 19-04]: Confirm-page lock failure disables payment CTA and prevents Toss requestPayment after prepare rejection.
+- [Phase 19-04]: Complete-page lock rejection bypasses orderId recovery and renders failed UI state instead of success.
+- [Phase 19-04]: Preserve selected seats on prepare lock failure until the user explicitly clicks the recovery CTA.
+- [Phase 19-03]: Existing pending orderId returns now require active Valkey ownership for stored reservation seats.
+- [Phase 19-03]: Existing payment idempotency remains first and does not require active locks after sold transition.
+- [Phase 19-03]: Post-Toss consume failure cancels the Toss payment and skips the DB sold transition.
 
 ### Pending Todos
 
@@ -141,8 +166,8 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-29T00:36:57.611Z
-Stopped at: Phase 17 context gathered
-Resume file: .planning/phases/17-local-dev-health-indicator-fix-inmemoryredis-ping-capability/17-CONTEXT.md
+Last session: 2026-04-29T08:48:54.173Z
+Stopped at: Completed 19-03-PLAN.md
+Resume file: None
 
 **Planned Phase:** 15 (resend-heygrabit-com-cutover-transactional-email-secret-mana) — 3 plans — 2026-04-24T08:54:14.266Z

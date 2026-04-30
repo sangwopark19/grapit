@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'node:crypto';
 import { ReservationService } from './reservation.service.js';
@@ -42,6 +48,12 @@ function createMockTossClient() {
 function createMockBookingService() {
   return {
     unlockAllSeats: vi.fn().mockResolvedValue({ unlockedSeats: [] }),
+    assertOwnedSeatLocks: vi.fn().mockResolvedValue(undefined),
+    consumeOwnedSeatLocks: vi.fn().mockResolvedValue({ consumedSeatIds: [] }),
+    extendOwnedSeatLocks: vi.fn().mockResolvedValue(undefined),
+    acquirePaymentConfirmLock: vi.fn().mockResolvedValue(true),
+    refreshPaymentConfirmLock: vi.fn().mockResolvedValue(true),
+    releasePaymentConfirmLock: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -72,6 +84,156 @@ describe('ReservationService', () => {
     );
   });
 
+  const LOCK_EXPIRED_MESSAGE = '좌석 점유 시간이 만료되었습니다. 좌석을 다시 선택해주세요.';
+  const LOCK_OTHER_OWNER_MESSAGE = '이미 다른 사용자가 선택한 좌석입니다.';
+
+  function seatSelection(seatId: string): SeatSelection {
+    const [, number = '1'] = seatId.split('-');
+    return { seatId, tierName: 'VIP', price: 50000, row: 'A', number };
+  }
+
+  function seatConfigRowsFor(seats: Array<string | SeatSelection>) {
+    return [{
+      seatConfig: {
+        tiers: [{
+          tierName: 'VIP',
+          color: '#111111',
+          seatIds: seats.map((seat) => (typeof seat === 'string' ? seat : seat.seatId)),
+        }],
+      },
+    }];
+  }
+
+  function chainResult<T>(rows: T[]) {
+    return {
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue(rows),
+      }),
+    };
+  }
+
+  function setupPrepareBase(dto: {
+    showtimeId: string;
+    orderId: string;
+    seats: SeatSelection[];
+    amount: number;
+  }) {
+    mockDb.select
+      .mockReturnValueOnce(chainResult([]))
+      .mockReturnValueOnce(chainResult([{ id: dto.showtimeId, performanceId: 'performance-1', dateTime: new Date() }]))
+      .mockReturnValueOnce(chainResult([{ tierName: 'VIP', price: 50000 }]))
+      .mockReturnValueOnce(chainResult(seatConfigRowsFor(dto.seats)));
+
+    mockDb.transaction.mockResolvedValue({
+      id: 'reservation-created',
+      tossOrderId: dto.orderId,
+    });
+  }
+
+  function setupExistingPendingOrder(dto: {
+    showtimeId: string;
+    orderId: string;
+    userId: string;
+    amount?: number;
+    status?: string;
+    seats?: Array<string | SeatSelection>;
+  }) {
+    const seats = (dto.seats ?? ['A-1', 'A-2']).map((seat) => (
+      typeof seat === 'string' ? seat : seat.seatId
+    ));
+    const amount = dto.amount ?? seats.length * 50000;
+    const seatMapSeatIds = Array.from(new Set([...seats, 'A-1', 'A-2', 'A-3', 'B-1']));
+    mockDb.select
+      .mockReturnValueOnce(chainResult([{
+        id: 'reservation-existing',
+        userId: dto.userId,
+        tossOrderId: dto.orderId,
+        showtimeId: dto.showtimeId,
+        status: dto.status ?? 'PENDING_PAYMENT',
+        totalAmount: amount,
+      }]))
+      .mockReturnValueOnce(chainResult([{ id: dto.showtimeId, performanceId: 'performance-1', dateTime: new Date() }]))
+      .mockReturnValueOnce(chainResult([{ tierName: 'VIP', price: 50000 }]))
+      .mockReturnValueOnce(chainResult(seatConfigRowsFor(seatMapSeatIds)))
+      .mockReturnValueOnce(chainResult(seats.map((seatId) => ({
+        seatId,
+        tierName: 'VIP',
+        price: 50000,
+        row: seatId.split('-')[0] ?? 'A',
+        number: seatId.split('-')[1] ?? '1',
+      }))));
+  }
+
+  function setupConfirmReservationBase(args: {
+    reservationId: string;
+    showtimeId: string;
+    orderId: string;
+    userId: string;
+    amount: number;
+    seats?: string[];
+  }) {
+    const seats = args.seats ?? ['A-1', 'A-2'];
+    mockDb.select
+      .mockReturnValueOnce(chainResult([]))
+      .mockReturnValueOnce(chainResult([{
+        id: args.reservationId,
+        userId: args.userId,
+        showtimeId: args.showtimeId,
+        tossOrderId: args.orderId,
+        status: 'PENDING_PAYMENT',
+        totalAmount: args.amount,
+      }]))
+      .mockReturnValueOnce(chainResult(seats.map((seatId) => ({ seatId }))));
+  }
+
+  function setupReservationDetailMocks(args: {
+    reservationId: string;
+    userId: string;
+    amount: number;
+    seats?: string[];
+  }) {
+    const seats = args.seats ?? ['A-1', 'A-2'];
+    mockDb.select
+      .mockReturnValueOnce({
+        from: vi.fn().mockReturnValue({
+          innerJoin: vi.fn().mockReturnValue({
+            innerJoin: vi.fn().mockReturnValue({
+              leftJoin: vi.fn().mockReturnValue({
+                where: vi.fn().mockResolvedValue([{
+                  reservation: {
+                    id: args.reservationId,
+                    userId: args.userId,
+                    reservationNumber: 'GRP-20260429-LOCKS',
+                    status: 'CONFIRMED',
+                    totalAmount: args.amount,
+                    cancelDeadline: new Date(),
+                    cancelledAt: null,
+                    cancelReason: null,
+                    createdAt: new Date(),
+                  },
+                  showtime: { dateTime: new Date() },
+                  performance: { title: '락 테스트 공연', posterUrl: null },
+                  venue: { name: '락 테스트 극장' },
+                }]),
+              }),
+            }),
+          }),
+        }),
+      })
+      .mockReturnValueOnce(chainResult(seats.map((seatId) => ({
+        seatId,
+        tierName: 'VIP',
+        price: 50000,
+        row: 'A',
+        number: seatId.split('-')[1] ?? '1',
+      }))))
+      .mockReturnValueOnce(chainResult([{
+        paymentKey: 'pk_test_123',
+        method: '카드',
+        paidAt: new Date(),
+      }]));
+  }
+
   describe('reservation number', () => {
     it('should generate reservation number matching GRP-YYYYMMDD-XXXXX format', () => {
       const result = service.generateReservationNumber();
@@ -91,15 +253,54 @@ describe('ReservationService', () => {
       // Mock: priceTiers query returns VIP=100000, R=80000
       mockDb.select.mockReturnValue({
         from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([
-            { id: randomUUID(), performanceId, tierName: 'VIP', price: 100000, sortOrder: 0 },
-            { id: randomUUID(), performanceId, tierName: 'R', price: 80000, sortOrder: 1 },
-          ]),
+          where: vi.fn()
+            .mockResolvedValueOnce([
+              { id: randomUUID(), performanceId, tierName: 'VIP', price: 100000, sortOrder: 0 },
+              { id: randomUUID(), performanceId, tierName: 'R', price: 80000, sortOrder: 1 },
+            ])
+            .mockResolvedValueOnce([{
+              seatConfig: {
+                tiers: [
+                  { tierName: 'VIP', color: '#111111', seatIds: ['A-1', 'A-2'] },
+                  { tierName: 'R', color: '#222222', seatIds: ['B-1'] },
+                ],
+              },
+            }]),
         }),
       });
 
       const result = await service.calculateTotalAmount(seats, performanceId);
       expect(result).toBe(280000); // 100000 + 100000 + 80000
+    });
+
+    it('should derive tier and price from seat map config when available', async () => {
+      const performanceId = randomUUID();
+      const seats: SeatSelection[] = [
+        { seatId: 'A-1', tierName: 'R', price: 1, row: 'X', number: '999' },
+        { seatId: 'B-1', tierName: 'VIP', price: 1, row: 'Y', number: '999' },
+      ];
+
+      mockDb.select.mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn()
+            .mockResolvedValueOnce([
+              { id: randomUUID(), performanceId, tierName: 'VIP', price: 100000, sortOrder: 0 },
+              { id: randomUUID(), performanceId, tierName: 'R', price: 80000, sortOrder: 1 },
+            ])
+            .mockResolvedValueOnce([{
+              seatConfig: {
+                tiers: [
+                  { tierName: 'VIP', color: '#111111', seatIds: ['A-1'] },
+                  { tierName: 'R', color: '#222222', seatIds: ['B-1'] },
+                ],
+              },
+            }]),
+        }),
+      });
+
+      await expect(service.calculateTotalAmount(seats, performanceId))
+        .resolves
+        .toBe(180000);
     });
 
     it('should throw BadRequestException for invalid tier ID', async () => {
@@ -110,14 +311,302 @@ describe('ReservationService', () => {
 
       mockDb.select.mockReturnValue({
         from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([
-            { id: randomUUID(), performanceId, tierName: 'VIP', price: 100000, sortOrder: 0 },
-          ]),
+          where: vi.fn()
+            .mockResolvedValueOnce([
+              { id: randomUUID(), performanceId, tierName: 'VIP', price: 100000, sortOrder: 0 },
+            ])
+            .mockResolvedValueOnce([{
+              seatConfig: {
+                tiers: [
+                  { tierName: 'NONEXISTENT', color: '#111111', seatIds: ['A-1'] },
+                ],
+              },
+            }]),
         }),
       });
 
       await expect(service.calculateTotalAmount(seats, performanceId))
         .rejects.toThrow(BadRequestException);
+    });
+
+    it.each([
+      ['missing', []],
+      ['null config', [{ seatConfig: null }]],
+      ['malformed tiers', [{ seatConfig: { tiers: 'VIP' } }]],
+      ['empty tiers', [{ seatConfig: { tiers: [] } }]],
+    ])('should fail closed when seat map config is %s', async (_caseName, seatMapRows) => {
+      const performanceId = randomUUID();
+      const seats: SeatSelection[] = [
+        { seatId: 'A-1', tierName: 'VIP', price: 1, row: 'client', number: '999' },
+      ];
+
+      mockDb.select.mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn()
+            .mockResolvedValueOnce([
+              { id: randomUUID(), performanceId, tierName: 'VIP', price: 100000, sortOrder: 0 },
+            ])
+            .mockResolvedValueOnce(seatMapRows),
+        }),
+      });
+
+      await expect(service.calculateTotalAmount(seats, performanceId))
+        .rejects
+        .toThrow('좌석 배치 정보가 유효하지 않습니다');
+    });
+
+    it('should throw BadRequestException for duplicate seat IDs', async () => {
+      const performanceId = randomUUID();
+      const seats: SeatSelection[] = [
+        { seatId: 'A-1', tierName: 'VIP', price: 100000, row: 'A', number: '1' },
+        { seatId: 'A-1', tierName: 'VIP', price: 100000, row: 'A', number: '1' },
+      ];
+
+      await expect(service.calculateTotalAmount(seats, performanceId))
+        .rejects
+        .toThrow('중복된 좌석이 포함되어 있습니다');
+      expect(mockDb.select).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('prepareReservation - lock ownership', () => {
+    it('prepareReservation rejects duplicate seat IDs before reading database state', async () => {
+      const userId = randomUUID();
+      const dto = {
+        showtimeId: randomUUID(),
+        orderId: 'GRP-DUPLICATE-SEATS',
+        seats: [seatSelection('A-1'), seatSelection('A-1')],
+        amount: 100000,
+      };
+
+      await expect(service.prepareReservation(dto, userId))
+        .rejects
+        .toThrow('중복된 좌석이 포함되어 있습니다');
+
+      expect(mockDb.select).not.toHaveBeenCalled();
+      expect(mockBookingService.assertOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockDb.transaction).not.toHaveBeenCalled();
+    });
+
+    it('prepareReservation checks active locks before creating a new pending reservation', async () => {
+      const userId = randomUUID();
+      const dto = {
+        showtimeId: randomUUID(),
+        orderId: 'GRP-LOCK-PREPARE-SUCCESS',
+        seats: [seatSelection('A-1'), seatSelection('A-2')],
+        amount: 100000,
+      };
+      setupPrepareBase(dto);
+
+      await expect(service.prepareReservation(dto, userId))
+        .resolves
+        .toEqual({ reservationId: 'reservation-created', orderId: dto.orderId });
+
+      expect(mockBookingService.assertOwnedSeatLocks).toHaveBeenCalledWith(userId, dto.showtimeId, ['A-1', 'A-2']);
+      expect(mockDb.transaction).toHaveBeenCalledOnce();
+      expect(mockBookingService.assertOwnedSeatLocks.mock.invocationCallOrder[0])
+        .toBeLessThan(mockDb.transaction.mock.invocationCallOrder[0]!);
+    });
+
+    it('prepareReservation stores canonical tierName and price from seat map config', async () => {
+      const userId = randomUUID();
+      const dto = {
+        showtimeId: randomUUID(),
+        orderId: 'GRP-CANONICAL-SEATS',
+        seats: [{ seatId: 'A-1', tierName: 'R', price: 1, row: 'client', number: '999' }],
+        amount: 100000,
+      };
+      const insertedValues: unknown[] = [];
+
+      mockDb.select
+        .mockReturnValueOnce(chainResult([]))
+        .mockReturnValueOnce(chainResult([{ id: dto.showtimeId, performanceId: 'performance-1', dateTime: new Date() }]))
+        .mockReturnValueOnce(chainResult([
+          { tierName: 'VIP', price: 100000 },
+          { tierName: 'R', price: 80000 },
+        ]))
+        .mockReturnValueOnce(chainResult([{
+          seatConfig: {
+            tiers: [
+              { tierName: 'VIP', color: '#111111', seatIds: ['A-1'] },
+              { tierName: 'R', color: '#222222', seatIds: ['B-1'] },
+            ],
+          },
+        }]));
+
+      const mockTx = {
+        insert: vi.fn().mockReturnValue({
+          values: vi.fn((values: unknown) => {
+            insertedValues.push(values);
+            return {
+              returning: vi.fn().mockResolvedValue([{ id: 'reservation-created', tossOrderId: dto.orderId }]),
+            };
+          }),
+        }),
+      };
+      mockDb.transaction.mockImplementation(async (cb: (tx: typeof mockTx) => Promise<unknown>) => cb(mockTx));
+
+      await expect(service.prepareReservation(dto, userId))
+        .resolves
+        .toEqual({ reservationId: 'reservation-created', orderId: dto.orderId });
+
+      expect(mockBookingService.assertOwnedSeatLocks).toHaveBeenCalledWith(userId, dto.showtimeId, ['A-1']);
+      expect(insertedValues[1]).toEqual([
+        expect.objectContaining({
+          reservationId: 'reservation-created',
+          seatId: 'A-1',
+          tierName: 'VIP',
+          price: 100000,
+          row: 'A',
+          number: '1',
+        }),
+      ]);
+    });
+
+    it('prepareReservation rejects missing active lock before creating pending reservation', async () => {
+      const userId = randomUUID();
+      const dto = {
+        showtimeId: randomUUID(),
+        orderId: 'GRP-LOCK-PREPARE-MISSING',
+        seats: [seatSelection('A-1')],
+        amount: 50000,
+      };
+      setupPrepareBase(dto);
+      mockBookingService.assertOwnedSeatLocks.mockRejectedValueOnce(
+        new ConflictException(LOCK_EXPIRED_MESSAGE),
+      );
+
+      await expect(service.prepareReservation(dto, userId))
+        .rejects
+        .toThrow(LOCK_EXPIRED_MESSAGE);
+
+      expect(mockBookingService.assertOwnedSeatLocks).toHaveBeenCalledWith(userId, dto.showtimeId, ['A-1']);
+      expect(mockDb.transaction).not.toHaveBeenCalled();
+    });
+
+    it('prepareReservation rejects other-user lock before creating pending reservation', async () => {
+      const userId = randomUUID();
+      const dto = {
+        showtimeId: randomUUID(),
+        orderId: 'GRP-LOCK-PREPARE-OTHER',
+        seats: [seatSelection('A-2')],
+        amount: 50000,
+      };
+      setupPrepareBase(dto);
+      mockBookingService.assertOwnedSeatLocks.mockRejectedValueOnce(
+        new ConflictException(LOCK_OTHER_OWNER_MESSAGE),
+      );
+
+      await expect(service.prepareReservation(dto, userId))
+        .rejects
+        .toThrow(LOCK_OTHER_OWNER_MESSAGE);
+
+      expect(mockBookingService.assertOwnedSeatLocks).toHaveBeenCalledWith(userId, dto.showtimeId, ['A-2']);
+      expect(mockDb.transaction).not.toHaveBeenCalled();
+    });
+
+    it('Existing pending order cannot bypass active lock ownership', async () => {
+      const userId = randomUUID();
+      const dto = {
+        showtimeId: randomUUID(),
+        orderId: 'GRP-LOCK-IDEMPOTENT-PENDING',
+        seats: [seatSelection('A-1'), seatSelection('A-2')],
+        amount: 100000,
+      };
+      setupExistingPendingOrder({ ...dto, userId });
+      mockBookingService.assertOwnedSeatLocks.mockRejectedValueOnce(
+        new ConflictException(LOCK_EXPIRED_MESSAGE),
+      );
+
+      await expect(service.prepareReservation(dto, userId))
+        .rejects
+        .toThrow(LOCK_EXPIRED_MESSAGE);
+
+      expect(mockBookingService.assertOwnedSeatLocks).toHaveBeenCalledWith(userId, dto.showtimeId, ['A-1', 'A-2']);
+      expect(mockDb.transaction).not.toHaveBeenCalled();
+    });
+
+    it('prepareReservation rejects reused orderId when existing reservation is not pending', async () => {
+      const userId = randomUUID();
+      const dto = {
+        showtimeId: randomUUID(),
+        orderId: 'GRP-IDEMPOTENT-CANCELLED',
+        seats: [seatSelection('A-1')],
+        amount: 50000,
+      };
+      setupExistingPendingOrder({ ...dto, userId, status: 'CANCELLED', seats: ['A-1'] });
+
+      await expect(service.prepareReservation(dto, userId))
+        .rejects
+        .toThrow('이미 처리된 주문 ID입니다. 새 주문 ID로 다시 시도해주세요.');
+
+      expect(mockBookingService.assertOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockDb.transaction).not.toHaveBeenCalled();
+    });
+
+    it('prepareReservation rejects reused orderId when request seats do not match existing pending reservation', async () => {
+      const userId = randomUUID();
+      const dto = {
+        showtimeId: randomUUID(),
+        orderId: 'GRP-IDEMPOTENT-SEAT-MISMATCH',
+        seats: [seatSelection('A-1')],
+        amount: 50000,
+      };
+      setupExistingPendingOrder({
+        ...dto,
+        userId,
+        amount: 50000,
+        seats: ['A-2'],
+      });
+
+      await expect(service.prepareReservation(dto, userId))
+        .rejects
+        .toThrow('기존 예매 요청과 일치하지 않습니다. 새 주문 ID로 다시 시도해주세요.');
+
+      expect(mockBookingService.assertOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockDb.transaction).not.toHaveBeenCalled();
+    });
+
+    it('prepareReservation rejects reused orderId when request amount does not match existing pending reservation', async () => {
+      const userId = randomUUID();
+      const dto = {
+        showtimeId: randomUUID(),
+        orderId: 'GRP-IDEMPOTENT-AMOUNT-MISMATCH',
+        seats: [seatSelection('A-1')],
+        amount: 40000,
+      };
+      setupExistingPendingOrder({
+        ...dto,
+        userId,
+        amount: 50000,
+        seats: ['A-1'],
+      });
+
+      await expect(service.prepareReservation(dto, userId))
+        .rejects
+        .toThrow('기존 예매 요청과 일치하지 않습니다. 새 주문 ID로 다시 시도해주세요.');
+
+      expect(mockBookingService.assertOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockDb.transaction).not.toHaveBeenCalled();
+    });
+
+    it('prepareReservation rejects another user existing pending orderId', async () => {
+      const userId = randomUUID();
+      const otherUserId = randomUUID();
+      const dto = {
+        showtimeId: randomUUID(),
+        orderId: 'GRP-LOCK-IDEMPOTENT-OTHER-USER',
+        seats: [seatSelection('A-1')],
+        amount: 50000,
+      };
+      setupExistingPendingOrder({ ...dto, userId: otherUserId });
+
+      await expect(service.prepareReservation(dto, userId))
+        .rejects
+        .toThrow('예매 정보를 찾을 수 없습니다. 다시 시도해주세요.');
+
+      expect(mockBookingService.assertOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockDb.transaction).not.toHaveBeenCalled();
     });
   });
 
@@ -280,6 +769,16 @@ describe('ReservationService', () => {
         }),
       });
 
+      // 3rd select: pending reservation seats for ownership assertion/consume
+      mockDb.select.mockReturnValueOnce({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([
+            { seatId: 'A-1' },
+            { seatId: 'A-2' },
+          ]),
+        }),
+      });
+
       // Track all tx operations
       const txOps: { operation: string; args: unknown[] }[] = [];
       const mockTx = {
@@ -287,7 +786,9 @@ describe('ReservationService', () => {
           txOps.push({ operation: 'update', args });
           return {
             set: vi.fn().mockReturnValue({
-              where: vi.fn().mockResolvedValue([]),
+              where: vi.fn().mockReturnValue({
+                returning: vi.fn().mockResolvedValue([{ id: randomUUID() }]),
+              }),
             }),
           };
         }),
@@ -296,6 +797,9 @@ describe('ReservationService', () => {
           return {
             values: vi.fn().mockReturnValue({
               returning: vi.fn().mockResolvedValue([{ id: randomUUID() }]),
+              onConflictDoNothing: vi.fn().mockReturnValue({
+                returning: vi.fn().mockResolvedValue([{ id: randomUUID() }]),
+              }),
             }),
           };
         }),
@@ -313,16 +817,6 @@ describe('ReservationService', () => {
 
       mockDb.transaction.mockImplementation(async (cb: (tx: typeof mockTx) => Promise<unknown>) => {
         return cb(mockTx);
-      });
-
-      // After-transaction select for seats (for WS broadcast)
-      mockDb.select.mockReturnValueOnce({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([
-            { seatId: 'A-1' },
-            { seatId: 'A-2' },
-          ]),
-        }),
       });
 
       // getReservationDetail mocks (called at the end of confirm)
@@ -386,13 +880,15 @@ describe('ReservationService', () => {
         userId,
       );
 
-      // tx.select should have been called for reservation seats
-      expect(mockTx.select).toHaveBeenCalled();
       // tx.update should be called for reservation status AND seat_inventories (at least 3 calls: 1 for reservation + 2 for seats)
       expect(mockTx.update.mock.calls.length).toBeGreaterThanOrEqual(3);
+      expect(mockBookingService.assertOwnedSeatLocks.mock.invocationCallOrder[0])
+        .toBeLessThan(mockDb.transaction.mock.invocationCallOrder[0]!);
+      expect(mockDb.transaction.mock.invocationCallOrder[0])
+        .toBeLessThan(mockBookingService.consumeOwnedSeatLocks.mock.invocationCallOrder[0]!);
     });
 
-    it('should call BookingService.unlockAllSeats after transaction', async () => {
+    it('should not call BookingService.unlockAllSeats after confirm success', async () => {
       setupConfirmMocks();
 
       await service.confirmAndCreateReservation(
@@ -400,7 +896,7 @@ describe('ReservationService', () => {
         userId,
       );
 
-      expect(mockBookingService.unlockAllSeats).toHaveBeenCalledWith(userId, showtimeId);
+      expect(mockBookingService.unlockAllSeats).not.toHaveBeenCalledWith(userId, showtimeId);
     });
 
     it('should call BookingGateway.broadcastSeatUpdate with sold for each seat', async () => {
@@ -413,6 +909,318 @@ describe('ReservationService', () => {
 
       expect(mockBookingGateway.broadcastSeatUpdate).toHaveBeenCalledWith(showtimeId, 'A-1', 'sold', userId);
       expect(mockBookingGateway.broadcastSeatUpdate).toHaveBeenCalledWith(showtimeId, 'A-2', 'sold', userId);
+    });
+  });
+
+  describe('confirmAndCreateReservation - lock ownership', () => {
+    const userId = randomUUID();
+    const reservationId = randomUUID();
+    const showtimeId = randomUUID();
+    const orderId = 'GRP-LOCK-CONFIRM-ABCDE';
+
+    it('rejects concurrent confirm for the same orderId before reading payment state', async () => {
+      mockBookingService.acquirePaymentConfirmLock.mockResolvedValueOnce(false);
+
+      await expect(service.confirmAndCreateReservation(
+        { paymentKey: 'pk_test_123', orderId, amount: 150000 },
+        userId,
+      )).rejects.toThrow('결제 확인이 이미 진행 중입니다.');
+
+      expect(mockDb.select).not.toHaveBeenCalled();
+      expect(mockTossClient.confirmPayment).not.toHaveBeenCalled();
+      expect(mockBookingService.releasePaymentConfirmLock).not.toHaveBeenCalled();
+    });
+
+    it('rejects cancelled reservation instead of treating it as confirmed', async () => {
+      mockDb.select
+        .mockReturnValueOnce(chainResult([]))
+        .mockReturnValueOnce(chainResult([{
+          id: reservationId,
+          userId,
+          showtimeId,
+          tossOrderId: orderId,
+          status: 'CANCELLED',
+          totalAmount: 150000,
+        }]));
+
+      await expect(service.confirmAndCreateReservation(
+        { paymentKey: 'pk_test_123', orderId, amount: 150000 },
+        userId,
+      )).rejects.toThrow(LOCK_EXPIRED_MESSAGE);
+
+      expect(mockBookingService.extendOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockTossClient.confirmPayment).not.toHaveBeenCalled();
+      expect(mockDb.transaction).not.toHaveBeenCalled();
+      const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
+      expect(mockBookingService.refreshPaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
+      expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
+    });
+
+    it('confirmAndCreateReservation extends locks before Toss confirm and rejects invalid locks', async () => {
+      setupConfirmReservationBase({
+        reservationId,
+        showtimeId,
+        orderId,
+        userId,
+        amount: 150000,
+      });
+      mockBookingService.extendOwnedSeatLocks.mockRejectedValueOnce(
+        new ConflictException(LOCK_EXPIRED_MESSAGE),
+      );
+      mockDb.transaction.mockResolvedValue(undefined);
+      setupReservationDetailMocks({ reservationId, userId, amount: 150000 });
+
+      await expect(service.confirmAndCreateReservation(
+        { paymentKey: 'pk_test_123', orderId, amount: 150000 },
+        userId,
+      )).rejects.toThrow(LOCK_EXPIRED_MESSAGE);
+
+      expect(mockBookingService.extendOwnedSeatLocks).toHaveBeenCalledWith(userId, showtimeId, ['A-1', 'A-2'], 60);
+      expect(mockBookingService.assertOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockTossClient.confirmPayment).not.toHaveBeenCalled();
+      expect(mockDb.transaction).not.toHaveBeenCalled();
+      const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
+      expect(mockBookingService.refreshPaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
+      expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
+    });
+
+    it('cancels Toss and does not mark sold when lock ownership is lost after Toss confirm', async () => {
+      setupConfirmReservationBase({
+        reservationId,
+        showtimeId,
+        orderId,
+        userId,
+        amount: 150000,
+      });
+      mockBookingService.assertOwnedSeatLocks.mockRejectedValueOnce(
+        new ConflictException(LOCK_EXPIRED_MESSAGE),
+      );
+
+      await expect(service.confirmAndCreateReservation(
+        { paymentKey: 'pk_test_123', orderId, amount: 150000 },
+        userId,
+      )).rejects.toThrow(LOCK_EXPIRED_MESSAGE);
+
+      expect(mockBookingService.extendOwnedSeatLocks).toHaveBeenCalledWith(userId, showtimeId, ['A-1', 'A-2'], 60);
+      expect(mockTossClient.confirmPayment).toHaveBeenCalledOnce();
+      expect(mockBookingService.assertOwnedSeatLocks).toHaveBeenCalledWith(userId, showtimeId, ['A-1', 'A-2']);
+      expect(mockTossClient.cancelPayment).toHaveBeenCalledWith('pk_test_123', '좌석 점유 만료로 인한 자동 취소');
+      expect(mockDb.transaction).not.toHaveBeenCalled();
+      expect(mockBookingService.consumeOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockBookingGateway.broadcastSeatUpdate).not.toHaveBeenCalled();
+      const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
+      expect(mockBookingService.refreshPaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
+      expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
+    });
+
+    it('cancels Toss and rejects when the order confirm lock is lost after Toss confirm', async () => {
+      setupConfirmReservationBase({
+        reservationId,
+        showtimeId,
+        orderId,
+        userId,
+        amount: 150000,
+      });
+      mockBookingService.refreshPaymentConfirmLock
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(false);
+
+      await expect(service.confirmAndCreateReservation(
+        { paymentKey: 'pk_test_123', orderId, amount: 150000 },
+        userId,
+      )).rejects.toThrow('결제 확인이 이미 진행 중입니다.');
+
+      expect(mockBookingService.extendOwnedSeatLocks).toHaveBeenCalledWith(userId, showtimeId, ['A-1', 'A-2'], 60);
+      expect(mockTossClient.confirmPayment).toHaveBeenCalledOnce();
+      expect(mockBookingService.assertOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockTossClient.cancelPayment).toHaveBeenCalledWith('pk_test_123', '결제 확인 중복 처리로 인한 자동 취소');
+      expect(mockDb.transaction).not.toHaveBeenCalled();
+      expect(mockBookingService.consumeOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockBookingGateway.broadcastSeatUpdate).not.toHaveBeenCalled();
+      const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
+      expect(mockBookingService.refreshPaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
+      expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
+    });
+
+    it('surfaces manual refund error when compensation cancel fails after Toss confirm', async () => {
+      setupConfirmReservationBase({
+        reservationId,
+        showtimeId,
+        orderId,
+        userId,
+        amount: 150000,
+      });
+      mockBookingService.refreshPaymentConfirmLock
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(false);
+      mockTossClient.cancelPayment.mockRejectedValueOnce(new Error('Toss cancel failed'));
+
+      await expect(service.confirmAndCreateReservation(
+        { paymentKey: 'pk_test_123', orderId, amount: 150000 },
+        userId,
+      )).rejects.toThrow('결제는 승인되었으나 자동 취소에 실패했습니다. 고객센터에 문의해주세요.');
+
+      expect(mockTossClient.confirmPayment).toHaveBeenCalledOnce();
+      expect(mockTossClient.cancelPayment).toHaveBeenCalledWith('pk_test_123', '결제 확인 중복 처리로 인한 자동 취소');
+      expect(mockDb.transaction).not.toHaveBeenCalled();
+      expect(mockBookingService.consumeOwnedSeatLocks).not.toHaveBeenCalled();
+      const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
+      expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
+    });
+
+    it('cancels Toss and rejects when confirm lock refresh throws after Toss confirm', async () => {
+      setupConfirmReservationBase({
+        reservationId,
+        showtimeId,
+        orderId,
+        userId,
+        amount: 150000,
+      });
+      mockBookingService.refreshPaymentConfirmLock
+        .mockResolvedValueOnce(true)
+        .mockRejectedValueOnce(new Error('Redis eval failed'));
+
+      await expect(service.confirmAndCreateReservation(
+        { paymentKey: 'pk_test_123', orderId, amount: 150000 },
+        userId,
+      )).rejects.toThrow(InternalServerErrorException);
+
+      expect(mockBookingService.extendOwnedSeatLocks).toHaveBeenCalledWith(userId, showtimeId, ['A-1', 'A-2'], 60);
+      expect(mockTossClient.confirmPayment).toHaveBeenCalledOnce();
+      expect(mockBookingService.assertOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockTossClient.cancelPayment).toHaveBeenCalledWith('pk_test_123', '결제 확인 상태 검증 실패로 인한 자동 취소');
+      expect(mockDb.transaction).not.toHaveBeenCalled();
+      expect(mockBookingService.consumeOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockBookingGateway.broadcastSeatUpdate).not.toHaveBeenCalled();
+      const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
+      expect(mockBookingService.refreshPaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
+      expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
+    });
+
+    it('does not cancel Toss when post-commit lock cleanup fails', async () => {
+      setupConfirmReservationBase({
+        reservationId,
+        showtimeId,
+        orderId,
+        userId,
+        amount: 150000,
+      });
+      mockDb.transaction.mockResolvedValue(undefined);
+      mockBookingService.consumeOwnedSeatLocks.mockRejectedValueOnce(
+        new ConflictException(LOCK_OTHER_OWNER_MESSAGE),
+      );
+      setupReservationDetailMocks({ reservationId, userId, amount: 150000 });
+
+      await expect(service.confirmAndCreateReservation(
+        { paymentKey: 'pk_test_123', orderId, amount: 150000 },
+        userId,
+      )).resolves.toMatchObject({ id: reservationId });
+
+      expect(mockBookingService.extendOwnedSeatLocks).toHaveBeenCalledWith(userId, showtimeId, ['A-1', 'A-2'], 60);
+      expect(mockBookingService.assertOwnedSeatLocks).toHaveBeenCalledWith(userId, showtimeId, ['A-1', 'A-2']);
+      expect(mockTossClient.confirmPayment).toHaveBeenCalledOnce();
+      expect(mockDb.transaction).toHaveBeenCalledOnce();
+      expect(mockBookingService.consumeOwnedSeatLocks).toHaveBeenCalledWith(userId, showtimeId, ['A-1', 'A-2']);
+      expect(mockDb.transaction.mock.invocationCallOrder[0])
+        .toBeLessThan(mockBookingService.consumeOwnedSeatLocks.mock.invocationCallOrder[0]!);
+      expect(mockTossClient.cancelPayment).not.toHaveBeenCalled();
+      expect(mockBookingGateway.broadcastSeatUpdate).toHaveBeenCalledWith(showtimeId, 'A-1', 'sold', userId);
+      expect(mockBookingGateway.broadcastSeatUpdate).toHaveBeenCalledWith(showtimeId, 'A-2', 'sold', userId);
+      const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
+      expect(mockBookingService.refreshPaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
+      expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
+    });
+
+    it('cancels Toss and rejects when conditional sold transition detects an already sold seat', async () => {
+      setupConfirmReservationBase({
+        reservationId,
+        showtimeId,
+        orderId,
+        userId,
+        amount: 150000,
+      });
+
+      const mockTx = {
+        update: vi.fn().mockReturnValue({
+          set: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              returning: vi.fn().mockResolvedValue([]),
+            }),
+          }),
+        }),
+        insert: vi.fn().mockReturnValue({
+          values: vi.fn().mockReturnValue({
+            onConflictDoNothing: vi.fn().mockReturnValue({
+              returning: vi.fn().mockResolvedValue([]),
+            }),
+            returning: vi.fn().mockResolvedValue([{ id: randomUUID() }]),
+          }),
+        }),
+      };
+      mockDb.transaction.mockImplementation(async (cb: (tx: typeof mockTx) => Promise<unknown>) => cb(mockTx));
+      mockDb.select.mockReturnValueOnce(chainResult([]));
+
+      await expect(service.confirmAndCreateReservation(
+        { paymentKey: 'pk_test_123', orderId, amount: 150000 },
+        userId,
+      )).rejects.toThrow('이미 판매된 좌석입니다');
+
+      expect(mockTossClient.confirmPayment).toHaveBeenCalledOnce();
+      expect(mockTossClient.cancelPayment).toHaveBeenCalledWith('pk_test_123', '서버 오류로 인한 자동 취소');
+      expect(mockBookingService.assertOwnedSeatLocks).toHaveBeenCalledWith(userId, showtimeId, ['A-1', 'A-2']);
+      expect(mockBookingService.assertOwnedSeatLocks.mock.invocationCallOrder[0])
+        .toBeLessThan(mockDb.transaction.mock.invocationCallOrder[0]!);
+      expect(mockBookingService.consumeOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockBookingGateway.broadcastSeatUpdate).not.toHaveBeenCalled();
+      const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
+      expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
+    });
+
+    it('does not cancel Toss when a duplicate payment insert race already committed the same order', async () => {
+      setupConfirmReservationBase({
+        reservationId,
+        showtimeId,
+        orderId,
+        userId,
+        amount: 150000,
+      });
+      mockDb.transaction.mockRejectedValueOnce(new Error('duplicate key value violates unique constraint'));
+      mockDb.select.mockReturnValueOnce(chainResult([{ reservationId, tossOrderId: orderId }]));
+      setupReservationDetailMocks({ reservationId, userId, amount: 150000 });
+
+      await expect(service.confirmAndCreateReservation(
+        { paymentKey: 'pk_test_123', orderId, amount: 150000 },
+        userId,
+      )).resolves.toMatchObject({ id: reservationId });
+
+      expect(mockTossClient.confirmPayment).toHaveBeenCalledOnce();
+      expect(mockTossClient.cancelPayment).not.toHaveBeenCalled();
+      expect(mockBookingService.assertOwnedSeatLocks).toHaveBeenCalledWith(userId, showtimeId, ['A-1', 'A-2']);
+      expect(mockBookingService.assertOwnedSeatLocks.mock.invocationCallOrder[0])
+        .toBeLessThan(mockDb.transaction.mock.invocationCallOrder[0]!);
+      expect(mockBookingService.consumeOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockBookingGateway.broadcastSeatUpdate).not.toHaveBeenCalled();
+      const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
+      expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
+    });
+
+    it('existing payment idempotency returns detail without active lock ownership check', async () => {
+      mockDb.select
+        .mockReturnValueOnce(chainResult([{ reservationId, tossOrderId: orderId }]));
+      setupReservationDetailMocks({ reservationId, userId, amount: 150000 });
+
+      await expect(service.confirmAndCreateReservation(
+        { paymentKey: 'pk_test_123', orderId, amount: 150000 },
+        userId,
+      )).resolves.toMatchObject({ id: reservationId });
+
+      expect(mockBookingService.extendOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockBookingService.assertOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockBookingService.consumeOwnedSeatLocks).not.toHaveBeenCalled();
+      expect(mockTossClient.confirmPayment).not.toHaveBeenCalled();
+      const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
+      expect(mockBookingService.refreshPaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
+      expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
     });
   });
 

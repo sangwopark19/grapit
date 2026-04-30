@@ -103,14 +103,18 @@ export function useUnlockAllSeats() {
 export function usePrepareReservation() {
   return useMutation({
     mutationFn: (data: PrepareReservationRequest) =>
-      apiClient.post<PrepareReservationResponse>('/api/v1/reservations/prepare', data),
+      apiClient.post<PrepareReservationResponse>('/api/v1/reservations/prepare', data, {
+        showErrorToast: false,
+      }),
   });
 }
 
 export function useConfirmPayment() {
   return useMutation({
     mutationFn: (data: ConfirmPaymentRequest) =>
-      apiClient.post<ReservationDetail>('/api/v1/payments/confirm', data),
+      apiClient.post<ReservationDetail>('/api/v1/payments/confirm', data, {
+        showErrorToast: false,
+      }),
   });
 }
 

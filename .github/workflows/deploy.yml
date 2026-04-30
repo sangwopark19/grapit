@@ -11,6 +11,7 @@ env:
   AR_REPO: grabit
   WEB_SERVICE: grabit-web
   API_SERVICE: grabit-api
+  DEPLOY_SHA: ${{ github.event.workflow_run.head_sha }}
 
 jobs:
   deploy-api:
@@ -21,11 +22,44 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.DEPLOY_SHA }}
       - uses: pnpm/action-setup@v5
       - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: pnpm
+      - name: Validate production origins
+        run: |
+          node - <<'NODE'
+          const values = {
+            CLOUD_RUN_API_URL: process.env.CLOUD_RUN_API_URL,
+            CLOUD_RUN_WEB_URL: process.env.CLOUD_RUN_WEB_URL,
+          };
+          const localHosts = new Set(['localhost', '127.0.0.1', '0.0.0.0', '::1']);
+
+          for (const [name, value] of Object.entries(values)) {
+            if (!value || value.trim() !== value) {
+              throw new Error(`${name} must be set without surrounding whitespace`);
+            }
+
+            const url = new URL(value);
+            if (url.protocol !== 'https:') {
+              throw new Error(`${name} must be an https URL`);
+            }
+            if (url.origin !== value) {
+              throw new Error(`${name} must be an origin only, e.g. https://api.heygrabit.com`);
+            }
+
+            const hostname = url.hostname.replace(/^\[|\]$/g, '').toLowerCase();
+            if (localHosts.has(hostname)) {
+              throw new Error(`${name} must not point to localhost`);
+            }
+          }
+          NODE
+        env:
+          CLOUD_RUN_API_URL: ${{ vars.CLOUD_RUN_API_URL }}
+          CLOUD_RUN_WEB_URL: ${{ vars.CLOUD_RUN_WEB_URL }}
       - run: pnpm install --frozen-lockfile
 
       # GCP Auth (OIDC, per D-20) — must run before migration for Cloud SQL Proxy
@@ -66,10 +100,10 @@ jobs:
       - name: Build API image
         run: |
           docker build -f apps/api/Dockerfile \
-            -t ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.API_SERVICE }}:${{ github.sha }} \
+            -t ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.API_SERVICE }}:${{ env.DEPLOY_SHA }} \
             .
       - name: Push API image
-        run: docker push ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.API_SERVICE }}:${{ github.sha }}
+        run: docker push ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.API_SERVICE }}:${{ env.DEPLOY_SHA }}
 
       # Deploy to Cloud Run (per D-16, D-18)
       # D-05: --service-account 값은 grapit-cloudrun@ 그대로 유지 (Phase 13 rename 제외 — IAM 바인딩 재설정 리스크 회피)
@@ -77,7 +111,7 @@ jobs:
         with:
           service: ${{ env.API_SERVICE }}
           region: ${{ env.GCP_REGION }}
-          image: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.API_SERVICE }}:${{ github.sha }}
+          image: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.API_SERVICE }}:${{ env.DEPLOY_SHA }}
           flags: >-
             --service-account=grapit-cloudrun@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com
             --add-cloudsql-instances=${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
@@ -134,6 +168,8 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.DEPLOY_SHA }}
 
       # GCP Auth
       - id: auth
@@ -154,10 +190,10 @@ jobs:
             --build-arg NEXT_PUBLIC_R2_HOSTNAME=${{ secrets.R2_PUBLIC_HOSTNAME }} \
             --build-arg NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN }} \
             --build-arg NEXT_PUBLIC_TOSS_CLIENT_KEY=${{ secrets.NEXT_PUBLIC_TOSS_CLIENT_KEY }} \
-            -t ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.WEB_SERVICE }}:${{ github.sha }} \
+            -t ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.WEB_SERVICE }}:${{ env.DEPLOY_SHA }} \
             .
       - name: Push Web image
-        run: docker push ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.WEB_SERVICE }}:${{ github.sha }}
+        run: docker push ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.WEB_SERVICE }}:${{ env.DEPLOY_SHA }}
 
       # Deploy to Cloud Run (per D-16, D-18)
       # D-05: --service-account 값은 grapit-cloudrun@ 그대로 유지 (Phase 13 rename 제외 — IAM 바인딩 재설정 리스크 회피)
@@ -165,7 +201,7 @@ jobs:
         with:
           service: ${{ env.WEB_SERVICE }}
           region: ${{ env.GCP_REGION }}
-          image: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.WEB_SERVICE }}:${{ github.sha }}
+          image: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.WEB_SERVICE }}:${{ env.DEPLOY_SHA }}
           flags: >-
             --service-account=grapit-cloudrun@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com
             --min-instances=0
