@@ -887,7 +887,7 @@ export class ReservationService {
       return;
     }
 
-    await this.db
+    const [cancelled] = await this.db
       .update(reservations)
       .set({
         status: 'CANCELLED',
@@ -895,6 +895,17 @@ export class ReservationService {
         cancelReason: '좌석 점유 만료',
         updatedAt: new Date(),
       })
-      .where(eq(reservations.id, reservation.id));
+      .where(
+        and(
+          eq(reservations.id, reservation.id),
+          eq(reservations.userId, userId),
+          eq(reservations.status, 'PENDING_PAYMENT'),
+        ),
+      )
+      .returning({ id: reservations.id });
+
+    if (!cancelled) {
+      return;
+    }
   }
 }
