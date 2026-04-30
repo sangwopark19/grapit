@@ -298,13 +298,16 @@ class InMemoryRedis {
     const members = Array.from(this.sets.get(userSeatsKey) ?? []);
     let alive = 0;
     for (const sid of members) {
-      if (this.store.has(`${keyPrefix}${sid}`)) {
+      const owner = this.store.get(`${keyPrefix}${sid}`);
+      if (owner === userId) {
         alive++;
       } else {
         const userSet = this.sets.get(userSeatsKey);
         if (userSet) userSet.delete(sid);
-        const lockedSet = this.sets.get(lockedSeatsKey);
-        if (lockedSet) lockedSet.delete(sid);
+        if (owner === undefined) {
+          const lockedSet = this.sets.get(lockedSeatsKey);
+          if (lockedSet) lockedSet.delete(sid);
+        }
       }
     }
 

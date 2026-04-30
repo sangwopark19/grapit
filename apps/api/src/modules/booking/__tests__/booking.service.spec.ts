@@ -87,7 +87,7 @@ describe('BookingService', () => {
       const result = await service.lockSeat(userId, showtimeId, seatId);
       const after = Date.now();
 
-      // Verify redis.eval called with script containing SMEMBERS + EXISTS loop
+      // Verify redis.eval called with script containing SMEMBERS + owner check loop
       // ioredis flat signature: eval(script, numKeys, ...keysAndArgs)
       expect(mockRedis.eval).toHaveBeenCalledOnce();
       const callArgs = mockRedis.eval.mock.calls[0] as unknown[];
@@ -95,7 +95,8 @@ describe('BookingService', () => {
       const numKeys = callArgs[1] as number;
       const flatKeys = callArgs.slice(2, 2 + numKeys) as string[];
       expect(script).toContain('SMEMBERS');
-      expect(script).toContain('EXISTS');
+      expect(script).toContain('GET');
+      expect(script).toContain('owner == ARGV[1]');
       expect(numKeys).toBe(3);
       expect(flatKeys).toContain(`{${showtimeId}}:user-seats:${userId}`);
       expect(flatKeys).toContain(`{${showtimeId}}:seat:${seatId}`);

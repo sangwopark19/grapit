@@ -40,11 +40,14 @@ const LOCK_SEAT_LUA = `
 local members = redis.call('SMEMBERS', KEYS[1])
 local alive = 0
 for i, sid in ipairs(members) do
-  if redis.call('EXISTS', ARGV[5] .. sid) == 1 then
+  local owner = redis.call('GET', ARGV[5] .. sid)
+  if owner == ARGV[1] then
     alive = alive + 1
   else
     redis.call('SREM', KEYS[1], sid)
-    redis.call('SREM', KEYS[3], sid)
+    if not owner then
+      redis.call('SREM', KEYS[3], sid)
+    end
   end
 end
 if alive >= tonumber(ARGV[3]) then

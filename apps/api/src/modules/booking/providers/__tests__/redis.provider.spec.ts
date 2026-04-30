@@ -277,6 +277,34 @@ describe('redisProvider factory', () => {
         )).resolves.toEqual([0, 'OTHER_OWNER', 'A-2', 'other-user']);
       });
 
+      it('lock seat cleanup does not count stale user-seat members owned by another user', async () => {
+        const redis = createMock();
+        const otherSeatKey = `{${showtimeId}}:seat:A-3`;
+        const newSeatKey = `{${showtimeId}}:seat:A-4`;
+        await redis.set(seatA1Key, userId);
+        await redis.set(seatA2Key, userId);
+        await redis.set(otherSeatKey, 'other-user');
+        await redis.sadd(userSeatsKey, 'A-1', 'A-2', 'A-3');
+        await redis.sadd(lockedSeatsKey, 'A-1', 'A-2', 'A-3');
+
+        await expect(redis.eval(
+          'lock-seat-lua',
+          3,
+          userSeatsKey,
+          newSeatKey,
+          lockedSeatsKey,
+          userId,
+          '600',
+          '3',
+          'A-4',
+          `{${showtimeId}}:seat:`,
+        )).resolves.toEqual([1, newSeatKey, 'A-4']);
+
+        expect(await redis.get(newSeatKey)).toBe(userId);
+        expect(await redis.smembers(userSeatsKey)).not.toContain('A-3');
+        expect(await redis.smembers(lockedSeatsKey)).toContain('A-3');
+      });
+
       it('CONSUME_OWNED_SEAT_LOCKS_LUA returns success tuple and preserves unrelated same-showtime locks', async () => {
         const redis = createMock();
         const seatA3Key = `{${showtimeId}}:seat:A-3`;
