@@ -372,6 +372,21 @@ export class ReservationService {
     }, refreshEveryMs);
   }
 
+  private async cancelConfirmedPaymentOrThrow(paymentKey: string, reason: string): Promise<void> {
+    try {
+      await this.tossClient.cancelPayment(paymentKey, reason);
+      this.logger.log(`Compensation cancel succeeded. paymentKey=${paymentKey}`);
+    } catch (cancelError) {
+      this.logger.error(
+        `CRITICAL: compensation cancel failed. paymentKey=${paymentKey}. Manual refund required.`,
+        cancelError instanceof Error ? cancelError.stack : String(cancelError),
+      );
+      throw new InternalServerErrorException(
+        '결제는 승인되었으나 자동 취소에 실패했습니다. 고객센터에 문의해주세요.',
+      );
+    }
+  }
+
   private async confirmAndCreateReservationLocked(
     dto: ConfirmPaymentRequest,
     userId: string,
@@ -441,15 +456,7 @@ export class ReservationService {
         `Payment confirm lock refresh failed after Toss confirm. paymentKey=${tossResponse.paymentKey}, orderId=${dto.orderId}`,
         lockError instanceof Error ? lockError.stack : String(lockError),
       );
-      try {
-        await this.tossClient.cancelPayment(tossResponse.paymentKey, '결제 확인 상태 검증 실패로 인한 자동 취소');
-        this.logger.log(`Confirm lock refresh compensation cancel succeeded. paymentKey=${tossResponse.paymentKey}`);
-      } catch (cancelError) {
-        this.logger.error(
-          `CRITICAL: Confirm lock refresh compensation cancel failed. paymentKey=${tossResponse.paymentKey}. Manual refund required.`,
-          cancelError instanceof Error ? cancelError.stack : String(cancelError),
-        );
-      }
+      await this.cancelConfirmedPaymentOrThrow(tossResponse.paymentKey, '결제 확인 상태 검증 실패로 인한 자동 취소');
       throw new InternalServerErrorException(
         '결제는 승인되었으나 처리 중 오류가 발생했습니다. 자동 취소를 시도했습니다. 고객센터에 문의해주세요.',
       );
@@ -458,15 +465,7 @@ export class ReservationService {
       this.logger.error(
         `Payment confirm lock ownership lost after Toss confirm. paymentKey=${tossResponse.paymentKey}, orderId=${dto.orderId}`,
       );
-      try {
-        await this.tossClient.cancelPayment(tossResponse.paymentKey, '결제 확인 중복 처리로 인한 자동 취소');
-        this.logger.log(`Confirm lock compensation cancel succeeded. paymentKey=${tossResponse.paymentKey}`);
-      } catch (cancelError) {
-        this.logger.error(
-          `CRITICAL: Confirm lock compensation cancel failed. paymentKey=${tossResponse.paymentKey}. Manual refund required.`,
-          cancelError instanceof Error ? cancelError.stack : String(cancelError),
-        );
-      }
+      await this.cancelConfirmedPaymentOrThrow(tossResponse.paymentKey, '결제 확인 중복 처리로 인한 자동 취소');
       throw new ConflictException('결제 확인이 이미 진행 중입니다.');
     }
 
@@ -478,15 +477,7 @@ export class ReservationService {
         `Seat lock ownership lost or consume failed after Toss confirm. paymentKey=${tossResponse.paymentKey}, orderId=${dto.orderId}`,
         lockError instanceof Error ? lockError.stack : String(lockError),
       );
-      try {
-        await this.tossClient.cancelPayment(tossResponse.paymentKey, '좌석 점유 만료로 인한 자동 취소');
-        this.logger.log(`Post-confirm lock compensation cancel succeeded. paymentKey=${tossResponse.paymentKey}`);
-      } catch (cancelError) {
-        this.logger.error(
-          `CRITICAL: Post-confirm lock compensation cancel failed. paymentKey=${tossResponse.paymentKey}. Manual refund required.`,
-          cancelError instanceof Error ? cancelError.stack : String(cancelError),
-        );
-      }
+      await this.cancelConfirmedPaymentOrThrow(tossResponse.paymentKey, '좌석 점유 만료로 인한 자동 취소');
       throw lockError;
     }
 
@@ -568,15 +559,7 @@ export class ReservationService {
         `DB transaction failed after Toss confirm. paymentKey=${tossResponse.paymentKey}, orderId=${dto.orderId}`,
         dbError instanceof Error ? dbError.stack : String(dbError),
       );
-      try {
-        await this.tossClient.cancelPayment(tossResponse.paymentKey, '서버 오류로 인한 자동 취소');
-        this.logger.log(`Compensation cancel succeeded. paymentKey=${tossResponse.paymentKey}`);
-      } catch (cancelError) {
-        this.logger.error(
-          `CRITICAL: Compensation cancel also failed. paymentKey=${tossResponse.paymentKey}. Manual refund required.`,
-          cancelError instanceof Error ? cancelError.stack : String(cancelError),
-        );
-      }
+      await this.cancelConfirmedPaymentOrThrow(tossResponse.paymentKey, '서버 오류로 인한 자동 취소');
       if (dbError instanceof ConflictException) {
         throw dbError;
       }

@@ -1040,6 +1040,32 @@ describe('ReservationService', () => {
       expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
     });
 
+    it('surfaces manual refund error when compensation cancel fails after Toss confirm', async () => {
+      setupConfirmReservationBase({
+        reservationId,
+        showtimeId,
+        orderId,
+        userId,
+        amount: 150000,
+      });
+      mockBookingService.refreshPaymentConfirmLock
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(false);
+      mockTossClient.cancelPayment.mockRejectedValueOnce(new Error('Toss cancel failed'));
+
+      await expect(service.confirmAndCreateReservation(
+        { paymentKey: 'pk_test_123', orderId, amount: 150000 },
+        userId,
+      )).rejects.toThrow('결제는 승인되었으나 자동 취소에 실패했습니다. 고객센터에 문의해주세요.');
+
+      expect(mockTossClient.confirmPayment).toHaveBeenCalledOnce();
+      expect(mockTossClient.cancelPayment).toHaveBeenCalledWith('pk_test_123', '결제 확인 중복 처리로 인한 자동 취소');
+      expect(mockDb.transaction).not.toHaveBeenCalled();
+      expect(mockBookingService.consumeOwnedSeatLocks).not.toHaveBeenCalled();
+      const lockToken = mockBookingService.acquirePaymentConfirmLock.mock.calls[0]?.[1];
+      expect(mockBookingService.releasePaymentConfirmLock).toHaveBeenCalledWith(orderId, lockToken);
+    });
+
     it('cancels Toss and rejects when confirm lock refresh throws after Toss confirm', async () => {
       setupConfirmReservationBase({
         reservationId,
